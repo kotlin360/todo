@@ -1,0 +1,67 @@
+{include file="public/header" /}
+<div style="width:580px;padding:20px 5px">
+	<form class="layui-form" lay-filter="editForm" id="editForm">
+		<div class="layui-form-item">
+			<label class="layui-form-label">菜单名称</label>
+			<div class="layui-input-inline">
+				<input type="text" name="title" value="{$menu.title}" required lay-verify="required" placeholder="请输入菜单名称" autocomplete="off" class="layui-input">
+			</div>
+			<div class="layui-form-mid layui-word-aux">如：用户管理</div>
+		</div>
+		<div class="layui-form-item">
+			<label class="layui-form-label">节点URL</label>
+			<div class="layui-input-inline">
+				<input type="text" name="name" value="{$menu.name}" required lay-verify="required" placeholder="模块/控制器/方法，顶级菜单填写#" autocomplete="off" class="layui-input">
+			</div>
+			<div class="layui-form-mid layui-word-aux">如：admin/user/adduser</div>
+		</div>
+		<div class="layui-form-item">
+			<label class="layui-form-label">CSS图标</label>
+			<div class="layui-input-inline">
+				<input type="text" name="css" value="{$menu.css}" required lay-verify="required" placeholder="请输入菜单名称前显示的CSS图标" autocomplete="off" class="layui-input">
+			</div>
+			<div class="layui-form-mid layui-word-aux">如：如fa fa-user，<a href="http://fontawesome.dashgame.com/" target="_blank">选择图标</a></div>
+		</div>
+		<div class="layui-form-item">
+			<label class="layui-form-label">排序</label>
+			<div class="layui-input-inline">
+				<input type="text" name="sort" value="{$menu.sort}" required lay-verify="required" placeholder="请输入排序值" autocomplete="off" class="layui-input">
+			</div>
+			<div class="layui-form-mid layui-word-aux">如：数值越小越优先显示</div>
+		</div>
+		<div class="layui-form-item">
+			<label class="layui-form-label">状态</label>
+			<div class="layui-input-inline">
+				<input type="checkbox" name="status" value="1" lay-skin="switch" lay-text="开启|禁用" {eq name="menu.status" value="1" }checked{/eq}>
+			</div>
+			<div class="layui-form-mid layui-word-aux">默认开启</div>
+		</div>
+		<div class="hr-line-dashed2"></div>
+		<div class="layui-form-item">
+			<div class="layui-input-block">
+				<input type="hidden" name="id" value="{$menu.id}"/>
+				<button class="layui-btn" lay-submit lay-filter="editForm">立即提交</button>
+				<button type="reset" class="layui-btn layui-btn-primary">重置</button>
+			</div>
+		</div>
+	</form>
+</div>
+<script type="text/javascript">
+	layui.use(['form', 'layer', 'jquery'], function () {
+		var form = layui.form, layer = layui.layer, $ = layui.jquery;
+		//监听提交
+		form.on('submit(editForm)', function (data) {
+			$.post("{:url('menu/edit')}", data.field, function (result) {
+				if (result.code == 1) {
+					layer.msg('菜单修改成功', {icon: 1, time: 1000, offset: 't'}, function (index) {
+						window.parent.location.reload(); //刷新父页面
+					});
+				} else {
+					layer.msg(result.msg, {offset: '10px', icon: 2});
+				}
+			}, 'json');
+			return false;
+		});
+	});
+</script>
+{include file="public/footer" /}

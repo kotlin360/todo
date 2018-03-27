@@ -1,0 +1,82 @@
+{include file="public/header" /}
+<table class="layui-table">
+	<colgroup>
+		<col width="200">
+		<col width="100">
+		<col width="100">
+		<col width="200">
+		<col width="180">
+	</colgroup>
+	<thead>
+	<tr>
+		<th style="text-align:center">备份名称</th>
+		<th style="text-align:center">卷数</th>
+		<th style="text-align:center">数据大小</th>
+		<th style="text-align:center">备份时间</th>
+		<th style="text-align:center">操作</th>
+	</tr>
+	</thead>
+	<tbody>
+	{volist name="lists" id="v" empty="暂时没有备份数据表数据"}
+	<tr style="text-align:center">
+		<td>{$key}</td>
+		<td>{$v.part}</td>
+		<td>{$v.size|format_bytes}</td>
+		<td>{$v.time|date='Y-m-d H:i:s'}</td>
+		<td>
+			<a href="{:url('data/rollback',['file'=>urlsafe_b64encode($key),'part'=>$v.part])}" class="layui-btn layui-btn-xs rollback"><i class="fa fa-reply-all"></i> 还原</a>&nbsp;&nbsp;
+			<a href="{:url('data/download',['file'=>urlsafe_b64encode($key)])}" class="layui-btn layui-btn-xs layui-btn-warm download"><i class="fa fa-reply-all"></i> 下载</a>&nbsp;&nbsp;
+			<a href="{:url('data/del',['file'=>urlsafe_b64encode($key)])}" class="layui-btn layui-btn-danger layui-btn-xs del"><i class="fa fa-trash-o"></i> 删除</a>
+		</td>
+	</tr>
+	{/volist}
+	</tbody>
+</table>
+<script type="text/javascript">
+	layui.use(['layer', 'jquery'], function () {
+		var layer = layui.layer, $ = layui.jquery;
+		$(function () {
+			// 数据库还原
+			$('.rollback').on('click', function () {
+				var _this = $(this), url = _this.attr('href');
+				layer.confirm('您确定要恢复到此数据版本吗？请慎重操作', {title: '警告', icon: 0, btn: ['确定', '取消']}, function () {
+					$.post(url + '?t=' + new Date().getTime(), function (data) {
+						if (data.code == 1) {
+							layer.msg('数据表恢复成功', {icon: 1, offset: 't'});
+						} else {
+							layer.msg(data.msg, {offset: 't', icon: 2});
+						}
+					}, 'json');
+				});
+				return false;
+			});
+			// 数据库备份删除
+			$('.del').on('click', function () {
+				var _this = $(this), url = _this.attr('href');
+				layer.confirm('您确定要删除此数据库备份吗？', {title: '删除警告', icon: 0, btn: ['确定', '取消']}, function () {
+					$.post(url + '?t=' + new Date().getTime(), function (data) {
+						if (data.code == 1) {
+							layer.msg('数据库备份删除成功', {icon: 1, time: 1000, offset: 't'}, function (index) {
+								window.location.reload(true);
+							});
+						} else {
+							layer.msg(data.msg, {offset: 't', icon: 2});
+						}
+					}, 'json');
+				});
+				return false;
+			});
+			// 数据库备份下载
+			$('.download').on('click', function () {
+				var _this = $(this), url = _this.attr('href');
+				$.ajax({
+					type: 'POST',
+					async: false1,
+					url: url + '?t=' + new Date().getTime()
+				});
+				return false;
+			});
+		});
+	});
+</script>
+{include file="public/footer" /}
