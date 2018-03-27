@@ -1,4 +1,4 @@
-<?php /*a:3:{s:50:"D:\WWW\shop\application/admin/view\role\index.html";i:1522043843;s:53:"D:\WWW\shop\application/admin/view\public\header.html";i:1521987856;s:53:"D:\WWW\shop\application/admin/view\public\footer.html";i:1521785805;}*/ ?>
+<?php /*a:3:{s:50:"D:\WWW\shop\application/admin/view\role\index.html";i:1522112100;s:53:"D:\WWW\shop\application/admin/view\public\header.html";i:1522112100;s:53:"D:\WWW\shop\application/admin/view\public\footer.html";i:1522112100;}*/ ?>
 <!DOCTYPE html>
 <html>
 <head>

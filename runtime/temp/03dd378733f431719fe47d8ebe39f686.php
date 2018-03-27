@@ -1,4 +1,4 @@
-<?php /*a:1:{s:51:"D:\WWW\shop\application/admin/view\index\index.html";i:1522065924;}*/ ?>
+<?php /*a:1:{s:51:"D:\WWW\shop\application/admin/view\index\index.html";i:1522112100;}*/ ?>
 <!-- 头部公共文件 -->
 <!DOCTYPE html>
 <html>

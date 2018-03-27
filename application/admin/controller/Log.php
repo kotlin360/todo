@@ -54,8 +54,7 @@ class Log extends Base
 				Db::name('log')->where('log_id', 'in', $log_id)->data(['is_del' => 0])->update();
 			}
 			$json = ['code' => 1];
-		} catch
-		(\Exception $e) {
+		} catch (\Exception $e) {
 			$json = ['code' => 0, 'msg' => '日志删除失败，请稍后再试'];
 		}
 		return json($json);

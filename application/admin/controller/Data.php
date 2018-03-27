@@ -178,10 +178,10 @@ class Data extends Base
 				}
 			}
 			// 这里$name_prefix 只是文件名不包含卷和后缀在前缀文件名称
-			Log::info(session('auth.uid'), session('auth.username'), '数据库还原成功，还原版本' . $name_prefix);
+			Log::info('数据库还原成功，还原版本' . $name_prefix);
 			return json(['code' => 1]);
 		} catch (\Exception $e) {
-			Log::error(session('auth.uid'), session('auth.username'), '数据库还原失败，还原版本' . $name_prefix);
+			Log::error('数据库还原失败，还原版本' . $name_prefix);
 			return json(['code' => 0, 'msg' => $e->getMessage()]);
 		}
 	}

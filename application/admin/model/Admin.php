@@ -1,7 +1,6 @@
 <?php
 namespace app\admin\model;
 
-use app\admin\facade\UserType;
 use app\common\facade\Log;
 use think\Db;
 use think\facade\Request;
@@ -29,23 +28,26 @@ class Admin extends Model
 				return ['code' => 0, 'msg' => '登录失败，管理员不存在'];
 			}
 			if (md5(md5($data['password']) . config('auth_key')) != $user->password) {
-				Log::error($user->id, $user->username, '用户【' . $user->username . '】登录失败：密码错误');
+				Log::error('用户【' . $user->username . '】登录失败：密码错误', $user->id);
 				return ['code' => 0, 'msg' => '登录失败，密码错误'];
 			}
 			if (1 != $user->status) {
-				Log::error($user->id, $user->username, '用户【' . $user->username . '】登录失败：该账号被禁用');
+				Log::error('用户【' . $user->username . '】登录失败：该账号被禁用', $user->id);
 				return ['code' => 0, 'msg' => '登录失败，该账号被禁用'];
 			}
 			//获取该管理员的角色信息
-			$info = UserType::getRoleInfo($user->groupid);
+//			$info = UserType::getRoleInfo($user->id);
+//			if ($info === false) {
+//				return ['code' => 0, 'msg' => '登录失败，该账号尚未分配角色'];
+//			}
 			// 先执行登录写SESSION，权限后期完成
 			Session::set('auth', [
 				'uid' => $user->id,
 				'username' => $user->username,
 				'real_name' => $user->real_name,
-				'rolename' => $info['title'], //角色名
-				'rule' => $info['rules'], //角色节点
-				'name' => $info['name'], //角色权限
+//				'rolename' => $info['title'], //角色名
+//				'rule' => $info['rules'], //角色节点
+//				'name' => $info['name'], //角色权限
 			]);
 			//更新管理员状态
 			$param = [
@@ -54,10 +56,9 @@ class Admin extends Model
 				'last_login_time' => $_SERVER['REQUEST_TIME']
 			];
 			$this->where('id', $user->id)->update($param);
-			Log::info($user->id, $user->username, '用户【' . $user->username . '】登录成功');
+			Log::info('登录成功');
 			return ['code' => 1, 'url' => url('index/index'), 'msg' => '登录成功,正在跳转到后台'];
 		} catch (\Exception $e) {
-			echo $e->getMessage();
 			return ['code' => 0, 'msg' => '登录失败，请联系系统管理员'];
 		}
 	}
@@ -84,9 +85,107 @@ class Admin extends Model
 		}
 	}
 
-	public function getUserByWhere($map, $cur_page, $page_size)
+	/**
+	 * 根据条件获取系统用户
+	 * @param $map
+	 * @param $cur_page
+	 * @param $limits
+	 * @return array|\PDOStatement|string|\think\Collection
+	 * @throws \think\db\exception\DataNotFoundException
+	 * @throws \think\db\exception\ModelNotFoundException
+	 * @throws \think\exception\DbException
+	 */
+	public function getUserByWhere($map, $cur_page, $limits)
 	{
-		$sql = Db::name('admin')->alias('a')
-			->join('auth_group_access AS aga ON a.id = aga.uid');
+		return $this->where($map)->page($cur_page, $limits)->field('password', true)->order('id')->select();
+	}
+
+	/**
+	 * 创建系统用户
+	 * @param $data
+	 * @return array
+	 */
+	public function createSystemUser($data)
+	{
+		$data['password'] = md5(md5('123456') . config('auth_key'));
+		// 启动事务
+		Db::startTrans();
+		try {
+			$uid = Db::name('admin')->strict(false)->insertGetId($data);
+			foreach ($data['group_id'] as $v) {
+				$groupData[] = ['uid' => $uid, 'group_id' => $v];
+			}
+			Db::name('auth_group_access')->insertAll($groupData);
+			Db::commit();
+			return ['code' => 1];
+		} catch (\Exception $e) {
+			// 回滚事务
+			Db::rollback();
+			return ['code' => 0, 'msg' => '创建用户失败，请联系系统管理员'];
+		}
+	}
+
+	/**
+	 * 根据用户ID获取系统用户的信息和所在的组
+	 * @param $id
+	 * @return array|\PDOStatement|string|\think\Collection
+	 * @throws \think\db\exception\DataNotFoundException
+	 * @throws \think\db\exception\ModelNotFoundException
+	 * @throws \think\exception\DbException
+	 */
+	public function getUserById($id)
+	{
+		$user = Db::name('admin')->where("id={$id}")
+			->field('id,username,real_name,status')->find();
+		$group = Db::name('auth_group_access')->where("uid={$id}")->column('group_id');
+		$groupString = implode(',', $group);
+		$user['group'] = $groupString;
+		return $user;
+	}
+
+	/**
+	 * 修改系统用户
+	 * @param $id    系统用户主键
+	 * @param $data  要修改的数据
+	 * @return array
+	 */
+	public function editSystemUser($id, $data)
+	{
+		// 启动事务
+		Db::startTrans();
+		try {
+			Db::name('admin')->where("id={$id}")->strict(false)->update($data);
+			foreach ($data['group_id'] as $v) {
+				$groupData[] = ['uid' => $id, 'group_id' => $v];
+			}
+			// 首先删除auth_group_access表中的角色组id
+			Db::name('auth_group_access')->where("uid={$id}")->delete();
+			Db::name('auth_group_access')->insertAll($groupData);
+			Db::commit();
+			return ['code' => 1];
+		} catch (\Exception $e) {
+			// 回滚事务
+			Db::rollback();
+			return ['code' => 0, 'msg' => '修改用户失败，请联系系统管理员'];
+		}
+	}
+
+	/**
+	 * 重置系统用户密码
+	 * @param $id
+	 * @return array
+	 */
+	public function resetpwd($id)
+	{
+		$data['password'] = md5(md5('123456') . config('auth_key'));
+		try {
+			$name = Db::name('admin')->where("id={$id}")->value('real_name');
+			Db::name('admin')->where("id={$id}")->update($data);
+			Log::info("重置系统用户{$name}密码成功");
+			return ['code' => 1];
+		} catch (\Exception $e) {
+			Log::error("重置系统用户{$name}密码失败," . $e->getMessage());
+			return ['code' => 0, 'msg' => '重置密码失败，请联系管理员'];
+		}
 	}
 }

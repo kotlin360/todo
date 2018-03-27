@@ -3,7 +3,6 @@ namespace app\admin\model;
 
 use app\common\facade\Log;
 use think\Db;
-use think\facade\Cache;
 use think\facade\Session;
 use think\Model;
 
@@ -21,18 +20,12 @@ class Menu extends Model
 	 */
 	public function getAllMenu($floor)
 	{
-		$menuTreeCache = Cache::get('menuTree' . $floor);
-		if ($menuTreeCache) {
-			return unserialize($menuTreeCache);
-		}
 		$where = '';
 		if ($floor == 2) {
 			$where = "level <= $floor";
 		}
 		$menus = Db::name($this->name)->where($where)->order('id asc')->field(true)->select();
 		$menuTree = $this->makeMenuTree($menus);
-		// 将菜单写入缓存
-		Cache::set('menuTree' . $floor, serialize($menuTree));
 		return $menuTree;
 	}
 
@@ -87,8 +80,6 @@ class Menu extends Model
 			$json = ['code' => 0, 'msg' => '删除失败，此菜单下有子菜单'];
 		} else {
 			$this->where("id={$id}")->delete();
-			// 清除缓存
-			Cache::clear();
 			$json = ['code' => 1];
 		}
 		return $json;
@@ -110,8 +101,6 @@ class Menu extends Model
 				Log::error(Session::get('auth.uid'), Session::get('auth.username'), '添加菜单失败');
 				return ['code' => 0, 'msg' => $this->getError()];
 			} else {
-				// 添加成功，需要清空菜单的文件缓存
-				Cache::clear();
 				Log::info(Session::get('auth.uid'), Session::get('auth.username'), '添加菜单成功');
 				return ['code' => 1, 'msg' => '添加菜单成功'];
 			}
@@ -132,8 +121,6 @@ class Menu extends Model
 				Log::error(Session::get('auth.uid'), Session::get('auth.username'), '编辑菜单失败');
 				return ['code' => 0, 'msg' => $this->getError()];
 			} else {
-				// 成功后要清空缓存的
-				Cache::clear();
 				Log::info(Session::get('auth.uid'), Session::get('auth.username'), '编辑菜单成功');
 				return ['code' => 1, 'data' => '', 'msg' => '编辑菜单成功'];
 			}

@@ -1,4 +1,4 @@
-<?php /*a:3:{s:50:"D:\WWW\shop\application/admin/view\menu\index.html";i:1522070830;s:53:"D:\WWW\shop\application/admin/view\public\header.html";i:1521987856;s:53:"D:\WWW\shop\application/admin/view\public\footer.html";i:1521785805;}*/ ?>
+<?php /*a:3:{s:50:"D:\WWW\shop\application/admin/view\menu\index.html";i:1522131337;s:53:"D:\WWW\shop\application/admin/view\public\header.html";i:1522112100;s:53:"D:\WWW\shop\application/admin/view\public\footer.html";i:1522112100;}*/ ?>
 <!DOCTYPE html>
 <html>
 <head>
@@ -152,9 +152,9 @@
 		});
 		//监听提交
 		form.on('submit(addForm)', function (data) {
-			$.post("<?php echo url('menu/add_rule'); ?>", data.field, function (result) {
+			$.post("<?php echo url('menu/add_rule'); ?>?t=" + new Date().getTime(), data.field, function (result) {
 				if (result.code == 1) {
-					layer.msg('菜单添加成功', {icon: 1, time: 1000, offset: '0'}, function (index) {
+					layer.msg('菜单添加成功', {icon: 1, time: 1000, offset: 't'}, function (index) {
 						window.location.reload(true);
 					});
 				} else {

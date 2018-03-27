@@ -1,7 +1,7 @@
 <?php
 namespace app\admin\model;
 
-use think\db;
+use think\Db;
 use think\Model;
 
 class UserType extends Model
@@ -39,19 +39,25 @@ class UserType extends Model
 	 */
 	public function getRoleInfo($id)
 	{
-		$result = Db::name('auth_group')->where('id', $id)->find();
-		if (empty($result['rules'])) {
-			$where = '';
-		} else {
-			$where = 'id in(' . $result['rules'] . ')';
-		}
-		$res = Db::name('auth_rule')->field('name')->where($where)->select();
-		foreach ($res as $key => $vo) {
-			if ('#' != $vo['name']) {
-				$result['name'][] = $vo['name'];
-			}
-		}
-		return $result;
+		// 一个管理员可能属于多个角色组
+		$sql = "SELECT ag.title FROM think_auth_group ag where id in
+	(SELECT group_id FROM think_auth_group_access  aga WHERE aga.uid = {$id}";
+		$groups = Db::query($sql);
+		p($groups);
+		die;
+//		$result = Db::name('auth_group')->where('id', $id)->find();
+//		if (empty($result['rules'])) {
+//			$where = '';
+//		} else {
+//			$where = 'id in(' . $result['rules'] . ')';
+//		}
+//		$res = Db::name('auth_rule')->field('name')->where($where)->select();
+//		foreach ($res as $key => $vo) {
+//			if ('#' != $vo['name']) {
+//				$result['name'][] = $vo['name'];
+//			}
+//		}
+//		return $result;
 	}
 
 	/**
@@ -70,5 +76,18 @@ class UserType extends Model
 		} catch (\Exception $e) {
 			return ['code' => 0, 'msg' => $e->getMessage()];
 		}
+	}
+
+	/**
+	 * 获取系统所有的角色名称和id，除了系统管理
+	 * @return array
+	 */
+	public function getAllSystemRoles()
+	{
+		$where = [
+			'id' => ['id', '<>', '1'],
+			'status' => ['status', '=', '1'],
+		];
+		return Db::name($this->name)->where($where)->field('id,title')->select();
 	}
 }

@@ -2,7 +2,7 @@
 namespace app\admin\controller;
 
 use app\admin\model\Admin as AdminModel;
-use app\admin\validate\Admin as AdminValidate;
+use app\admin\validate\Login as LoginValidate;
 use app\admin\validate\Passwd as PasswdValidate;
 use think\captcha\Captcha;
 use think\Controller;
@@ -27,12 +27,12 @@ class Login extends Controller
 
 	/**
 	 * 登录动作
-	 * @param AdminValidate $validate
+	 * @param LoginValidate $validate
 	 * @param Captcha       $captcha
 	 * @param AdminModel    $adminModel
 	 * @return \think\response\Json
 	 */
-	public function do_login(AdminValidate $validate, Captcha $captcha, AdminModel $adminModel)
+	public function do_login(LoginValidate $validate, Captcha $captcha, AdminModel $adminModel)
 	{
 		$data = [
 			'username' => input('post.username'),
