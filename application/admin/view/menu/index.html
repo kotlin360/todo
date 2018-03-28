@@ -132,7 +132,7 @@
 		});
 		//监听提交
 		form.on('submit(addForm)', function (data) {
-			$.post("{:url('menu/add_rule')}?t=" + new Date().getTime(), data.field, function (result) {
+			$.post("{:url('menu/add')}?t=" + new Date().getTime(), data.field, function (result) {
 				if (result.code == 1) {
 					layer.msg('菜单添加成功', {icon: 1, time: 1000, offset: 't'}, function (index) {
 						window.location.reload(true);

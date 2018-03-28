@@ -13,7 +13,6 @@
 <div class="hr-line-dashed"></div>
 <table id="datatable" lay-filter="datatable"></table>
 <script type="text/html" id="toobar">
-	<a class="layui-btn layui-btn-xs" lay-event="detail"><i class="fa fa-hand-o-right"></i> 权限分配</a>
 	<a class="layui-btn layui-btn-warm layui-btn-xs" lay-event="edit"><i class="fa fa-edit"></i> 编辑</a>
 	<a class="layui-btn layui-btn-danger layui-btn-xs" lay-event="del"><i class="fa fa-trash-o"></i> 删除</a>
 </script>
@@ -43,18 +42,16 @@
 				{fixed: 'right', title: '操作', align: 'center', toolbar: '#toobar'}
 			]]
 		});
-		// 添加菜单事件
-		var addBox = $('#addBtn').on('click', function () {
-			layer.open({
-				type: 1,
-				title: '新增角色',
-				area: '520px',
-				scrollbar: false,
-				anim: 2,
-				shadeClose: true,
-				content: $('#addHtml').html()
+		// 添加角色，同时为角色添加相应的菜单
+		$('#addBtn').on('click', function () {
+			var addBox = layer.open({
+				type: 2,
+				title: false,
+				closeBtn: 0,
+				content: "{:url('role/add')}"
 			});
 			form.render(null, 'addForm');
+			layer.full(addBox);
 			return false;
 		});
 

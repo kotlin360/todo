@@ -49,17 +49,14 @@
 <script type="text/javascript">
 	layui.use(['form', 'layer', 'jquery'], function () {
 		var form = layui.form, layer = layui.layer, $ = layui.jquery;
-		var index = parent.layer.getFrameIndex(window.name);
 		//监听提交
 		form.on('submit(editForm)', function (data) {
 			$.post("{:url('menu/edit')}?t=" + new Date().getTime(), data.field, function (result) {
 				if (result.code == 1) {
-					parent.layer.close(index);
-					layer.msg('菜单修改成功', {icon: 1, time: 1000, offset: 't'}, function (index) {
-						window.parent.location.reload(); //刷新父页面
-					});
+					window.parent.location.reload(); //刷新父页面
+					parent.layer.msg('菜单修改成功', {icon: 1, time: 2000, offset: 't'});
 				} else {
-					layer.msg(result.msg, {offset: '10px', icon: 2});
+					layer.msg(result.msg, {icon: 2});
 				}
 			}, 'json');
 			return false;

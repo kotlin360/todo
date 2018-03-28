@@ -4,7 +4,6 @@ namespace app\admin\controller;
 use app\admin\model\Admin as AdminModel;
 use app\admin\model\UserType as UserTypeModel;
 use app\admin\validate\Admin as AdminValidate;
-use think\Db;
 use think\facade\Config;
 
 /**
@@ -15,32 +14,18 @@ use think\facade\Config;
 class Admin extends Base
 {
 	/**
-	 * 系统用户列表 或者异步加载用户数据
+	 * 系统用户列表
 	 * @param AdminModel $adminModel
 	 * @return mixed|\think\response\Json
-	 * @throws \think\db\exception\DataNotFoundException
-	 * @throws \think\db\exception\ModelNotFoundException
-	 * @throws \think\exception\DbException
 	 */
 	public function index(AdminModel $adminModel)
 	{
 		if ($this->request->isAjax()) {
-			$keyword = input('keyword', '', 'urldecode');
-			$map = [];
-			if ($keyword && $keyword !== '') {
-				$map['real_name'] = ['real_name', 'like', '%' . $keyword . '%'];
-			}
 			$cur_page = input('page', 1, 'intval');
+			$keyword = input('keyword', '', 'urldecode');
 			$page_size = input('limit', Config::get('page_size'), 'intval');
-			$roleList = $adminModel->getUserByWhere($map, $cur_page, $page_size);
-			$count = Db::name('admin')->where($map)->count();
-			$json = [
-				'code' => 0,
-				'msg' => '',
-				'count' => $count,
-				'data' => $roleList,
-				'curPage' => $cur_page
-			];
+			$map = $keyword ? "real_name like '%{$keyword}%' " : '';
+			$json = $adminModel->getDataByWhere($map, $cur_page, $page_size);
 			return json($json);
 		} else {
 			$page_size = Config::get('page_size');
@@ -52,7 +37,8 @@ class Admin extends Base
 	 * 创建系统用户，并分配角色
 	 * @param AdminModel    $adminModel
 	 * @param AdminValidate $adminValidate
-	 * @return \think\response\Json
+	 * @param UserTypeModel $userTypeModel
+	 * @return mixed|\think\response\Json
 	 */
 	public function add(AdminModel $adminModel, AdminValidate $adminValidate, UserTypeModel $userTypeModel)
 	{
@@ -80,9 +66,6 @@ class Admin extends Base
 	 * @param AdminValidate $adminValidate
 	 * @param UserTypeModel $userTypeModel
 	 * @return mixed|\think\response\Json
-	 * @throws \think\db\exception\DataNotFoundException
-	 * @throws \think\db\exception\ModelNotFoundException
-	 * @throws \think\exception\DbException
 	 */
 	public function edit(AdminModel $adminModel, AdminValidate $adminValidate, UserTypeModel $userTypeModel)
 	{
@@ -99,8 +82,12 @@ class Admin extends Base
 			}
 			return json($adminModel->editSystemUser($id, $data));
 		} else {
-			$this->assign('user', $adminModel->getUserById($id));
-			$this->assign('roles', $userTypeModel->getAllSystemRoles());
+			$user = $adminModel->getUserById($id);
+			$roles = $userTypeModel->getAllSystemRoles();
+			if ($user === null || $roles === null) {
+				$this->redirect(url('system/mistake'));
+			}
+			$this->assign(['user' => $user, 'roles' => $roles]);
 			return $this->fetch('admin/add');
 		}
 	}
@@ -114,5 +101,17 @@ class Admin extends Base
 	{
 		$id = input('param.id', 0, 'intval');
 		return json($adminModel->resetpwd($id));
+	}
+
+	/**
+	 * 修改系统用户状态（开启或者禁用）
+	 * @param AdminModel $adminModel
+	 * @return \think\response\Json
+	 */
+	public function change_status(AdminModel $adminModel)
+	{
+		$id = input('param.id', 0, 'intval');
+		$status = input('param.status', 1, 'intval');
+		return json($adminModel->change_status($id, $status));
 	}
 }

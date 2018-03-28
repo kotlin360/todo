@@ -46,8 +46,8 @@
 						{if !empty($first['child'])}
 						{volist name="$first['child']" id="second"}
 						<li>
-							<a href="javascript:void(0)" data-url="{$second.name|url}" data-icon="fa-bullseye" data-title="{$second.title}" kit-target data-id='{$second.id}'>
-								<i class="fa fa-caret-right"></i><span class="menuTitle">{$second.title}</span>
+							<a href="javascript:void(0)" data-url="{$second.name|url}" data-title="{$second.title}" kit-target data-id='{$second.id}'>
+								<i class="fa fa-angle-right"></i><span class="menuTitle">{$second.title}</span>
 							</a>
 						</li>
 						{/volist}

@@ -75,7 +75,12 @@ class Login extends Controller
 		return $captcha->entry();
 	}
 
-	// 修改管理员密码
+	/**
+	 * 修改管理员密码
+	 * @param PasswdValidate $passwdValidate
+	 * @param AdminModel     $adminModel
+	 * @return mixed|\think\response\Json
+	 */
 	public function changepwd(PasswdValidate $passwdValidate, AdminModel $adminModel)
 	{
 		if ($this->request->isAjax()) {

@@ -3,6 +3,8 @@ namespace app\admin\model;
 
 use app\common\facade\Log;
 use think\Db;
+use think\exception\DbException;
+use think\facade\Config;
 use think\facade\Request;
 use think\facade\Session;
 use think\Model;
@@ -90,14 +92,25 @@ class Admin extends Model
 	 * @param $map
 	 * @param $cur_page
 	 * @param $limits
-	 * @return array|\PDOStatement|string|\think\Collection
-	 * @throws \think\db\exception\DataNotFoundException
-	 * @throws \think\db\exception\ModelNotFoundException
-	 * @throws \think\exception\DbException
+	 * @return array
 	 */
-	public function getUserByWhere($map, $cur_page, $limits)
+	public function getDataByWhere($map, $cur_page, $limits)
 	{
-		return $this->where($map)->page($cur_page, $limits)->field('password', true)->order('id')->select();
+		try {
+			$count = $this->where($map)->count();
+			$list = $this->where($map)->page($cur_page, $limits)
+				->field('password', true)->order('id')->select();
+			$json = [
+				'code' => 0,
+				'msg' => '',
+				'count' => $count,
+				'data' => $list
+			];
+			return $json;
+		} catch (\Exception $e) {
+			Log::error('根据条件获取系统用户getDataByWhere');
+			return ['code' => 404, 'msg' => $e->getMessage()];
+		}
 	}
 
 	/**
@@ -128,25 +141,27 @@ class Admin extends Model
 	/**
 	 * 根据用户ID获取系统用户的信息和所在的组
 	 * @param $id
-	 * @return array|\PDOStatement|string|\think\Collection
-	 * @throws \think\db\exception\DataNotFoundException
-	 * @throws \think\db\exception\ModelNotFoundException
-	 * @throws \think\exception\DbException
+	 * @return array|null|\PDOStatement|string|Model
 	 */
 	public function getUserById($id)
 	{
-		$user = Db::name('admin')->where("id={$id}")
-			->field('id,username,real_name,status')->find();
-		$group = Db::name('auth_group_access')->where("uid={$id}")->column('group_id');
-		$groupString = implode(',', $group);
-		$user['group'] = $groupString;
-		return $user;
+		try {
+			$user = Db::name('admin')->where("id={$id}")
+				->field('id,username,real_name,status')->find();
+			$group = Db::name('auth_group_access')->where("uid={$id}")->column('group_id');
+			$groupString = implode(',', $group);
+			$user['group'] = $groupString;
+			return $user;
+		} catch (DbException $e) {
+			Log::error('根据用户ID获取系统用户的信息和所在的组');
+			return null;
+		}
 	}
 
 	/**
 	 * 修改系统用户
-	 * @param $id    系统用户主键
-	 * @param $data  要修改的数据
+	 * @param $id
+	 * @param $data
 	 * @return array
 	 */
 	public function editSystemUser($id, $data)
@@ -186,6 +201,28 @@ class Admin extends Model
 		} catch (\Exception $e) {
 			Log::error("重置系统用户{$name}密码失败," . $e->getMessage());
 			return ['code' => 0, 'msg' => '重置密码失败，请联系管理员'];
+		}
+	}
+
+	/**
+	 * 修改系统用户状态（启用或者禁用）
+	 * @param $id
+	 * @param $status
+	 * @return array
+	 */
+	public function change_status($id, $status)
+	{
+		$msg = $status == 1 ? '禁用' : '启用';
+		try {
+			$tableName = Config::get('database.prefix') . 'admin';
+			$name = Db::name('admin')->where("id={$id}")->value('real_name');
+			$sql = "UPDATE {$tableName} SET status = (case status when 0 then 1 else 0  end) WHERE id={$id}";
+			Db::execute($sql);
+			Log::info("{$msg}用户{$name}成功");
+			return ['code' => 1];
+		} catch (\Exception $e) {
+			Log::error("{$msg}用户{$name}失败," . $e->getMessage());
+			return ['code' => 0, 'msg' => $msg . '用户【' . $name . '】失败，请联系管理员'];
 		}
 	}
 }

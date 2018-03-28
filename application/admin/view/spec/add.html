@@ -1,0 +1,66 @@
+{include file="public/header" /}
+<div style="width:680px;padding:10px 5px">
+	<form class="layui-form" lay-filter="addForm" id="addForm">
+		<div class="layui-form-item">
+			<label class="layui-form-label">名称</label>
+			<div class="layui-input-inline">
+				<input type="text" name="name" value="{$spec.name|default=''}" lay-verify="required" placeholder="请输入商品规格名称，如颜色" autocomplete="off" class="layui-input">
+			</div>
+		</div>
+		<div class="layui-form-item">
+			<label class="layui-form-label">备注</label>
+			<div class="layui-input-inline">
+				<input type="text" name="note" value="{$spec.note|default=''}" placeholder="请输入备注，非必填" autocomplete="off" class="layui-input">
+			</div>
+			<div class="layui-form-mid layui-word-aux">一般说明是关于什么的，如：服装</div>
+		</div>
+		<div class="layui-form-item layui-form-text">
+			<label class="layui-form-label">规格值</label>
+			<div class="layui-input-block">
+				<textarea name="value" lay-verify="required" placeholder="如果名称填写了颜色，那么规格值就可以填写多种颜色；注意多个规格值用逗号（不区分中英文）分割，比方:白色，金色，银色，黑色" class="layui-textarea" style="width:500px;resize: none">{$spec.value|default=''}</textarea>
+			</div>
+		</div>
+		<div class="layui-form-item">
+			<label class="layui-form-label">状态</label>
+			<div class="layui-input-inline">
+				<input type="checkbox" name="status" value="1" {eq name="spec.status|default='1'" value="1" }checked{/eq} lay-skin="switch" lay-text="开启|禁用" >
+			</div>
+			<div class="layui-form-mid layui-word-aux">默认开启,如禁用添加商品时无法找到规格</div>
+		</div>
+		<div class="hr-line-dashed2"></div>
+		<div class="layui-form-item">
+			<div class="layui-input-block">
+				<input type="hidden" name="id" value="{$spec.id|default=''}"/>
+				<button class="layui-btn" lay-submit lay-filter="addForm">立即提交</button>
+				<button type="reset" class="layui-btn layui-btn-primary">重置</button>
+			</div>
+		</div>
+	</form>
+</div>
+<script type="text/javascript">
+	layui.use(['form', 'layer', 'jquery'], function () {
+		var form = layui.form,
+			layer = layui.layer, $ = layui.jquery;
+		//获取窗口索引
+		var index = parent.layer.getFrameIndex(window.name);
+		//监听新增角色提交
+		form.on('submit(addForm)', function (data) {
+			var url = "{:url('spec/add')}?t=", okMsg = '商品规格创建成功'; // 添加
+			if (data.field.id) {
+				// 修改
+				url = "{:url('spec/edit')}?t=";
+				okMsg = '商品规格修改成功';
+			}
+			$.post(url + new Date().getTime(), data.field, function (result) {
+				if (result.code == 1) {
+					window.parent.location.reload(); //刷新父页面
+					parent.layer.msg(okMsg, {icon: 1, time: 2000});
+				} else {
+					layer.msg(result.msg, {icon: 2});
+				}
+			}, 'json');
+			return false;
+		});
+	});
+</script>
+{include file="public/footer" /}

@@ -3,20 +3,17 @@
 	<form class="layui-form" lay-filter="searchForm" id="searchForm">
 		<div class="layui-form-item" style="float: left;">
 			<div class="layui-input-inline">
-				<input type="text" name="keyword" autocomplete="off" placeholder="输入真实姓名关键字，如果为空查询全部" class="layui-input layui-btn-sm">
+				<input type="text" name="keyword" autocomplete="off" placeholder="输入商品标题关键字，如果为空查询全部" class="layui-input layui-btn-sm">
 			</div>
 			<button type="submit" lay-submit lay-filter="searchForm" class="layui-btn layui-btn-warm"><i class="fa fa-search"></i> 搜索</button>
-			<button class="layui-btn" id="addBtn"><i class="fa fa-plus"></i> 新增系统用户（默认初始密码123456）</button>
+			<button class="layui-btn" id="addBtn"><i class="fa fa-plus"></i> 新增商品</button>
 		</div>
 	</form>
 </fieldset>
 <div class="hr-line-dashed"></div>
 <table id="datatable" lay-filter="datatable"></table>
 <script type="text/html" id="toobar">
-	{{# if(d.id !=1){ }}
 	<a class="layui-btn layui-btn-warm layui-btn-xs" lay-event="edit"><i class="fa fa-edit"></i> 编辑</a>
-	{{# } }}
-	<a class="layui-btn layui-btn-danger layui-btn-xs" lay-event="resetpwd"><i class="fa fa-lock"></i> 密码重置</a>
 </script>
 <script type="text/javascript">
 	layui.config({
@@ -97,12 +94,9 @@
 		$('#addBtn').on('click', function () {
 			layer.open({
 				type: 2,
-				title: '新增系统用户（默认初始密码123456）',
-				area: ['620px', '450px'],
-				scrollbar: false,
-				anim: 2,
-				shadeClose: true,
-				content: "{:url('admin/add')}"
+				title: '新增商品',
+				title: false,
+				content: "{:url('goods/add')}"
 			});
 			return false;
 		});

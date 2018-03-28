@@ -4,6 +4,11 @@ namespace app\admin\model;
 use think\Db;
 use think\Model;
 
+/**
+ * @project  用户角色模型
+ * @author   千叶
+ * @date     2018-03-28
+ */
 class UserType extends Model
 {
 	protected $name = 'auth_group';
@@ -16,18 +21,30 @@ class UserType extends Model
 	 * @param $map
 	 * @param $cur_page
 	 * @param $limits
-	 * @return array|\PDOStatement|string|\think\Collection
-	 * @throws \think\exception\DbException
-	 * @throws db\exception\DataNotFoundException
-	 * @throws db\exception\ModelNotFoundException
+	 * @return array
 	 */
-	public function getRoleByWhere($map, $cur_page, $limits)
+	public function getDataByWhere($map, $cur_page, $limits)
 	{
-		return $this->where($map)->page($cur_page, $limits)->order('id desc')->select();
+		try {
+			$count = $this->where($map)->count();
+			$list = $this->where($map)->page($cur_page, $limits)->order('id desc')->select();
+			$json = [
+				'code' => 0,
+				'msg' => '',
+				'count' => $count,
+				'data' => $list
+			];
+			return $json;
+		} catch (\Exception $e) {
+			Log::error('根据条件获取角色列表信息');
+			return ['code' => 404, 'msg' => '系统异常，请稍后再试'];
+		}
 	}
 
 	/**
-	 * [getRoleByWhere 根据条件获取所有的角色数量]
+	 * 根据条件获取所有的角色数量
+	 * @param $where
+	 * @return int|string
 	 */
 	public function getAllRole($where)
 	{
@@ -35,7 +52,8 @@ class UserType extends Model
 	}
 
 	/**
-	 * [getRoleInfo 获取角色信息]
+	 * 获取角色信息
+	 * @param $id
 	 */
 	public function getRoleInfo($id)
 	{
@@ -61,8 +79,9 @@ class UserType extends Model
 	}
 
 	/**
-	 * [insertRole 插入角色信息]
-	 * @author [田建龙] [864491238@qq.com]
+	 * 插入角色信息
+	 * @param $param
+	 * @return array
 	 */
 	public function insertRole($param)
 	{
@@ -88,6 +107,10 @@ class UserType extends Model
 			'id' => ['id', '<>', '1'],
 			'status' => ['status', '=', '1'],
 		];
-		return Db::name($this->name)->where($where)->field('id,title')->select();
+		try {
+			return Db::name($this->name)->where($where)->field('id,title')->select();
+		} catch (\Exception $e) {
+			return null;
+		}
 	}
 }

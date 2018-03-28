@@ -3,9 +3,13 @@ namespace app\admin\model;
 
 use app\common\facade\Log;
 use think\Db;
-use think\facade\Session;
 use think\Model;
 
+/**
+ * @project  菜单模型
+ * @author   千叶
+ * @date     2018-03-28
+ */
 class Menu extends Model
 {
 
@@ -24,7 +28,7 @@ class Menu extends Model
 		if ($floor == 2) {
 			$where = "level <= $floor";
 		}
-		$menus = Db::name($this->name)->where($where)->order('id asc')->field(true)->select();
+		$menus = Db::name($this->name)->where($where)->order('sort')->field(true)->select();
 		$menuTree = $this->makeMenuTree($menus);
 		return $menuTree;
 	}
@@ -54,15 +58,21 @@ class Menu extends Model
 	}
 
 	/**
-	 * [getRoleMenu 根据节点数据获取对应的菜单]
+	 * 根据节点数据获取对应的菜单
+	 * @param string $nodeStr
+	 * @return array
 	 */
 	public function getRoleMenu($nodeStr = '')
 	{
 		//超级管理员没有节点数组
-		$where = empty($nodeStr) ? 'status = 1 and level < 3' : 'status = 1 and id in(' . $nodeStr . ') and level < 3';
-		$result = Db::name($this->name)->where($where)->select();
-		$menu = prepareMenu($result);
-		return $menu;
+		try {
+			$where = empty($nodeStr) ? 'status = 1 and level < 3' : 'status = 1 and id in(' . $nodeStr . ') and level < 3';
+			$result = Db::name($this->name)->where($where)->order('sort')->select();
+			$menu = prepareMenu($result);
+			return $menu;
+		} catch (\Exception $e) {
+			return [];
+		}
 	}
 
 	/**
@@ -98,10 +108,10 @@ class Menu extends Model
 			$param['name'] = $pid == 0 ? '#' : $param['name'];
 			$result = $this->save($param);
 			if (false === $result) {
-				Log::error(Session::get('auth.uid'), Session::get('auth.username'), '添加菜单失败');
+				Log::error('添加菜单失败');
 				return ['code' => 0, 'msg' => $this->getError()];
 			} else {
-				Log::info(Session::get('auth.uid'), Session::get('auth.username'), '添加菜单成功');
+				Log::info('添加菜单成功');
 				return ['code' => 1, 'msg' => '添加菜单成功'];
 			}
 		} catch (\PDOException $e) {
@@ -118,11 +128,11 @@ class Menu extends Model
 		try {
 			$result = $this->save($param, ['id' => $param['id']]);
 			if (false === $result) {
-				Log::error(Session::get('auth.uid'), Session::get('auth.username'), '编辑菜单失败');
+				Log::error('编辑菜单失败');
 				return ['code' => 0, 'msg' => $this->getError()];
 			} else {
-				Log::info(Session::get('auth.uid'), Session::get('auth.username'), '编辑菜单成功');
-				return ['code' => 1, 'data' => '', 'msg' => '编辑菜单成功'];
+				Log::info('编辑菜单成功');
+				return ['code' => 1];
 			}
 		} catch (\PDOException $e) {
 			return ['code' => 0, 'msg' => $e->getMessage()];
@@ -139,7 +149,7 @@ class Menu extends Model
 		try {
 			return $this->where("id={$id}")->find();
 		} catch (\Exception $e) {
-			Log::error(Session::get('auth.uid'), Session::get('auth.username'), '获取单个菜单失败');
+			Log::error('获取单个菜单失败');
 		}
 	}
 }

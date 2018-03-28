@@ -1,0 +1,73 @@
+{include file="public/header" /}
+<div style="width:600px;padding:10px 5px">
+	<form class="layui-form" lay-filter="addForm" id="addForm">
+		<div class="layui-form-item">
+			<label class="layui-form-label">用户名</label>
+			<div class="layui-input-inline">
+				<input type="text" name="username" value="{$goods.username|default=''}" lay-verify="required" placeholder="请输入登录用的用户名" autocomplete="off" class="layui-input">
+			</div>
+		</div>
+		<div class="layui-form-item">
+			<label class="layui-form-label">真实姓名</label>
+			<div class="layui-input-inline">
+				<input type="text" name="real_name" value="{$goods.real_name|default=''}" lay-verify="required" placeholder="请输入用户真实姓名" autocomplete="off" class="layui-input">
+			</div>
+		</div>
+		<div class="layui-form-item">
+			<label class="layui-form-label">拥有角色</label>
+			<div class="layui-input-block">
+				{volist name="roles" id="v"}
+				<div class="layui-col-xs4">
+					<input type="checkbox" name="group_id[]" value="{$v.id}"
+					       {in name="v.id" value="$goods.group|default=''" }checked{/in}
+					title="{$v.title}" lay-skin="primary">
+				</div>
+				{/volist}
+			</div>
+		</div>
+		<div class="layui-form-item">
+			<label class="layui-form-label">状态</label>
+			<div class="layui-input-inline">
+				<input type="checkbox" name="status" value="1"
+				       {eq name="user.status|default='1'" value="1" }checked{/eq}
+				lay-skin="switch" lay-text="开启|禁用" >
+			</div>
+			<div class="layui-form-mid layui-word-aux">默认开启</div>
+		</div>
+		<div class="hr-line-dashed2"></div>
+		<div class="layui-form-item">
+			<div class="layui-input-block">
+				<input type="hidden" name="id" value="{$user.id|default=''}"/>
+				<button class="layui-btn" lay-submit lay-filter="addForm">立即提交</button>
+				<button type="reset" class="layui-btn layui-btn-primary">重置</button>
+			</div>
+		</div>
+	</form>
+</div>
+<script type="text/javascript">
+	layui.use(['form', 'layer', 'jquery'], function () {
+		var form = layui.form,
+			layer = layui.layer, $ = layui.jquery;
+		//获取窗口索引
+		var index = parent.layer.getFrameIndex(window.name);
+		//监听新增角色提交
+		form.on('submit(addForm)', function (data) {
+			var url = "{:url('admin/add')}?t=", okMsg = '系统用户创建成功'; // 添加
+			if (data.field.id) {
+				// 修改
+				url = "{:url('admin/edit')}?t=";
+				okMsg = '系统用户修改成功';
+			}
+			$.post(url + new Date().getTime(), data.field, function (result) {
+				if (result.code == 1) {
+					window.parent.location.reload(); //刷新父页面
+					parent.layer.msg(okMsg, {icon: 1, time: 2000});
+				} else {
+					layer.msg(result.msg, {icon: 2});
+				}
+			}, 'json');
+			return false;
+		});
+	});
+</script>
+{include file="public/footer" /}

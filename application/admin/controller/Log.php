@@ -15,22 +15,11 @@ class Log extends Base
 	public function index(LogModel $logModel)
 	{
 		if ($this->request->isAjax()) {
-			$keyword = input('keyword', '', 'urldecode');
-			$map['is_del'] = ['is_del', '=', 1];
-			if ($keyword && $keyword !== '') {
-				$map['admin_name'] = ['admin_name', 'like', '%' . $keyword . '%'];
-			}
 			$cur_page = input('page', 1, 'intval');
+			$keyword = input('keyword', '', 'urldecode');
 			$page_size = input('limit', Config::get('page_size'), 'intval');
-			$roleList = $logModel->getLogByWhere($map, $cur_page, $page_size);
-			$count = Db::name('log')->where($map)->count();
-			$json = [
-				'code' => 0,
-				'msg' => '',
-				'count' => $count,
-				'data' => $roleList,
-				'curPage' => $cur_page
-			];
+			$map = $keyword ? "is_del = 1 and admin_name like '%{$keyword}%'" : 'is_del = 1';
+			$json = $logModel->getDataByWhere($map, $cur_page, $page_size);
 			return json($json);
 		} else {
 			$page_size = Config::get('page_size');
@@ -53,10 +42,9 @@ class Log extends Base
 				// 批量删除
 				Db::name('log')->where('log_id', 'in', $log_id)->data(['is_del' => 0])->update();
 			}
-			$json = ['code' => 1];
+			return json(['code' => 1]);
 		} catch (\Exception $e) {
-			$json = ['code' => 0, 'msg' => '日志删除失败，请稍后再试'];
+			return json(['code' => 0, 'msg' => '日志删除失败，请稍后再试']);
 		}
-		return json($json);
 	}
 }

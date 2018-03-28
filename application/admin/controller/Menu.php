@@ -2,6 +2,7 @@
 namespace app\admin\controller;
 
 use app\admin\model\Menu as MenuModel;
+use think\Db;
 
 /**
  * @project  菜单控制器
@@ -30,7 +31,7 @@ class Menu extends Base
 	 * @param MenuModel $menuModel
 	 * @return \think\response\Json
 	 */
-	public function add_rule(MenuModel $menuModel)
+	public function add(MenuModel $menuModel)
 	{
 		$param = input('post.');
 		$json = $menuModel->insertMenu($param);

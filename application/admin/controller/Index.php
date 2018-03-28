@@ -1,7 +1,7 @@
 <?php
 namespace app\admin\controller;
 
-use app\admin\model\Menu as MemuModel;
+use app\admin\model\Menu as MenuModel;
 use think\facade\Config;
 use think\facade\Session;
 
@@ -14,9 +14,10 @@ class Index extends Base
 {
 	/**
 	 * 后台首页
+	 * @param MenuModel $menuModel
 	 * @return mixed
 	 */
-	public function index(MemuModel $menuModel)
+	public function index(MenuModel $menuModel)
 	{
 		$menus = $menuModel->getRoleMenu(Session::get('auth.rule'));
 		$this->assign('menus', $menus);

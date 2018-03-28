@@ -1,0 +1,104 @@
+{include file="public/header" /}
+<fieldset class="layui-elem-field" style="border:0">
+	<form class="layui-form" lay-filter="searchForm" id="searchForm">
+		<div class="layui-form-item" style="float: left;">
+			<div class="layui-input-inline">
+				<input type="text" name="keyword" autocomplete="off" placeholder="输入分类名称关键字，如果为空查询全部" class="layui-input layui-btn-sm">
+			</div>
+			<button type="submit" lay-submit lay-filter="searchForm" class="layui-btn layui-btn-warm"><i class="fa fa-search"></i> 搜索</button>
+			<button class="layui-btn" id="addBtn"><i class="fa fa-plus"></i> 新增分类</button>
+		</div>
+	</form>
+</fieldset>
+<div class="hr-line-dashed"></div>
+<table id="datatable" lay-filter="datatable"></table>
+<script type="text/html" id="toobar">
+	<a class="layui-btn layui-btn-warm layui-btn-xs" lay-event="edit"><i class="fa fa-edit"></i> 编辑</a>
+</script>
+<script type="text/javascript">
+	layui.config({
+		base: '/static/admin/js/'
+	}).use(['table', 'form', 'layer', 'jquery', 'utils'], function () {
+		var table = layui.table, form = layui.form,
+			layer = layui.layer, $ = layui.jquery,
+			utils = layui.utils;
+		var datatable = table.render({
+			elem: '#datatable',
+			height: 'full-120',
+			limit: "{$page_size}",
+			url: "{:url('category/index')}?t=" + new Date().getTime(),
+			page: true,
+			cols: [[
+				{field: 'id', title: '序号', align: 'center', width: 80},
+				{field: 'cate_title', title: '分类名称', align: 'center', width: 200},
+				{field: 'sort', title: '排序', align: 'center', width: 80},
+				{
+					field: 'create_time', title: '创建时间', align: 'center', width: 180,
+					templet: '<span>{{ layui.utils.toDateString(d.create_time*1000) }}</span>'
+				},
+				{
+					field: 'edit_time', title: '修改时间', align: 'center', width: 180,
+					templet: '<span>{{ layui.utils.toDateString(d.edit_time*1000) }}</span>'
+				},
+				{
+					field: 'status', title: '状态', align: 'center', width: 80, templet: function (v) {
+						if (v.status == 1) {
+							return '<a class="layui-btn layui-btn-xs changeStatus" lay-event="changeStatus">已开启</a>';
+						} else {
+							return '<a class="layui-btn layui-btn-danger layui-btn-xs changeStatus" lay-event="changeStatus">已禁用</a>\n';
+						}
+					}
+				},
+				{title: '操作', align: 'center', toolbar: '#toobar', width: 200}
+			]]
+		});
+		table.on('tool(datatable)', function (obj) {
+			var data = obj.data;
+			var layEvent = obj.event;
+			if (layEvent === 'edit') {
+				layer.open({
+					type: 2,
+					title: '修改商品分类',
+					area: ['650px', '360px'],
+					scrollbar: false,
+					anim: 2,
+					shadeClose: true,
+					content: "{:url('category/edit')}?t=" + new Date().getTime() + '&id=' + data.id
+				});
+			} else if (layEvent === 'changeStatus') {
+				var tip = parseInt(data.status) == 1 ? '禁用' : '启用';
+				layer.confirm('确定要' + tip + '【' + data.cate_title + '】此分类吗？<br>注意：如禁用此分类下的商品不再显示', {title: '修改商品分类状态', icon: 0, btn: ['确定', '取消']}, function () {
+					$.post("{:url('category/change_status')}?t=" + new Date().getTime(), {id: data.id, status: data.status}, function (result) {
+						if (result.code == 1) {
+							layer.msg('商品分类状态修改成功', {icon: 1, time: 1000, offset: 't'}, function () {
+								datatable.reload();
+							});
+						} else {
+							layer.msg(result.msg, {offset: 't', icon: 2});
+						}
+					}, 'json');
+				});
+			}
+		});
+		// 添加菜单事件
+		$('#addBtn').on('click', function () {
+			layer.open({
+				type: 2,
+				title: '新增商品分类',
+				area: ['650px', '360px'],
+				scrollbar: false,
+				anim: 2,
+				shadeClose: true,
+				content: "{:url('category/add')}?t=" + new Date().getTime()
+			});
+			return false;
+		});
+		//监听搜索提交
+		form.on('submit(searchForm)', function (data) {
+			var keyword = encodeURI($('input[name=keyword]').val());
+			datatable.reload({where: {keyword: keyword, page: 1}});
+			return false;
+		});
+	});
+</script>
+{include file="public/footer" /}

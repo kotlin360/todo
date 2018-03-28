@@ -1,0 +1,52 @@
+{include file="public/header" /}
+<div>
+	<form class="layui-form" lay-filter="addForm" id="addForm">
+		<div class="layui-form-item">
+			<label class="layui-form-label">角色名称</label>
+			<div class="layui-input-inline">
+				<input type="text" name="title" lay-verify="required" placeholder="请输入角色名称" autocomplete="off" class="layui-input">
+			</div>
+			<label class="layui-form-label">状态</label>
+			<div class="layui-input-inline">
+				<input type="checkbox" name="status" value="1" lay-skin="switch" lay-text="开启|禁用" checked>
+			</div>
+			<div class="layui-form-mid layui-word-aux">默认开启</div>
+		</div>
+		<div class="hr-line-dashed2"></div>
+		<div class="layui-form-item">
+			<div class="layui-input-block">
+				<input type="hidden" name="id" value="{$user.id|default=''}"/>
+				<button class="layui-btn" lay-submit lay-filter="addForm">立即提交</button>
+				<button type="reset" class="layui-btn layui-btn-primary">重置</button>
+				<button type="reset" class="layui-btn layui-btn-primary">关闭窗口</button>
+			</div>
+		</div>
+	</form>
+</div>
+<script type="text/javascript">
+	layui.use(['form', 'layer', 'jquery'], function () {
+		var form = layui.form,
+			layer = layui.layer, $ = layui.jquery;
+		//获取窗口索引
+		var index = parent.layer.getFrameIndex(window.name);
+		//监听新增角色提交
+		form.on('submit(addForm)', function (data) {
+			var url = "{:url('admin/add')}?t=", okMsg = '系统用户创建成功'; // 添加
+			if (data.field.id) {
+				// 修改
+				url = "{:url('admin/edit')}?t=";
+				okMsg = '系统用户修改成功';
+			}
+			$.post(url + new Date().getTime(), data.field, function (result) {
+				if (result.code == 1) {
+					window.parent.location.reload(); //刷新父页面
+					parent.layer.msg(okMsg, {icon: 1, time: 2000});
+				} else {
+					layer.msg(result.msg, {icon: 2});
+				}
+			}, 'json');
+			return false;
+		});
+	});
+</script>
+{include file="public/footer" /}
