@@ -23,7 +23,7 @@ class Category extends Base
 			$cur_page = input('page', 1, 'intval');
 			$keyword = input('keyword', '', 'urldecode');
 			$page_size = input('limit', Config::get('page_size'), 'intval');
-			$map = $keyword ? "cate_title like '%{$keyword}%'" : '';
+			$map = $keyword ? "name like '%{$keyword}%'" : '';
 			$json = $categoryModel->getDataByWhere($map, $cur_page, $page_size);
 			return json($json);
 		} else {
@@ -41,7 +41,7 @@ class Category extends Base
 	{
 		if ($this->request->isAjax()) {
 			$data = [
-				'cate_title' => input('cate_title', ''),
+				'name' => input('name', ''),
 				'sort' => input('sort', 1000, 'intval'),
 				'status' => input('status', 0, 'intval'),
 			];
@@ -66,7 +66,7 @@ class Category extends Base
 		$id = input('id', 0, 'intval');
 		if ($this->request->isAjax()) {
 			$data = [
-				'cate_title' => input('cate_title', ''),
+				'name' => input('name', ''),
 				'sort' => input('sort', 1000, 'intval'),
 				'status' => input('status', 0, 'intval'),
 			];

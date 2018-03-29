@@ -124,4 +124,22 @@ class Spec extends Model
 		}
 	}
 
+	/**
+	 * 获取系统中所有的有效商品规格
+	 * @return array|null
+	 */
+	public function getAllSpec()
+	{
+		try {
+			$spec = Db::name($this->name)->where('status=1')->field('id,name,note,value')->select();
+			foreach ($spec as $k => $v) {
+				$values['s' . $v['id']] = unserialize($v['value']);
+				unset($v['value']);
+			}
+			return ['names' => $spec, 'values' => $values];
+		} catch (\Exception $e) {
+			return null;
+		}
+	}
+
 }

@@ -1,0 +1,111 @@
+{include file="public/header" /}
+<div style="width:700px;margin-left:20px" id="selectSpecDiv">
+	<div class="layui-row">
+		<fieldset class="layui-elem-field site-demo-button">
+			<legend>规格</legend>
+			<div class="specNameDIV">
+				{volist name="spec.names" id="s1"}
+				<a class="layui-btn layui-btn-primary layui-btn-sm spec_names" id="s{$s1.id}">{$s1.name}（{$s1.note}）<span class="layui-badge num"></span></a>
+				{/volist}
+			</div>
+		</fieldset>
+	</div>
+	<br>
+	<div class="layui-row">
+		<form class="layui-form" id="selectForm">
+			{volist name="spec.values" id="s2"}
+			<fieldset class="layui-elem-field site-demo-button valueFieldset {$key}-valueFieldset">
+				<legend>规格值&emsp;<input type="checkbox" title="全选" lay-filter="check_all" class="check_all" id="{$key}_check_all" lay-skin="primary"/></legend>
+				<div class="valueDiv {$key}-valueDiv" flag="{$key}">
+					{volist name="s2" id="v"}
+					<input type="checkbox" name="{$v}" title="{$v}" lay-skin="primary" lay-filter="check_single">
+					{/volist}
+				</div>
+			</fieldset>
+			{/volist}
+			<br>
+			<br>
+			<div class="layui-form-item">
+				<div class="layui-input-block" style="margin-left:180px">
+					<button class="layui-btn" lay-submit lay-filter="addForm">立即提交</button>&emsp;
+					<button class="layui-btn layui-btn-primary" id="closeIframe">关闭窗口</button>
+				</div>
+			</div>
+		</form>
+	</div>
+</div>
+<script type="text/javascript">
+	layui.use(['form', 'layer', 'jquery'], function () {
+		var form = layui.form,
+			layer = layui.layer, $ = layui.jquery;
+
+		// 这里的cur_valueDiv指的是选中所在的fieldset下的valueDiv
+		function value_select_event(cur_valueDiv) {
+			var all_inputs_num = cur_valueDiv.find('input').length;// 所有的
+			var checked_inputs_num = cur_valueDiv.find('input:checked').length;// 被选中的规格值数量
+			var flag = cur_valueDiv.attr('flag');
+			if (all_inputs_num != checked_inputs_num) {
+				document.getElementById(flag + '_check_all').checked = false;
+				form.render('checkbox');
+			}
+			if (checked_inputs_num > 0) {
+				$('#' + flag).find('.num').html(checked_inputs_num).show();
+			} else {
+				$('#' + flag).find('.num').html(0).hide();
+			}
+		}
+
+		// 规格值全选按钮监听事件
+		form.on('checkbox(check_all)', function (data) {
+			var cur_valueDiv = $('.valueDiv:visible');
+			cur_valueDiv.find('input').prop('checked', data.elem.checked);
+			form.render('checkbox');
+			value_select_event(cur_valueDiv);
+		});
+
+		// 规格值单选按钮监听事件
+		form.on('checkbox(check_single)', function (data) {
+			var _self = $(data.elem), cur_valueDiv = _self.parent('.valueDiv');
+			value_select_event(cur_valueDiv);
+		});
+
+		//监听新增角色提交
+		form.on('submit(selectForm)', function (data) {
+			var url = "{:url('goods/add')}?t=", okMsg = '系统用户创建成功'; // 添加
+			if (data.field.id) {
+				// 修改
+				url = "{:url('admin/edit')}?t=";
+				okMsg = '系统用户修改成功';
+			}
+			$.post(url + new Date().getTime(), data.field, function (result) {
+				if (result.code == 1) {
+					window.parent.location.reload(); //刷新父页面
+					parent.layer.msg(okMsg, {icon: 1, time: 2000});
+				} else {
+					layer.msg(result.msg, {icon: 2});
+				}
+			}, 'json');
+			return false;
+		});
+
+		$(function () {
+			var index = parent.layer.getFrameIndex(window.name); //获取窗口索引
+			// 规格按钮点击事件
+			$('.spec_names').each(function () {
+				var _this = $(this), _id = _this.attr('id');
+				_this.on('click', function () {
+					_this.addClass('current').siblings('a').removeClass('current');
+					_this.removeClass('layui-btn-primary').siblings('a').addClass('layui-btn-primary');
+					$('.valueFieldset').hide();
+					$('.' + _id + '-valueFieldset').show();
+				});
+			});
+
+			// 关闭弹窗
+			$('#closeIframe').click(function () {
+				parent.layer.close(index);
+			});
+		})
+	});
+</script>
+{include file="public/footer" /}

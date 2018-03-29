@@ -11,11 +11,11 @@ use think\Validate;
 class Category extends Validate
 {
 	protected $rule = [
-		'cate_title' => 'require|unique:goods_category',
+		'name' => 'require|unique:goods_category',
 	];
 
 	protected $message = [
-		'cate_title.require' => '创建失败，分类名称不能为空',
-		'cate_title.unique' => '创建失败，分类名称已经存在',
+		'name.require' => '创建失败，分类名称不能为空',
+		'name.unique' => '创建失败，分类名称已经存在',
 	];
 }

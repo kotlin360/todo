@@ -3,6 +3,7 @@ namespace app\admin\model;
 
 use app\common\facade\Log;
 use think\Db;
+use think\exception\DbException;
 use think\facade\Config;
 use think\Model;
 
@@ -100,13 +101,26 @@ class Category extends Model
 		$msg = $status == 1 ? '禁用' : '启用';
 		try {
 			$tableName = Config::get('database.prefix') . $this->name;
-			$name = Db::name('goods_category')->where("id={$id}")->value('cate_title');
+			$name = Db::name('goods_category')->where("id={$id}")->value('name');
 			$sql = "UPDATE {$tableName} SET status = (case status when 0 then 1 else 0  end) WHERE id={$id}";
 			Db::execute($sql);
 			return ['code' => 1];
 		} catch (\Exception $e) {
 			Log::error("{$msg}商品分类{$name}失败," . $e->getMessage());
 			return ['code' => 0, 'msg' => $msg . '分类【' . $name . '】失败，请联系管理员'];
+		}
+	}
+
+	/**
+	 * 获取全部的状态有效的商品分类
+	 * @return array|null|\PDOStatement|string|Model
+	 */
+	public function getAllCate()
+	{
+		try {
+			return $this->where('status=1')->field('id,name')->order('sort')->selectOrFail();
+		} catch (DbException $e) {
+			return null;
 		}
 	}
 }

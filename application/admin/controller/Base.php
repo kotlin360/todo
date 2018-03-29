@@ -16,7 +16,7 @@ class Base extends Controller
 	public function __construct(Auth $auth)
 	{
 		parent::__construct();
-		$this->assign('site', '某某公司');
+		$this->assign('site', '深邦智能');
 		$uid = Session::get('auth.uid');
 		// 检测SESSION中的uid，如果没有登录跳转到登录页面
 		if (!$uid) {

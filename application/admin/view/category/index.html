@@ -30,7 +30,7 @@
 			page: true,
 			cols: [[
 				{field: 'id', title: '序号', align: 'center', width: 80},
-				{field: 'cate_title', title: '分类名称', align: 'center', width: 200},
+				{field: 'name', title: '分类名称', align: 'center', width: 200},
 				{field: 'sort', title: '排序', align: 'center', width: 80},
 				{
 					field: 'create_time', title: '创建时间', align: 'center', width: 180,
@@ -67,7 +67,7 @@
 				});
 			} else if (layEvent === 'changeStatus') {
 				var tip = parseInt(data.status) == 1 ? '禁用' : '启用';
-				layer.confirm('确定要' + tip + '【' + data.cate_title + '】此分类吗？<br>注意：如禁用此分类下的商品不再显示', {title: '修改商品分类状态', icon: 0, btn: ['确定', '取消']}, function () {
+				layer.confirm('确定要' + tip + '【' + data.name + '】此分类吗？<br>注意：如禁用此分类下的商品不再显示', {title: '修改商品分类状态', icon: 0, btn: ['确定', '取消']}, function () {
 					$.post("{:url('category/change_status')}?t=" + new Date().getTime(), {id: data.id, status: data.status}, function (result) {
 						if (result.code == 1) {
 							layer.msg('商品分类状态修改成功', {icon: 1, time: 1000, offset: 't'}, function () {

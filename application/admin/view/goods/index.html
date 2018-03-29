@@ -6,7 +6,7 @@
 				<input type="text" name="keyword" autocomplete="off" placeholder="输入商品标题关键字，如果为空查询全部" class="layui-input layui-btn-sm">
 			</div>
 			<button type="submit" lay-submit lay-filter="searchForm" class="layui-btn layui-btn-warm"><i class="fa fa-search"></i> 搜索</button>
-			<button class="layui-btn" id="addBtn"><i class="fa fa-plus"></i> 新增商品</button>
+			<a class="layui-btn" href="{:url('goods/add')}"><i class="fa fa-plus"></i> 新增商品</a>
 		</div>
 	</form>
 </fieldset>
@@ -26,7 +26,7 @@
 			elem: '#datatable',
 			height: 'full-120',
 			limit: "{$page_size}",
-			url: "{:url('admin/index')}?t=" + new Date().getTime(),
+			url: "{:url('goods/index')}?t=" + new Date().getTime(),
 			page: true,
 			cols: [[
 				{field: 'id', title: 'UID', align: 'center', width: 80},
@@ -63,22 +63,12 @@
 					scrollbar: false,
 					anim: 2,
 					shadeClose: true,
-					content: "{:url('admin/edit')}?t=" + new Date().getTime() + '&id=' + data.id
-				});
-			} else if (layEvent === 'resetpwd') {
-				layer.confirm('确定要重置【' + data.real_name + '】的密码吗？<br>(提示：重置后密码为123456)', {title: '密码重置提示', icon: 0, btn: ['确定', '取消']}, function () {
-					$.post("{:url('admin/resetpwd')}?t=" + new Date().getTime(), {id: data.id}, function (data) {
-						if (data.code == 1) {
-							layer.msg('密码重置成功', {icon: 1, time: 1500, offset: 't'});
-						} else {
-							layer.msg(data.msg, {offset: 't', icon: 2});
-						}
-					}, 'json');
+					content: "{:url('goods/edit')}?t=" + new Date().getTime() + '&id=' + data.id
 				});
 			} else if (layEvent === 'changeStatus') {
 				var tip = parseInt(data.status) == 1 ? '禁用' : '启用';
 				layer.confirm('确定要' + tip + '【' + data.real_name + '】此系统用户吗？', {title: '修改用户状态', icon: 0, btn: ['确定', '取消']}, function () {
-					$.post("{:url('admin/change_status')}?t=" + new Date().getTime(), {id: data.id, status: data.status}, function (result) {
+					$.post("{:url('goods/change_status')}?t=" + new Date().getTime(), {id: data.id, status: data.status}, function (result) {
 						if (result.code == 1) {
 							layer.msg('用户状态修改成功', {icon: 1, time: 1000, offset: 't'}, function () {
 								datatable.reload();
@@ -89,16 +79,6 @@
 					}, 'json');
 				});
 			}
-		});
-		// 添加菜单事件
-		$('#addBtn').on('click', function () {
-			layer.open({
-				type: 2,
-				title: '新增商品',
-				title: false,
-				content: "{:url('goods/add')}"
-			});
-			return false;
 		});
 		//监听搜索提交
 		form.on('submit(searchForm)', function (data) {

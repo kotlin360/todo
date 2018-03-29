@@ -1,7 +1,9 @@
 <?php
 namespace app\admin\controller;
 
+use app\admin\model\Category as CategoryModel;
 use app\admin\model\Goods as GoodsModel;
+use app\admin\model\Spec as specModel;
 use app\admin\validate\Goods as GoodsValidate;
 use think\facade\Config;
 
@@ -26,9 +28,10 @@ class Goods extends Base
 	 * 新增商品
 	 * @param GoodsModel    $goodsModel
 	 * @param GoodsValidate $goodsValidate
+	 * @param CategoryModel $categoryModel
 	 * @return mixed|\think\response\Json
 	 */
-	public function add(GoodsModel $goodsModel, GoodsValidate $goodsValidate)
+	public function add(GoodsModel $goodsModel, GoodsValidate $goodsValidate, CategoryModel $categoryModel)
 	{
 		if ($this->request->isAjax()) {
 			$data = [
@@ -37,11 +40,24 @@ class Goods extends Base
 			if (!$goodsValidate->check($data)) {
 				return json(['code' => 0, 'msg' => $goodsValidate->getError()]);
 			}
-			$result = $goodsModel->createSystemUser($data);
+			$result = $goodsModel->createGoods($data);
 			return json($result);
 		} else {
-			$this->assign('roles', $goodsModel->getAllSystemRoles());
+			$cate = $categoryModel->getAllCate(); // 商品类别
+			$cate === null && $this->redirect(url('system/mistake'));
+			$sn = 'G' . date('Ymd') . time();
+			$this->assign(['sn' => $sn, 'cate' => $cate]);
 			return $this->fetch();
 		}
+	}
+
+	/**
+	 * 添加商品选择规格界面
+	 * @return mixed
+	 */
+	public function spec_select(specModel $specModel)
+	{
+		$spec = $specModel->getAllSpec();// 商品规格
+		return $this->assign('spec', $spec)->fetch();
 	}
 }
