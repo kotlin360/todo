@@ -19,7 +19,7 @@
 				<legend>规格值&emsp;<input type="checkbox" title="全选" lay-filter="check_all" class="check_all" id="check_all{$s2.id}" lay-skin="primary"/></legend>
 				<div class="valueDiv valueDiv{$s2.id}" flag="{$s2.id}">
 					{volist name="s2.value" id="v"}
-					<input type="checkbox" data="{$v.id}:{$v.name}" value="{$v.id}" title="{$v.name}" lay-skin="primary" lay-filter="check_single">
+					<input type="checkbox" data="{$v.id}:{$v.name}" id="valueInput{$v.id}" value="{$v.id}" title="{$v.name}" lay-skin="primary" lay-filter="check_single">
 					{/volist}
 				</div>
 			</fieldset>
@@ -37,25 +37,36 @@
 </div>
 <script type="text/javascript">
 	var specStringResult = ''; // 给父页面返回的规格和规格值字符串
+	Array.prototype.unique = function () {
+		var temp = {}, len = this.length;
+		for (var i = 0; i < len; i++) {
+			if (typeof temp[this[i]] == 'undefined') {
+				temp[this[i]] = 1;
+			}
+		}
+		this.length = 0;
+		len = 0;
+		for (j in temp) {
+			this[len++] = j;
+		}
+		return this;
+	};
 	layui.use(['form', 'layer', 'jquery'], function () {
 		var form = layui.form, layer = layui.layer, $ = layui.jquery;
 
 		// 打开规格iframe页面的时候初始化，有可能是编辑
 		function spec_init(spec_init_str) {
-			//console.log(spec_init_str);
-			// spec_dcr = spec_dcr.split(",");
-			// spec_dcr = spec_dcr.uniq();
-			// var len = spec_dcr.length;
-			// for (var i = 0; i < len; i++) {
-			// 	var value = spec_dcr[i].split(":");
-			// 	$(".spec_values ul").hide();
-			// 	$(":checkbox[value='" + value[0] + "']").parent().parent().show();
-			// 	$(":checkbox[value='" + value[0] + "']").click();
-			// 	var spec_tr = $("#spec_show_list input[value='" + value[0] + "']").parent().parent();
-			// 	$("input", spec_tr).eq(2).val(value[2]);
-			// 	$("input", spec_tr).eq(3).val(value[3]);
-			// 	spec_select();
-			// }
+			if ('' !== spec_init_str) {
+				var spec_init_array = spec_init_str.split(',');
+				spec_init_array = spec_init_array.unique();
+				for (var i = 0, len = spec_init_array.length; i < len; i++) {
+					var value = spec_init_array[i].split(':');
+					var checkbox = $('#valueInput' + value[0]);
+					checkbox.prop('checked', true);
+					cur_valueDiv = checkbox.parent('.valueDiv');
+					value_select_event(cur_valueDiv);
+				}
+			}
 		}
 
 		window.spec_init = spec_init;
@@ -110,6 +121,7 @@
 		});
 
 		$(function () {
+
 			var index = parent.layer.getFrameIndex(window.name); //获取窗口索引
 			// 规格按钮点击事件
 			$('.spec_names').each(function () {
@@ -137,6 +149,7 @@
 				parent.layer.close(index);
 			});
 		})
-	});
+	})
+	;
 </script>
 {include file="public/footer" /}
