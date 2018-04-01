@@ -17,7 +17,7 @@
 		<div class="layui-form-item layui-form-text">
 			<label class="layui-form-label">规格值</label>
 			<div class="layui-input-block">
-				<textarea name="value" lay-verify="required" placeholder="如果名称填写了颜色，那么规格值就可以填写多种颜色；注意多个规格值用逗号（不区分中英文）分割，比方:白色，金色，银色，黑色" class="layui-textarea" style="width:500px;resize: none">{$spec.value|default=''}</textarea>
+				<textarea name="value" lay-verify="required" placeholder="如果名称填写了颜色，那么规格值就可以填写多种颜色；注意多个规格值用逗号（不区分中英文，不能出现其他标点符号比方冒号分号）分割，比方:白色，金色，银色，黑色。越靠前越优先显示，同一规格不能出现相同规格值" class="layui-textarea" style="width:500px;resize: none">{$spec.value|default=''}</textarea>
 			</div>
 		</div>
 		<div class="layui-form-item">

@@ -128,4 +128,5 @@ return [
 	'auth_key' => 'JUD6FCtZsqrmVXc2apev4TRn3O8gAhxbSlH9wfPN', //默认数据加密KEY
 	'page_size' => '10',//分页数
 	'salt' => 'wZPb~yxvA!ir38&Z',//加密串
+	'file_upload_size' => 10 * 1024 * 1024, // 上传文件的最大尺寸，10兆
 ];

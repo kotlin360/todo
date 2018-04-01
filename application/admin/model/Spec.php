@@ -25,15 +25,37 @@ class Spec extends Model
 	 */
 	public function createSpec($data)
 	{
+		Db::startTrans();
 		try {
-			// 将提交的中文逗号转换为英文的
-			$data['value'] = str_replace('，', ',', $data['value']);
-			$data['value'] = serialize(explode(',', $data['value']));
+			// 将提交的中文逗号转换为英文的，切割为数组
+			$valueArray = explode(',', str_replace('，', ',', trim($data['value'])));
+			unset($data['value']);
 			$this->save($data);
+			$lastId = $this->getLastInsID();
+			$spec_value_array = []; // 此值需要插入到表think_goods_spec,需要序列化
+			$spec_value_list = []; // 此值需要插入到表think_goods_spec_value
+			foreach ($valueArray as $k => $v) {
+				$spec_value_list [] = [
+					'spec_id' => $lastId,
+					'name' => $v,
+					'sort' => ++$k
+				];
+			}
+			Db::name('goods_spec_value')->insertAll($spec_value_list);
+			// 此处获取刚刚插入到goods_spec_value的id数组，此数组跟$valueArray长度一致
+			$value_id_array = Db::name('goods_spec_value')->where("spec_id={$lastId}")
+				->order('sort')->field('id')->select();
+			foreach ($value_id_array as $k => $v) {
+				$spec_value_array[] = ['id' => $v['id'], 'name' => $valueArray[$k]];
+			}
+			// 再次更新到表think_goods_spec
+			$this->save(['value' => serialize($spec_value_array)], ['id' => $lastId]);
+			Db::commit();// 提交事务
 			return ['code' => 1];
 		} catch (\Exception $e) {
+			Db::rollback();
 			Log::error($e->getMessage());
-			return ['code' => 0, 'msg' => '创建失败，请稍后再试'];
+			return ['code' => 0, 'msg' => '创建失败，可能存在相同值！' . $e->getMessage()];
 		}
 	}
 
@@ -45,14 +67,35 @@ class Spec extends Model
 	 */
 	public function editSpec($id, $data)
 	{
+		Db::startTrans();
 		try {
-			// 将提交的中文逗号转换为英文的
-			$data['value'] = str_replace('，', ',', $data['value']);
-			$data['value'] = serialize(explode(',', $data['value']));
-			$this->where("id={$id}")->update($data);
+			$valueArray = explode(',', str_replace('，', ',', trim($data['value'])));
+			$spec_value_list = [];
+			$spec_value_array = [];
+			foreach ($valueArray as $k => $v) {
+				$spec_value_list [] = [
+					'spec_id' => $id,
+					'name' => $v,
+					'sort' => ++$k,
+				];
+			}
+			// 删除goods_spec_value表中存在数据，重新插入
+			Db::name('goods_spec_value')->where("spec_id={$id}")->delete();
+			Db::name('goods_spec_value')->insertAll($spec_value_list);
+			// 此处获取刚刚插入到goods_spec_value的id数组，此数组跟$valueArray长度一致
+			$value_id_array = Db::name('goods_spec_value')->where("spec_id={$id}")
+				->order('sort')->field('id')->select();
+			foreach ($value_id_array as $k => $v) {
+				$spec_value_array[] = ['id' => $v['id'], 'name' => $valueArray[$k]];
+			}
+			$data['value'] = serialize($spec_value_array);
+			// 再次更新到表think_goods_spec
+			$this->save($data, ['id' => $id]);
+			Db::commit();// 提交事务
 			return ['code' => 1];
 		} catch (\Exception $e) {
-			return ['code' => 0, 'msg' => '修改失败：' . $e->getMessage()];
+			Db::rollback();
+			return ['code' => 0, 'msg' => '创建失败，可能存在相同值！' . $e->getMessage()];
 		}
 	}
 
@@ -91,7 +134,8 @@ class Spec extends Model
 			$count = $this->where($map)->count();
 			$cursor = $this->where($map)->page($cur_page, $limits)->cursor();
 			foreach ($cursor as $v) {
-				$v['value'] = rtrim(implode(unserialize($v['value']), ','), ',');
+				$names = array_column(unserialize($v['value']), 'name');
+				$v['value'] = rtrim(implode($names, '，'));
 				$list[] = $v;
 			}
 			$json = [
@@ -133,10 +177,9 @@ class Spec extends Model
 		try {
 			$spec = Db::name($this->name)->where('status=1')->field('id,name,note,value')->select();
 			foreach ($spec as $k => $v) {
-				$values['s' . $v['id']] = unserialize($v['value']);
-				unset($v['value']);
+				$spec[$k]['value'] = unserialize($v['value']);
 			}
-			return ['names' => $spec, 'values' => $values];
+			return $spec;
 		} catch (\Exception $e) {
 			return null;
 		}

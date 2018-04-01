@@ -1,11 +1,12 @@
 {include file="public/header" /}
 <div style="width:700px;margin-left:20px" id="selectSpecDiv">
+	<div class="layui-row" id="fromParent"></div>
 	<div class="layui-row">
 		<fieldset class="layui-elem-field site-demo-button">
 			<legend>规格</legend>
 			<div class="specNameDIV">
-				{volist name="spec.names" id="s1"}
-				<a class="layui-btn layui-btn-primary layui-btn-sm spec_names" id="s{$s1.id}">{$s1.name}（{$s1.note}）<span class="layui-badge num"></span></a>
+				{volist name="spec" id="s1"}
+				<a class="layui-btn layui-btn-primary layui-btn-sm spec_names" id="spec{$s1.id}" data_id="{$s1.id}" value="{$s1.id}:{$s1.name}">{$s1.name}（{$s1.note}）<span class="layui-badge num"></span></a>
 				{/volist}
 			</div>
 		</fieldset>
@@ -13,12 +14,12 @@
 	<br>
 	<div class="layui-row">
 		<form class="layui-form" id="selectForm">
-			{volist name="spec.values" id="s2"}
-			<fieldset class="layui-elem-field site-demo-button valueFieldset {$key}-valueFieldset">
-				<legend>规格值&emsp;<input type="checkbox" title="全选" lay-filter="check_all" class="check_all" id="{$key}_check_all" lay-skin="primary"/></legend>
-				<div class="valueDiv {$key}-valueDiv" flag="{$key}">
-					{volist name="s2" id="v"}
-					<input type="checkbox" name="{$v}" title="{$v}" lay-skin="primary" lay-filter="check_single">
+			{volist name="spec" id="s2"}
+			<fieldset class="layui-elem-field site-demo-button valueFieldset valueFieldset{$s2.id}">
+				<legend>规格值&emsp;<input type="checkbox" title="全选" lay-filter="check_all" class="check_all" id="check_all{$s2.id}" lay-skin="primary"/></legend>
+				<div class="valueDiv valueDiv{$s2.id}" flag="{$s2.id}">
+					{volist name="s2.value" id="v"}
+					<input type="checkbox" data="{$v.id}:{$v.name}" value="{$v.id}" title="{$v.name}" lay-skin="primary" lay-filter="check_single">
 					{/volist}
 				</div>
 			</fieldset>
@@ -27,32 +28,71 @@
 			<br>
 			<div class="layui-form-item">
 				<div class="layui-input-block" style="margin-left:180px">
-					<button class="layui-btn" lay-submit lay-filter="addForm">立即提交</button>&emsp;
-					<button class="layui-btn layui-btn-primary" id="closeIframe">关闭窗口</button>
+					<a class="layui-btn" id="saveData">立即提交</a>&emsp;
+					<a class="layui-btn layui-btn-primary" id="closeIframe">关闭窗口</a>
 				</div>
 			</div>
 		</form>
 	</div>
 </div>
 <script type="text/javascript">
+	var specStringResult = ''; // 给父页面返回的规格和规格值字符串
 	layui.use(['form', 'layer', 'jquery'], function () {
-		var form = layui.form,
-			layer = layui.layer, $ = layui.jquery;
+		var form = layui.form, layer = layui.layer, $ = layui.jquery;
+
+		// 打开规格iframe页面的时候初始化，有可能是编辑
+		function spec_init(spec_init_str) {
+			//console.log(spec_init_str);
+			// spec_dcr = spec_dcr.split(",");
+			// spec_dcr = spec_dcr.uniq();
+			// var len = spec_dcr.length;
+			// for (var i = 0; i < len; i++) {
+			// 	var value = spec_dcr[i].split(":");
+			// 	$(".spec_values ul").hide();
+			// 	$(":checkbox[value='" + value[0] + "']").parent().parent().show();
+			// 	$(":checkbox[value='" + value[0] + "']").click();
+			// 	var spec_tr = $("#spec_show_list input[value='" + value[0] + "']").parent().parent();
+			// 	$("input", spec_tr).eq(2).val(value[2]);
+			// 	$("input", spec_tr).eq(3).val(value[3]);
+			// 	spec_select();
+			// }
+		}
+
+		window.spec_init = spec_init;
 
 		// 这里的cur_valueDiv指的是选中所在的fieldset下的valueDiv
 		function value_select_event(cur_valueDiv) {
-			var all_inputs_num = cur_valueDiv.find('input').length;// 所有的
-			var checked_inputs_num = cur_valueDiv.find('input:checked').length;// 被选中的规格值数量
-			var flag = cur_valueDiv.attr('flag');
-			if (all_inputs_num != checked_inputs_num) {
-				document.getElementById(flag + '_check_all').checked = false;
+			var all_inputs = cur_valueDiv.find('input');// 所有的
+			var checked_inputs = cur_valueDiv.find('input:checked');// 被选中的规格值
+			var all_inputs_length = all_inputs.length,
+				checked_inputs_length = checked_inputs.length;
+			// specNameDIV_A指的是规格上的a
+			var flag = cur_valueDiv.attr('flag'), specNameDIV_A = $('#spec' + flag);
+			if (all_inputs_length != checked_inputs_length) {
+				$('#check_all' + flag).prop('checked', false);
+				form.render('checkbox');
+			} else {
+				$('#check_all' + flag).prop('checked', true);
 				form.render('checkbox');
 			}
-			if (checked_inputs_num > 0) {
-				$('#' + flag).find('.num').html(checked_inputs_num).show();
+			if (checked_inputs_length > 0) {
+				specNameDIV_A.find('.num').html(checked_inputs_length).show();
+				specNameDIV_A.addClass('select')
 			} else {
-				$('#' + flag).find('.num').html(0).hide();
+				specNameDIV_A.find('.num').html(0).hide();
+				specNameDIV_A.removeClass('select')
 			}
+			specStringResult = '';// 一定要再次进行初始化为空
+			$('.specNameDIV').find('a.select').each(function () {
+				var _this = $(this), _id = _this.attr('data_id');
+				specStringResult += _this.attr('value') + '=';
+				$('.valueDiv' + _id).find('input:checked').each(function () {
+					specStringResult += $(this).attr('data') + ',';
+				});
+				specStringResult = specStringResult.slice(0, -1);
+				specStringResult += ';';
+			});
+			specStringResult = specStringResult.slice(0, -1);
 		}
 
 		// 规格值全选按钮监听事件
@@ -69,36 +109,27 @@
 			value_select_event(cur_valueDiv);
 		});
 
-		//监听新增角色提交
-		form.on('submit(selectForm)', function (data) {
-			var url = "{:url('goods/add')}?t=", okMsg = '系统用户创建成功'; // 添加
-			if (data.field.id) {
-				// 修改
-				url = "{:url('admin/edit')}?t=";
-				okMsg = '系统用户修改成功';
-			}
-			$.post(url + new Date().getTime(), data.field, function (result) {
-				if (result.code == 1) {
-					window.parent.location.reload(); //刷新父页面
-					parent.layer.msg(okMsg, {icon: 1, time: 2000});
-				} else {
-					layer.msg(result.msg, {icon: 2});
-				}
-			}, 'json');
-			return false;
-		});
-
 		$(function () {
 			var index = parent.layer.getFrameIndex(window.name); //获取窗口索引
 			// 规格按钮点击事件
 			$('.spec_names').each(function () {
-				var _this = $(this), _id = _this.attr('id');
+				var _this = $(this), _id = _this.attr('data_id');
 				_this.on('click', function () {
 					_this.addClass('current').siblings('a').removeClass('current');
 					_this.removeClass('layui-btn-primary').siblings('a').addClass('layui-btn-primary');
 					$('.valueFieldset').hide();
-					$('.' + _id + '-valueFieldset').show();
+					$('.valueFieldset' + _id).show();
 				});
+			});
+
+			$('#saveData').on('click', function () {
+				if ('' === specStringResult) {
+					layer.msg('您没有选择任何规格，请选择');
+					return false;
+				}
+				parent.makeSpecHtml(specStringResult);
+				parent.layer.close(index);
+				return false;
 			});
 
 			// 关闭弹窗
