@@ -35,11 +35,11 @@
 				{field: 'note', title: '备注', align: 'center', width: 100},
 				{
 					field: 'create_time', title: '创建时间', align: 'center', width: 170,
-					templet: '<span>{{ layui.utils.toDateString(d.create_time*1000) }}</span>'
+					templet: '<span>{{ d.create_time }}</span>'
 				},
 				{
-					field: 'edit_time', title: '修改时间', align: 'center', width: 170,
-					templet: '<span>{{ layui.utils.toDateString(d.edit_time*1000) }}</span>'
+					field: 'update_time', title: '修改时间', align: 'center', width: 170,
+					templet: '<span>{{ d.update_time }}</span>'
 				},
 				{
 					field: 'status', title: '状态', align: 'center', width: 80, templet: function (v) {

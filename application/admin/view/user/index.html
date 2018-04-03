@@ -3,10 +3,10 @@
 	<form class="layui-form" lay-filter="searchForm" id="searchForm">
 		<div class="layui-form-item" style="float: left;">
 			<div class="layui-input-inline">
-				<input type="text" name="keyword" autocomplete="off" placeholder="输入分类名称关键字，如果为空查询全部" class="layui-input layui-btn-sm">
+				<input type="text" name="keyword" autocomplete="off" placeholder="输入用户手机号码，如果为空查询全部" class="layui-input layui-btn-sm">
 			</div>
 			<button type="submit" lay-submit lay-filter="searchForm" class="layui-btn layui-btn-warm"><i class="fa fa-search"></i> 搜索</button>
-			<button class="layui-btn" id="addBtn"><i class="fa fa-plus"></i> 新增分类</button>
+			<!--<button class="layui-btn" id="addBtn"><i class="fa fa-plus"></i> 新增用户</button>-->
 		</div>
 	</form>
 </fieldset>
@@ -26,14 +26,16 @@
 			elem: '#datatable',
 			height: 'full-120',
 			limit: "{$page_size}",
-			url: "{:url('category/index')}?t=" + new Date().getTime(),
+			url: "{:url('user/index')}?t=" + new Date().getTime(),
 			page: true,
 			cols: [[
 				{field: 'id', title: '序号', align: 'center', width: 80},
-				{field: 'name', title: '分类名称', align: 'center', width: 200},
-				{field: 'sort', title: '排序', align: 'center', width: 80},
+				{field: 'username', title: '用户名', align: 'center', width: 120},
+				{field: 'tel', title: '手机号码', align: 'center', width: 120},
+				{field: 'score', title: '总积分', align: 'center', width: 100},
+				{field: 'money', title: '现金余额', align: 'center', width: 110},
 				{
-					field: 'create_time', title: '创建时间', align: 'center', width: 180,
+					field: 'create_time', title: '注册时间', align: 'center', width: 180,
 					templet: '<span>{{ d.create_time }}</span>'
 				},
 				{
@@ -49,7 +51,7 @@
 						}
 					}
 				},
-				{title: '操作', align: 'center', toolbar: '#toobar', width: 200}
+				// {title: '操作', align: 'center', toolbar: '#toobar', width: 200}
 			]]
 		});
 		table.on('tool(datatable)', function (obj) {
@@ -58,7 +60,7 @@
 			if (layEvent === 'edit') {
 				layer.open({
 					type: 2,
-					title: '修改商品分类',
+					title: '修改用户',
 					area: ['650px', '360px'],
 					scrollbar: false,
 					anim: 2,
@@ -80,19 +82,19 @@
 				});
 			}
 		});
-		// 添加菜单事件
-		$('#addBtn').on('click', function () {
-			layer.open({
-				type: 2,
-				title: '新增商品分类',
-				area: ['650px', '360px'],
-				scrollbar: false,
-				anim: 2,
-				shadeClose: true,
-				content: "{:url('category/add')}?t=" + new Date().getTime()
-			});
-			return false;
-		});
+		// 添加用户事件，暂时不开放，需要用户前台注册
+		// $('#addBtn').on('click', function () {
+		// 	layer.open({
+		// 		type: 2,
+		// 		title: '新增用户',
+		// 		area: ['650px', '360px'],
+		// 		scrollbar: false,
+		// 		anim: 2,
+		// 		shadeClose: true,
+		// 		content: "{:url('user/add')}?t=" + new Date().getTime()
+		// 	});
+		// 	return false;
+		// });
 		//监听搜索提交
 		form.on('submit(searchForm)', function (data) {
 			var keyword = encodeURI($('input[name=keyword]').val());
