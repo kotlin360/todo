@@ -1,6 +1,8 @@
 <?php
 namespace app\admin\model;
 
+use think\Db;
+use think\Facade\Config;
 use think\Model;
 
 /**
@@ -37,6 +39,25 @@ class User extends Model
 			return $json;
 		} catch (\Exception $e) {
 			return ['code' => 404, 'msg' => '获取用户列表失败：' . $e->getMessage()];
+		}
+	}
+
+	/**
+	 * 修改前台用户状态（启用或者禁用）
+	 * @param $id
+	 * @param $status
+	 * @return array
+	 */
+	public function changeStatus($id, $status)
+	{
+		$msg = $status == 1 ? '禁用' : '启用';
+		try {
+			$tableName = Config::get('database.prefix') . $this->name;
+			$sql = "UPDATE {$tableName} SET status = (case status when 0 then 1 else 0  end) WHERE id={$id}";
+			Db::execute($sql);
+			return ['code' => 1];
+		} catch (\Exception $e) {
+			return ['code' => 0, 'msg' => $msg] . '失败:' . $e->getMessage();
 		}
 	}
 }

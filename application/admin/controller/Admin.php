@@ -4,6 +4,8 @@ namespace app\admin\controller;
 use app\admin\model\Admin as AdminModel;
 use app\admin\model\UserType as UserTypeModel;
 use app\admin\validate\Admin as AdminValidate;
+use think\Db;
+use think\facade\Cache;
 use think\facade\Config;
 
 /**
@@ -113,5 +115,74 @@ class Admin extends Base
 		$id = input('param.id', 0, 'intval');
 		$status = input('param.status', 1, 'intval');
 		return json($adminModel->change_status($id, $status));
+	}
+
+	/**
+	 * 修改网站参数，保存到配置表config
+	 * @return mixed|\think\response\Json
+	 */
+	public function setting()
+	{
+		if ($this->request->isAjax()) {
+			// 保存
+			$dataRaw = input('post.');
+			$data = $this->handleValue($dataRaw);
+			try {
+				if (!empty($data['insertConfig'])) {
+					Db::name('config')->insertAll($data['insertConfig']);
+				}
+				if (!empty($data['updateConfig'])) {
+					foreach ($data['updateConfig'] as $v) {
+						Db::name('config')->update($v);
+					}
+				}
+				// 因为配置参数放入到缓存中，修改的话必须清空
+				Cache::rm('system_params');
+				return json(['code' => 1]);
+			} catch (\Exception $e) {
+				return json(['code' => 0, 'msg' => '保存失败：' . $e->getMessage()]);
+			}
+		} else {
+			// 展示
+			$settings = Db::name('config')->field(true)->select();
+			$config = [];
+			foreach ($settings as $v) {
+				$config[$v['key'] . '_uuid'] = $v['id'];
+				$config[$v['key']] = $v['value'];
+			}
+			return $this->assign('config', $config)->fetch();
+		}
+	}
+
+	/**
+	 * 处理接受到的配置参数
+	 * @param $data
+	 * @return mixed
+	 */
+	private function handleValue($data)
+	{
+		if (isset($data['config_service_phone'])) {
+			$data['config_service_phone'] = str_replace('，', ',', $data['config_service_phone']);
+		}
+		if (isset($data['config_service_qq'])) {
+			$data['config_service_qq'] = str_replace('，', ',', $data['config_service_qq']);
+		}
+		$insertConfig = [];
+		$updateConfig = [];
+		foreach ($data as $k => $v) {
+			if (endsWith($k, '_uuid')) {
+				if ($v == '') {
+					continue;
+				}
+				// 如果是_uuid结尾的
+				$keyWithoutUUID = substr($k, 0, -5);
+				$updateConfig[] = ['id' => $data["$k"], 'value' => $data["$keyWithoutUUID"], 'update_time' => $_SERVER['REQUEST_TIME']];
+			} else {
+				if (!isset($data[$k . '_uuid']) || $data[$k . '_uuid'] == '') {
+					$insertConfig[] = ['key' => $k, 'value' => $v, 'create_time' => $_SERVER['REQUEST_TIME']];
+				}
+			}
+		}
+		return ['insertConfig' => $insertConfig, 'updateConfig' => $updateConfig];
 	}
 }

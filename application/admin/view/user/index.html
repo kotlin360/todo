@@ -57,22 +57,12 @@
 		table.on('tool(datatable)', function (obj) {
 			var data = obj.data;
 			var layEvent = obj.event;
-			if (layEvent === 'edit') {
-				layer.open({
-					type: 2,
-					title: '修改用户',
-					area: ['650px', '360px'],
-					scrollbar: false,
-					anim: 2,
-					shadeClose: true,
-					content: "{:url('category/edit')}?t=" + new Date().getTime() + '&id=' + data.id
-				});
-			} else if (layEvent === 'changeStatus') {
+			if (layEvent === 'changeStatus') {
 				var tip = parseInt(data.status) == 1 ? '禁用' : '启用';
-				layer.confirm('确定要' + tip + '【' + data.name + '】此分类吗？<br>注意：如禁用此分类下的商品不再显示', {title: '修改商品分类状态', icon: 0, btn: ['确定', '取消']}, function () {
-					$.post("{:url('category/change_status')}?t=" + new Date().getTime(), {id: data.id, status: data.status}, function (result) {
+				layer.confirm('确定要' + tip + '【' + data.username + '】此用户吗？<br>注意：如禁用此用户无法登录小程序', {title: '修改用户状态', icon: 0, btn: ['确定', '取消']}, function () {
+					$.post("{:url('user/change_status')}?t=" + new Date().getTime(), {id: data.id, status: data.status}, function (result) {
 						if (result.code == 1) {
-							layer.msg('商品分类状态修改成功', {icon: 1, time: 1000, offset: 't'}, function () {
+							layer.msg('用户状态修改成功', {icon: 1, time: 1000, offset: 't'}, function () {
 								datatable.reload();
 							});
 						} else {

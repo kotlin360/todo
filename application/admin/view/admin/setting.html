@@ -1,0 +1,234 @@
+{include file="public/header" /}
+<style>
+	.layui-form-label {
+		width: 160px
+	}
+</style>
+<div class="layui-tab layui-tab-brief" lay-filter="docDemoTabBrief" style="margin:0">
+	<ul class="layui-tab-title">
+		<li class="layui-this">网站设置</li>
+		<li>商品参数</li>
+		<li>积分参数</li>
+		<li>支付参数</li>
+		<li>短信接口</li>
+	</ul>
+	<div class="layui-tab-content">
+
+		<div class="layui-tab-item layui-show">
+			<div class="layui-card">
+				<div class="layui-card-header">网站参数设置</div>
+				<div class="layui-card-body">
+					<form class="layui-form" action="" lay-filter="siteConfig">
+						<div class="layui-form-item">
+							<label class="layui-form-label">网站名称：</label>
+							<div class="layui-input-inline">
+								<input type="hidden" name="config_site_name_uuid" value="{$config.config_site_name_uuid|default=''}">
+								<input type="text" name="config_site_name" value="{$config.config_site_name|default=''}" lay-verify="required" autocomplete="off" class="layui-input">
+							</div>
+							<div class="layui-form-mid layui-word-aux">请输入网站名称，主要用于PC端后台展示</div>
+						</div>
+						<div class="layui-form-item">
+							<label class="layui-form-label">客服电话：</label>
+							<div class="layui-input-inline">
+								<input type="hidden" name="config_service_phone_uuid" value="{$config.config_service_phone_uuid|default=''}">
+								<input type="text" name="config_service_phone" value="{$config.config_service_phone|default=''}" lay-verify="required" autocomplete="off" class="layui-input">
+							</div>
+							<div class="layui-form-mid layui-word-aux">多个电话使用逗号（不区分中英文）分割</div>
+						</div>
+
+						<div class="layui-form-item">
+							<label class="layui-form-label">客服QQ：</label>
+							<div class="layui-input-inline">
+								<input type="hidden" name="config_service_qq_uuid" value="{$config.config_service_qq_uuid|default=''}">
+								<input type="text" name="config_service_qq" value="{$config.config_service_qq|default=''}" lay-verify="required" autocomplete="off" class="layui-input">
+							</div>
+							<div class="layui-form-mid layui-word-aux">多个QQ使用逗号（不区分中英文）分割</div>
+						</div>
+						<div class="layui-form-item">
+							<div class="layui-input-block">
+								<button class="layui-btn" lay-submit="" lay-filter="siteConfig">立即提交</button>
+								<button type="reset" class="layui-btn layui-btn-primary">重置</button>
+							</div>
+						</div>
+					</form>
+				</div>
+			</div>
+		</div>
+		<div class="layui-tab-item">
+			<div class="layui-card">
+				<div class="layui-card-header">商品参数设置</div>
+				<div class="layui-card-body">
+					<form class="layui-form" action="" lay-filter="goodsConfig">
+						<div class="layui-form-item">
+							<label class="layui-form-label">商品库存告警值：</label>
+							<div class="layui-input-inline">
+								<input type="hidden" name="config_warnning_line_uuid" value="{$config.config_warnning_line_uuid|default=''}">
+								<input type="text" name="config_warnning_line" value="{$config.config_warnning_line|default=''}" lay-verify="required|number" autocomplete="off" class="layui-input">
+							</div>
+							<div class="layui-form-mid layui-word-aux">告警值必须填写正整数</div>
+						</div>
+						<div class="layui-form-item">
+							<label class="layui-form-label">购买商品赠送积分：</label>
+							<div class="layui-input-inline">
+								<input type="hidden" name="config_after_buy_score_uuid" value="{$config.config_after_buy_score_uuid|default=''}">
+								<input type="text" name="config_after_buy_score" value="{$config.config_after_buy_score|default=''}" lay-verify="required|number" autocomplete="off" class="layui-input">
+							</div>
+							<div class="layui-form-mid layui-word-aux">请填写购买商品赠送多少积分，必须整数</div>
+						</div>
+						<div class="layui-form-item">
+							<label class="layui-form-label">商品默认运费：</label>
+							<div class="layui-input-inline">
+								<input type="hidden" name="config_freight_uuid" value="{$config.config_freight_uuid|default=''}">
+								<input type="text" name="config_freight" value="{$config.config_freight|default=''}" lay-verify="required|number" autocomplete="off" class="layui-input">
+							</div>
+							<div class="layui-form-mid layui-word-aux">商品默认运费，必须整数</div>
+						</div>
+						<div class="layui-form-item">
+							<div class="layui-input-block">
+								<button class="layui-btn" lay-submit="" lay-filter="goodsConfig">立即提交</button>
+								<button type="reset" class="layui-btn layui-btn-primary">重置</button>
+							</div>
+						</div>
+					</form>
+				</div>
+			</div>
+		</div>
+		<div class="layui-tab-item">
+			<div class="layui-card">
+				<div class="layui-card-header">积分参数设置</div>
+				<div class="layui-card-body">
+					<form class="layui-form" action="" lay-filter="scoreConfig">
+						<div class="layui-form-item">
+							<label class="layui-form-label">现金积分兑换率：</label>
+							<div class="layui-input-inline">
+								<input type="hidden" name="config_cash2score_rate_uuid" value="{$config.config_cash2score_rate_uuid|default=''}">
+								<input type="text" name="config_cash2score_rate" value="{$config.config_cash2score_rate|default=''}" lay-verify="required|number" autocomplete="off" class="layui-input">
+							</div>
+							<div class="layui-form-mid layui-word-aux">如果100积分兑换一元，就填写100，必填且为正整数</div>
+						</div>
+						<div class="layui-form-item">
+							<label class="layui-form-label">分享客户赠送积分：</label>
+							<div class="layui-input-inline">
+								<input type="hidden" name="config_share_score_uuid" value="{$config.config_share_score_uuid|default=''}">
+								<input type="text" name="config_share_score" value="{$config.config_share_score|default=''}" lay-verify="required|number" autocomplete="off" class="layui-input">
+							</div>
+							<div class="layui-form-mid layui-word-aux">分享客户赠送积分，比方分享一次送100积分就填写100</div>
+						</div>
+
+						<div class="layui-form-item">
+							<label class="layui-form-label">分享客户赠送积分频率：</label>
+							<div class="layui-input-inline">
+								<input type="hidden" name="config_share_score_limit_uuid" value="{$config.config_share_score_limit_uuid|default=''}">
+								<input type="text" name="config_share_score_limit" value="{$config.config_share_score_limit|default=''}" lay-verify="required|number" autocomplete="off" class="layui-input">
+							</div>
+							<div class="layui-form-mid layui-word-aux">比方一天分享最多只能赠送10次，就填写10，如果不限制填写-1</div>
+						</div>
+
+						<div class="layui-form-item">
+							<label class="layui-form-label">被分享人送积分：</label>
+							<div class="layui-input-inline">
+								<input type="hidden" name="config_share_goods_after_buy_score_uuid" value="{$config.config_share_goods_after_buy_score_uuid|default=''}">
+								<input type="text" name="config_share_goods_after_buy_score" value="{$config.config_share_goods_after_buy_score|default=''}" lay-verify="required|number" autocomplete="off" class="layui-input">
+							</div>
+							<div class="layui-form-mid layui-word-aux">分享的客户购买了商品，被分享人赠送多少积分</div>
+						</div>
+
+						<div class="layui-form-item">
+							<div class="layui-input-block">
+								<button class="layui-btn" lay-submit="" lay-filter="scoreConfig">立即提交</button>
+								<button type="reset" class="layui-btn layui-btn-primary">重置</button>
+							</div>
+						</div>
+					</form>
+				</div>
+			</div>
+		</div>
+		<div class="layui-tab-item">
+			<div class="layui-card">
+				<div class="layui-card-header">支付参数设置</div>
+				<div class="layui-card-body">
+					<div class="layui-form-item">
+						<label class="layui-form-label">网站名称：</label>
+						<div class="layui-input-inline">
+							<input type="text" name="config_site_name" value="" lay-verify="required|number" autocomplete="off" class="layui-input">
+						</div>
+						<div class="layui-form-mid layui-word-aux">请填写购买商品赠送多少积分，必须整数</div>
+					</div>
+					<div class="layui-form-item">
+						<label class="layui-form-label">商品默认运费：</label>
+						<div class="layui-input-inline">
+							<input type="text" name="config_freight" value="" lay-verify="required|number" autocomplete="off" class="layui-input">
+						</div>
+						<div class="layui-form-mid layui-word-aux">商品默认运费，必须整数</div>
+					</div>
+					<div class="layui-form-item">
+						<div class="layui-input-block">
+							<button class="layui-btn" lay-submit="" lay-filter="demo1">立即提交</button>
+							<button type="reset" class="layui-btn layui-btn-primary">重置</button>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="layui-tab-item">
+			<div class="layui-card">
+				<div class="layui-card-header">短信接口参数</div>
+				<div class="layui-card-body">
+					<div class="layui-form-item">
+						<label class="layui-form-label">网站名称：</label>
+						<div class="layui-input-inline">
+							<input type="text" name="config_site_name" value="" lay-verify="required|number" autocomplete="off" class="layui-input">
+						</div>
+						<div class="layui-form-mid layui-word-aux">请填写购买商品赠送多少积分，必须整数</div>
+					</div>
+					<div class="layui-form-item">
+						<label class="layui-form-label">商品默认运费：</label>
+						<div class="layui-input-inline">
+							<input type="text" name="config_freight" value="" lay-verify="required|number" autocomplete="off" class="layui-input">
+						</div>
+						<div class="layui-form-mid layui-word-aux">商品默认运费，必须整数</div>
+					</div>
+					<div class="layui-form-item">
+						<div class="layui-input-block">
+							<button class="layui-btn" lay-submit="" lay-filter="demo1">立即提交</button>
+							<button type="reset" class="layui-btn layui-btn-primary">重置</button>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		</form>
+	</div>
+</div>
+
+<script type="text/javascript">
+	layui.use(['form', 'layer', 'jquery', 'element'], function () {
+		var form = layui.form, element = layui.element,
+			layer = layui.layer, $ = layui.jquery;
+
+		function ajax_post(data) {
+			$.post("{:url('admin/setting')}?t=" + new Date().getTime(), data.field, function (result) {
+				if (result.code == 1) {
+					window.location.reload();
+					layer.msg('参数修改成功', {icon: 1, time: 2000});
+				} else {
+					layer.msg(result.msg, {icon: 2});
+				}
+			}, 'json');
+		}
+
+		form.on('submit(siteConfig)', function (data) {
+			ajax_post(data);
+			return false;
+		});
+		form.on('submit(goodsConfig)', function (data) {
+			ajax_post(data);
+			return false;
+		});
+		form.on('submit(scoreConfig)', function (data) {
+			ajax_post(data);
+			return false;
+		});
+	});
+</script>
+{include file="public/footer" /}

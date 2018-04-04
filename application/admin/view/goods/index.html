@@ -14,6 +14,7 @@
 <table id="datatable" lay-filter="datatable"></table>
 <script type="text/html" id="toobar">
 	<a class="layui-btn layui-btn-warm layui-btn-xs" lay-event="edit"><i class="fa fa-edit"></i> 编辑</a>
+	<a class="layui-btn layui-btn-xs" lay-event="detail"><i class="fa fa-eye"></i> 查看规格</a>
 </script>
 <script type="text/javascript">
 	layui.config({
@@ -29,26 +30,23 @@
 			url: "{:url('goods/index')}?t=" + new Date().getTime(),
 			page: true,
 			cols: [[
-				{field: 'id', title: 'UID', align: 'center', width: 80},
-				{field: 'username', title: '用户名', align: 'center', width: 120},
-				{field: 'real_name', title: '真实姓名', align: 'center', width: 120},
-				{field: 'loginnum', title: '登录次数', align: 'center', width: 120},
-				{field: 'last_login_ip', title: '最后登录IP', align: 'center', width: 150},
-				{
-					field: 'last_login_time', title: '最后登录时间', align: 'center', width: 180,
-					templet: '<span>{{ layui.utils.toDateString(d.last_login_time*1000) }}</span>'
-				},
+				{field: 'id', title: 'id', align: 'center', width: 80, fixed: 'left'},
+				{field: 'title', title: '商品名称', align: 'center', width: 300, fixed: 'left'},
+				{field: 'sn', title: '商品编号', align: 'center', width: 180, fixed: 'left'},
+				{field: 'cate_name', title: '所属分类', align: 'center', width: 120},
+				{field: 'unit', title: '单位', align: 'center', width: 80},
+				{field: 'freight', title: '运费', align: 'center', width: 80},
 				{
 					field: 'status', title: '状态', align: 'center', width: 80, templet: function (v) {
-						if (v.status == 1 && v.id == 1) {
-							return '已开启';
-						} else if (v.status == 1) {
-							return '<a class="layui-btn layui-btn-xs changeStatus" lay-event="changeStatus">已开启</a>';
+						if (v.status == 1) {
+							return '<a class="layui-btn layui-btn-xs changeStatus" lay-event="changeStatus">在售</a>';
 						} else {
-							return '<a class="layui-btn layui-btn-danger layui-btn-xs changeStatus" lay-event="changeStatus">已禁用</a>\n';
+							return '<a class="layui-btn layui-btn-danger layui-btn-xs changeStatus" lay-event="changeStatus">已下架</a>\n';
 						}
 					}
 				},
+				{field: 'create_time', title: '创建时间', align: 'center', width: 180},
+				{field: 'update_time', title: '修改时间', align: 'center', width: 180},
 				{title: '操作', align: 'center', toolbar: '#toobar', width: 220}
 			]]
 		});

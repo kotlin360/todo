@@ -80,7 +80,7 @@ class Category extends Base
 	}
 
 	/**
-	 * 修改系统用户状态（开启或者禁用）
+	 * 修改分类状态（开启或者禁用）
 	 * @param CategoryModel $categoryModel
 	 * @return \think\response\Json
 	 */

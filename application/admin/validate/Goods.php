@@ -11,16 +11,21 @@ use think\Validate;
 class Goods extends Validate
 {
 	protected $rule = [
-		'username' => 'require|unique:admin',
-		'real_name' => 'require',
-		'group_id' => 'require',
+		'title' => 'require',
+		'cate_id' => 'require',
+		'sn' => 'require',
+		'unit' => 'require',
+		'description' => 'require',
+		'imgs' => 'require',
 	];
 
 	protected $message = [
-		'username.require' => '用户创建失败，登录用户名不能为空',
-		'username.unique' => '用户创建失败，登录用户名已经存在',
-		'real_name.require' => '用户创建失败，真实姓名不能为空',
-		'group_id.require' => '用户创建失败，角色至少选择一个'
+		'title.require' => '创建失败，商品名称不能为空',
+		'cate_id.require' => '创建失败，商品类型不能为空',
+		'sn.require' => '创建失败，商品编号不能为空',
+		'unit.require' => '创建失败，单位不能为空',
+		'description.require' => '创建失败，商品描述不能为空',
+		'imgs.require' => '创建失败，商品图册不能为空',
 	];
 
 	// edit 验证场景定义

@@ -11,20 +11,7 @@
 	<div class="layui-card-header">新增商品</div>
 	<div class="layui-card-body" style="padding:20px 10px">
 		<form class="layui-form" lay-filter="addForm" id="addForm">
-			<div class="layui-form-item">
-				<div class="layui-inline">
-					<label class="layui-form-label">商品编号：</label>
-					<div class="layui-input-inline">
-						<input type="text" name="sn" id="sn" value="{$goods.sn|default=$sn}" lay-verify="required" layui-disabled placeholder="请输入商品名称，最多200个字符" autocomplete="off" class="layui-input">
-					</div>
-				</div>
-				<div class="layui-inline">
-					<label class="layui-form-label"><i class="must">*</i>单位：</label>
-					<div class="layui-input-inline">
-						<input type="text" name="unit" value="{$goods.uinit|default=''}" lay-verify="required" placeholder="请输入商品单位，比方：件" autocomplete="off" class="layui-input">
-					</div>
-				</div>
-			</div>
+
 			<div class="layui-form-item">
 				<label class="layui-form-label"><i class="must">*</i>商品名称：</label>
 				<div class="layui-input-block">
@@ -32,17 +19,41 @@
 				</div>
 			</div>
 
-			<div class="hr-line-dashed"></div>
 			<div class="layui-form-item">
 				<label class="layui-form-label"><i class="must">*</i>商品分类：</label>
 				<div class="layui-input-block">
-					{volist name="cate" id="v"}
-					<div class="layui-col-xs3 layui-col-md2">
-						<input type="radio" name="sex" value="nan" title="{$v.name}" {in name="v.id" value="$goods.group|default=1" }checked{/in}>
-					</div>
-					{/volist}
+					<select name="cate_id" lay-verify="required">
+						<option value="">==请选择商品分类==</option>
+						{volist name="cate" id="v"}
+						<option value="{$v.id}" {in name="v.id" value="$goods.cate_id|default=1" }checked{
+						/in}>{$v.name}</option>
+						{/volist}
+					</select>
 				</div>
 			</div>
+
+			<div class="layui-form-item">
+				<div class="layui-inline">
+					<label class="layui-form-label"><i class="must">*</i>商品编号：</label>
+					<div class="layui-input-inline">
+						<input type="text" name="sn" layui-disabled disabled id="sn" value="{$goods.sn|default=$sn}" lay-verify="required" autocomplete="off" class="layui-input">
+					</div>
+				</div>
+				<div class="layui-inline">
+					<label class="layui-form-label"><i class="must">*</i>单位：</label>
+					<div class="layui-input-inline layui-input-inline100">
+						<input type="text" name="unit" value="{$goods.unit|default='件'}" lay-verify="required" autocomplete="off" class="layui-input input80">
+					</div>
+				</div>
+				<div class="layui-inline">
+					<label class="layui-form-label"><i class="must">*</i>运费：</label>
+					<div class="layui-input-inline layui-input-inline100">
+						<input type="text" name="freight" id="freight" value="{$goods.freight|default=$params.config_freight}" lay-verify="required" autocomplete="off" class="layui-input input80">
+					</div>
+				</div>
+			</div>
+
+			<div class="hr-line-dashed"></div>
 
 			<div class="layui-form-item">
 				<label class="layui-form-label"><i class="must">*</i>商品规格：</label>
@@ -52,7 +63,7 @@
 
 			<div class="layui-form-item">
 				<label class="layui-form-label"><i class="must">*</i>相册：</label>
-				<div class="layui-input-block" id="goods_imgs">
+				<div class="layui-input-block" id="goods_imgs" style="line-height:20px">
 					<div id="container">
 						<div id="uploader">
 							<div class="queueList">
@@ -110,9 +121,13 @@
 <script type="text/javascript" src="__WEBUPLOADER__/js/webuploader.js"></script>
 <script type="text/javascript" src="__WEBUPLOADER__/js/upload.js"></script>
 <script type="text/javascript">
-	var arr = ['zhangsan', 'lisi', 'wangwu'];
+	var rate = "{$params.config_cash2score_rate|default=0}";
+	window.UMEDITOR_HOME_URL = "__UM__";
 	// 实例化编辑器
 	var ue = UM.getEditor('description', {
+		// 图片上传提交地址
+		imageUrl: "{:url('system/um_upload')}?t=" + new Date().getTime(),
+		imagePath: "/",
 		initialFrameWidth: '100%', //初始化编辑器宽度
 		initialFrameHeight: 300  //初始化编辑器高度
 	});
@@ -131,6 +146,7 @@
 			var tpl = document.getElementById('noSpecHtml').innerHTML; //读取模版
 			render = laytpl(tpl).render([]);
 			document.getElementById('specView').innerHTML = render;
+			form.render();
 		}
 
 		// 生成商品规格html,这里以收到的规格字符串 1:颜色=2:金色,3:银色;2:内存=7:4G,8:6G为例子
@@ -166,22 +182,31 @@
 			laytpl(getTpl).render(data, function (html) {
 				view.innerHTML = html;
 			});
+			form.render();
 		}
 
 		window.makeSpecHtml = makeSpecHtml; // 这句非常关键，iframe子页面调用的时候就靠这句
 
-		//监听新增角色提交
+		form.verify({
+			imgs: function (value, item) { //value：表单的值、item：表单的DOM对象
+				if (/[\S]+/.test(value)) {
+					return '请上传商品图册';
+				}
+			}
+		});
+
+		//监听商品创建提交
 		form.on('submit(addForm)', function (data) {
-			var url = "{:url('goods/add')}?t=", okMsg = '系统用户创建成功'; // 添加
+			var url = "{:url('goods/add')}?t=", okMsg = '商品创建成功'; // 添加
 			if (data.field.id) {
 				// 修改
-				url = "{:url('admin/edit')}?t=";
-				okMsg = '系统用户修改成功';
+				url = "{:url('goods/edit')}?t=";
+				okMsg = '商品修改成功';
 			}
 			$.post(url + new Date().getTime(), data.field, function (result) {
 				if (result.code == 1) {
-					window.parent.location.reload(); //刷新父页面
-					parent.layer.msg(okMsg, {icon: 1, time: 2000});
+					window.location.reload(); //刷新父页面
+					layer.msg(okMsg, {icon: 1, time: 2000});
 				} else {
 					layer.msg(result.msg, {icon: 2});
 				}
@@ -223,6 +248,14 @@
 				return false;
 			});
 
+			// 填入金额后根据汇率自动计算所需要的积分
+			$('#specView').on('blur', '.cashInput', function () {
+				var _this = $(this), cash = _this.val(), _scoreInput = _this.parent('td').next('td').find('.scoreInput');
+				if (0 != parseInt(rate)) {
+					_scoreInput.val(parseInt(cash) * parseInt(rate));
+				}
+			});
+
 			// 删除自定义规格条目
 			$('#specView').on('click', '.spec_del', function () {
 				var tr = $('#defineSpecTable .spec_tr');
@@ -250,39 +283,58 @@
 			<th><i class="must">*</i>货号</th>
 			{{# layui.each(d.names, function(i, v){ }}
 			<th>
-				{{ v }}
+				{{v}}
 			</th>
 			{{# }); }}
-			<th>
-				<input type="hidden" value="d.name_id_string" name="spec_items">
+			<th width="80">
+				<input type="hidden" value="1" name="is_spec">
+				<input type="hidden" value="{{ d.name_id_string }}" name="spec_key">
 				<i class="must">*</i>库存
 			</th>
-			<th><i class="must">*</i>预警线</th>
-			<th><i class="must">*</i>价格</th>
-			<th>操作</th>
+			<th width="80"><i class="must">*</i>预警线</th>
+			<th width="100"><i class="must">*</i>购买方式</th>
+			<th width="80"><i class="must">*</i>购买现金</th>
+			<th width="80"><i class="must">*</i>购买积分</th>
+			<th width="80"><i class="must">*</i>赠送积分</th>
+			<th width="80"><i class="must">*</i>是否上架</th>
+			<th width="50">操作</th>
 		</tr>
 		</thead>
 		<tbody>
 		{{# for(var i = 0, len = d.values.length; i < len; i++){ }}
 		<tr class="spec_tr">
 			<td>
-				<input type="text" name="sn[]" value="{{ d.sn }}_{{ i+1 }}" lay-verify="required" autocomplete="off" class="layui-input">
+				<input type="text" name="spec_sn[]" value="{{ d.sn }}_{{ i+1 }}" layui-disabled disabled lay-verify="required" autocomplete="off" class="layui-input">
 			</td>
 			{{# layui.each(d.values[i], function(index, item){ }}
-			<td>
-
-				{{ getPureName(item) }}
-			</td>
+			<td>{{getPureName(item)}}</td>
 			{{# }); }}
 			<td>
-				<input type="hidden" value="{{ d.values[i] }}" name="spec_item[]">
+				<input type="hidden" value="{{d.values[i]}}" name="spec_value[]">
 				<input type="text" name="stock[]" lay-verify="required" autocomplete="off" class="layui-input">
 			</td>
 			<td>
-				<input type="text" name="warning_line[]" value="2" lay-verify="required" autocomplete="off" class="layui-input">
+				<input type="text" name="warning_line[]" value="{$params.config_warnning_line|default=0}" lay-verify="required" autocomplete="off" class="layui-input">
 			</td>
 			<td>
-				<input type="text" name="price[]" lay-verify="required" autocomplete="off" class="layui-input">
+				<select name="style[]" lay-verify="required">
+					<option value="">==方式==</option>
+					<option value="1">积分</option>
+					<option value="2">现金</option>
+					<option value="3">组合</option>
+				</select>
+			</td>
+			<td>
+				<input type="text" name="cash[]" value="0" lay-verify="required" autocomplete="off" class="layui-input cashInput">
+			</td>
+			<td>
+				<input type="text" name="score[]" value="0" lay-verify="required" autocomplete="off" class="layui-input scoreInput">
+			</td>
+			<td>
+				<input type="text" name="gift[]" value="{$params.config_after_buy_score}" lay-verify="required" autocomplete="off" class="layui-input">
+			</td>
+			<td class="td_center">
+				<input type="checkbox" name="is_online[]" lay-skin="switch" lay-text="上架|下架" checked>
 			</td>
 			<td>
 				<a href="javascript:void(0)" class="lay-btn spec_del">删除</a>
@@ -298,24 +350,41 @@
 		<thead>
 		<tr>
 			<th><i class="must">*</i>货号</th>
-			<th><i class="must">*</i>库存</th>
-			<th><i class="must">*</i>预警线</th>
-			<th><i class="must">*</i>价格</th>
+			<th width="80"><i class="must">*</i>库存</th>
+			<th width="80"><i class="must">*</i>预警线</th>
+			<th width="130"><i class="must">*</i>购买方式</th>
+			<th width="100"><i class="must">*</i>购买现金</th>
+			<th width="100"><i class="must">*</i>购买积分</th>
+			<th width="100"><i class="must">*</i>赠送积分</th>
 		</tr>
 		</thead>
 		<tbody>
 		<tr>
 			<td>
-				<input type="text" name="sn[]" lay-verify="required" autocomplete="off" class="layui-input">
+				<input type="text" name="spec_sn" value="{$goods.sn|default=$sn}" layui-disabled disabled lay-verify="required" autocomplete="off" class="layui-input">
 			</td>
 			<td>
-				<input type="text" name="stock[]" lay-verify="required" autocomplete="off" class="layui-input">
+				<input type="text" name="stock" lay-verify="required" autocomplete="off" class="layui-input">
 			</td>
 			<td>
-				<input type="text" name="warning_line[]" value="2" lay-verify="required" autocomplete="off" class="layui-input">
+				<input type="text" name="warning_line" value="{$params.config_warnning_line}" lay-verify="required" autocomplete="off" class="layui-input">
 			</td>
 			<td>
-				<input type="text" name="price[]" lay-verify="required" autocomplete="off" class="layui-input">
+				<select name="style" lay-verify="required">
+					<option value="">==方式==</option>
+					<option value="1">积分</option>
+					<option value="2">现金</option>
+					<option value="3">组合</option>
+				</select>
+			</td>
+			<td>
+				<input type="text" name="cash" value="0" lay-verify="required" autocomplete="off" class="layui-input cashInput">
+			</td>
+			<td>
+				<input type="text" name="score" value="0" lay-verify="required" autocomplete="off" class="layui-input scoreInput">
+			</td>
+			<td>
+				<input type="text" name="gift" value="{$params.config_after_buy_score}" lay-verify="required" autocomplete="off" class="layui-input">
 			</td>
 		</tr>
 		</tbody>

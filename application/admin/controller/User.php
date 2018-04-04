@@ -32,4 +32,16 @@ class User extends Controller
 			return $this->assign('page_size', $page_size)->fetch();
 		}
 	}
+
+	/**
+	 * 修改前台用户状态（开启或者禁用）
+	 * @param UserModel $userModel
+	 * @return \think\response\Json
+	 */
+	public function change_status(UserModel $userModel)
+	{
+		$id = input('param.id', 0, 'intval');
+		$status = input('param.status', 1, 'intval');
+		return json($userModel->changeStatus($id, $status));
+	}
 }

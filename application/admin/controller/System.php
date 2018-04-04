@@ -41,4 +41,35 @@ class System extends Controller
 		}
 		return json($json);
 	}
+
+	/**
+	 * 因为百度UM对格式返回要要求，就单独重写了UM的上传
+	 * @return \think\response\Json
+	 */
+	public function um_upload()
+	{
+		ini_set("max_execution_time", 0);
+		$file = $this->request->file('upfile');
+		$fileInfo = $file->getInfo();
+		$size_allow = Config::get('file_upload_size');
+		$ext_allow = 'gif,jpg,jpeg,bmp,png';
+		$subpath = date('Ym'); // 子目录格式
+		$info = $file->validate(['size' => $size_allow, 'ext' => $ext_allow])->rule('uniqid')
+			->move('./uploads/' . date('Ym'));
+		if ($info) {
+			// 成功上传后 获取上传信息
+			$json = [
+				'state' => 'SUCCESS',
+				'originalName' => $fileInfo['name'],
+				'name' => $info->getFilename(),
+				'size' => $info->getSize(),
+				'type' => '.' . $info->getExtension(),
+				'url' => 'uploads/' . $subpath . '/' . $info->getSaveName()
+			];
+		} else {
+			// 上传失败获取错误信息
+			$json = ['state' => $file->getError()];
+		}
+		return json($json);
+	}
 }

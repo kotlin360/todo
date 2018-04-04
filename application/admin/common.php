@@ -70,3 +70,25 @@ function urlsafe_b64decode($string)
 	}
 	return base64_decode($data);
 }
+
+/**
+ * 字符是不是以某个字符开头
+ * @param $str
+ * @param $sub
+ * @return bool
+ */
+function beginsWith($str, $sub)
+{
+	return (substr($str, 0, strlen($sub)) === $sub);
+}
+
+/**
+ * 字符是不是以某个字符结束
+ * @param $str
+ * @param $sub
+ * @return bool
+ */
+function endsWith($str, $sub)
+{
+	return (substr($str, strlen($str) - strlen($sub)) === $sub);
+}
