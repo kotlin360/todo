@@ -45,7 +45,7 @@
 		<td>{$v.update_time|date='Y-m-d H:i:s'}</td>
 		<td style="padding: 3px">
 			<div>
-				<input type="text" name="sort" value="{$v.sort}" placeholder="排序值" autocomplete="off" class="layui-input" style="text-align:center">
+				<input type="text" name="sort" url="{:url('menu/change_sort',['id'=>$v['id']])}" data="{$v.sort}" value="{$v.sort}" placeholder="排序值" autocomplete="off" class="layui-input changeSort" style="text-align:center;padding-left:0">
 			</div>
 		</td>
 		<td>
@@ -75,6 +75,26 @@
 				});
 				return false;
 			});
+			// 排序修改监听
+			$('.changeSort').on('blur', function () {
+				var _this = $(this), url = _this.attr('url'),
+					_sort = _this.attr('data'), _curVal = _this.val();
+				if (_sort != _curVal) {
+					// 说明修改了，需要异步处理
+					$.post(url, {sort: _curVal}, function (data) {
+						if (data.code == 1) {
+							layer.tips('修改成功，页面需手动刷新', _this, {
+								tips: [4, '#78BA32']
+							});
+							_this.attr('data', _curVal);
+						} else {
+							layer.tips(data.msg, _this, {
+								tips: [4, '#ff5722']
+							});
+						}
+					}, 'json');
+				}
+			})
 		});
 		// 添加菜单事件
 		$('#addBtn').on('click', function () {

@@ -21,11 +21,11 @@
 		<div class="layui-form-item">
 			<label class="layui-form-label">角色名称</label>
 			<div class="layui-input-inline">
-				<input type="text" name="title" lay-verify="required" placeholder="请输入角色名称" autocomplete="off" class="layui-input">
+				<input type="text" name="title" value="{$role.title|default=''}" lay-verify="required" placeholder="请输入角色名称" autocomplete="off" class="layui-input">
 			</div>
 			<label class="layui-form-label">状态</label>
 			<div class="layui-input-inline">
-				<input type="checkbox" name="status" value="1" lay-skin="switch" lay-text="开启|禁用" checked>
+				<input type="checkbox" name="status" value="1" lay-skin="switch" lay-text="开启|禁用" {eq name="role.status" value="1" }checked{/eq}>
 			</div>
 		</div>
 		<div class="hr-line-dashed2"></div>
@@ -39,7 +39,7 @@
 					<div class="rules">
 						{if condition="$v2['child']"}
 						{volist name="v2.child" id="v3"}
-						<input type="checkbox" name="rules[]" value="{$v3.id}" title="{$v3.title}" lay-skin="primary">
+						<input type="checkbox" name="rules[]" value="{$v3.id}" title="{$v3.title}" lay-skin="primary" {in name="v3.id" value="$role.rules" }checked{/in}>
 						{/volist}
 						{/if}
 					</div>
@@ -50,7 +50,7 @@
 		{/volist}
 		<div class="layui-form-item">
 			<div class="layui-input-block">
-				<input type="hidden" name="id" value="{$user.id|default=''}"/>
+				<input type="hidden" name="id" value="{$role.id|default=''}"/>
 				<a class="layui-btn layui-btn-warm" id="reload">关闭窗口</a>
 				<button type="reset" class="layui-btn layui-btn-primary">重置</button>
 				<button class="layui-btn" lay-submit lay-filter="addForm">立即提交</button>
@@ -87,14 +87,24 @@
 				url = "{:url('role/edit')}?t=";
 				okMsg = '角色修改成功';
 			}
-			$.post(url + new Date().getTime(), data.field, function (result) {
-				if (result.code == 1) {
-					window.location.href = "{:url('role/index')}";
-					layer.msg(okMsg, {icon: 1, time: 2000});
-				} else {
-					layer.msg(result.msg, {icon: 2});
+			$.ajax({
+				type: 'post',
+				url: url + new Date().getTime(),
+				dataType: 'json',
+				data: data.field,
+				beforeSend: function () {
+					var loading = layer.load();
+				},
+				success: function (result) {
+					layer.close('loading');
+					if (result.code == 1) {
+						window.location.href = "{:url('role/index')}";
+						layer.msg(okMsg, {icon: 1, time: 2000});
+					} else {
+						layer.msg(result.msg, {icon: 2});
+					}
 				}
-			}, 'json');
+			});
 			return false;
 		});
 	});

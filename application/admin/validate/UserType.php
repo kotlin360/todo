@@ -11,7 +11,7 @@ use think\Validate;
 class UserType extends Validate
 {
 	protected $rule = [
-		'title' => 'require|unique:auth_group',
+		'title' => 'require|unique:user_type',
 		'rules' => 'require'
 	];
 
@@ -21,4 +21,12 @@ class UserType extends Validate
 		'rules.unique' => '创建失败，角色权限不能为空'
 	];
 
+	/**
+	 * edit 验证场景定义
+	 * @return $this
+	 */
+	public function sceneEdit()
+	{
+		return $this->remove('title', 'unique');
+	}
 }

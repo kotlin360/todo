@@ -31,9 +31,9 @@
 				{
 					field: 'status', title: '状态', align: 'center', width: 100, templet: function (v) {
 						if (v.status == 1) {
-							return '<a class="layui-btn layui-btn-xs changeStatus" href="{:url(\'role/change_status\')}?id="' + v.id + '.html status="' + v.status + '">已开启</a>';
+							return '<a class="layui-btn layui-btn-xs" href="javascript:void(0)" lay-event="changeStatus">已开启</a>';
 						} else {
-							return '<a class="layui-btn layui-btn-danger layui-btn-xs changeStatus" href="{:url(\'role/change_status\')}?id="' + v.id + '.html status="\' + v.status + \'">>已禁用</a>\n';
+							return '<a class="layui-btn layui-btn-danger layui-btn-xs"  href="javascript:void(0)" lay-event="changeStatus">已禁用</a>';
 						}
 					}
 				},
@@ -41,6 +41,46 @@
 				{field: 'update_time', title: '更新时间', align: 'center', width: 200},
 				{title: '操作', align: 'center', toolbar: '#toobar', width: 200}
 			]]
+		});
+		table.on('tool(datatable)', function (obj) {
+			var data = obj.data;
+			var layEvent = obj.event;
+			if (layEvent === 'edit') {
+				var addBox = layer.open({
+					type: 2,
+					title: false,
+					closeBtn: 0,
+					content: "{:url('role/edit')}?t=" + new Date().getTime() + '&id=' + data.id
+				});
+				form.render(null, 'addForm');
+				layer.full(addBox);
+				return false;
+			} else if (layEvent === 'del') {
+				layer.confirm('确定要删除【' + data.title + '】此角色吗？<br>注意：如果此角色下存在用户无法删除', {title: '删除角色', icon: 0, btn: ['确定', '取消']}, function () {
+					$.post("{:url('role/del')}?t=" + new Date().getTime(), {id: data.id}, function (result) {
+						if (result.code == 1) {
+							layer.msg('角色删除成功', {icon: 1, time: 1000, offset: 't'}, function () {
+								datatable.reload();
+							});
+						} else {
+							layer.msg(result.msg, {offset: 't', icon: 2});
+						}
+					}, 'json');
+				});
+			} else if (layEvent === 'changeStatus') {
+				var tip = parseInt(data.status) == 1 ? '禁用' : '启用';
+				layer.confirm('确定要' + tip + '【' + data.title + '】此角色吗？<br>注意：如禁用创建用户不再显示此角色', {title: '修改角色状态', icon: 0, btn: ['确定', '取消']}, function () {
+					$.post("{:url('role/change_status')}?t=" + new Date().getTime(), {id: data.id, status: data.status}, function (result) {
+						if (result.code == 1) {
+							layer.msg('角色状态修改成功', {icon: 1, time: 1000, offset: 't'}, function () {
+								datatable.reload();
+							});
+						} else {
+							layer.msg(result.msg, {offset: 't', icon: 2});
+						}
+					}, 'json');
+				});
+			}
 		});
 		// 添加角色，同时为角色添加相应的菜单
 		$('#addBtn').on('click', function () {
@@ -77,31 +117,5 @@
 			return false;
 		});
 	});
-</script>
-<script type="text/x-template" id="addHtml">
-	<div style="width:500px;padding:20px 5px">
-		<form class="layui-form" lay-filter="addForm" id="addForm">
-			<div class="layui-form-item">
-				<label class="layui-form-label">角色名称</label>
-				<div class="layui-input-inline">
-					<input type="text" name="title" lay-verify="required" placeholder="请输入角色名称" autocomplete="off" class="layui-input">
-				</div>
-			</div>
-			<div class="layui-form-item">
-				<label class="layui-form-label">状态</label>
-				<div class="layui-input-inline">
-					<input type="checkbox" name="status" value="1" lay-skin="switch" lay-text="开启|禁用" checked>
-				</div>
-				<div class="layui-form-mid layui-word-aux">默认开启</div>
-			</div>
-			<div class="hr-line-dashed2"></div>
-			<div class="layui-form-item">
-				<div class="layui-input-block">
-					<button class="layui-btn" lay-submit lay-filter="addForm">立即提交</button>
-					<button type="reset" class="layui-btn layui-btn-primary">重置</button>
-				</div>
-			</div>
-		</form>
-	</div>
 </script>
 {include file="public/footer" /}

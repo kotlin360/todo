@@ -60,4 +60,58 @@ class Role extends Base
 			return $this->assign('menuTree', $menuTree)->fetch();
 		}
 	}
+
+	/**
+	 * 修改角色
+	 * @param UserTypeModel    $userTypeModel
+	 * @param UserTypeValidate $userTypeValidate
+	 * @param MenuModel        $menuModel
+	 * @return mixed|\think\response\Json
+	 */
+	public function edit(UserTypeModel $userTypeModel, UserTypeValidate $userTypeValidate,
+	                     MenuModel $menuModel)
+	{
+		$id = input('id', 0, 'intval');
+		if ($this->request->isAjax()) {
+			$rules = implode(',', input('rules/a'));
+			$data = [
+				'title' => input('title', ''),
+				'status' => input('status', 0, 'intval'),
+				'rules' => $rules
+			];
+			// 修改验证
+			if (!$userTypeValidate->scene('edit')->check($data)) {
+				return json(['code' => 0, 'msg' => $userTypeValidate->getError()]);
+			}
+			return json($userTypeModel->editRole($id, $data));
+		} else {
+			// 获取系统中所有配置的菜单
+			$menuTree = $menuModel->getTree();
+			$role = $userTypeModel->getRoleById($id);
+			return $this->assign(['menuTree' => $menuTree, 'role' => $role])->fetch('role/add');
+		}
+	}
+
+	/**
+	 * 删除角色
+	 * @param UserTypeModel $userTypeModel
+	 * @param               $id
+	 * @return \think\response\Json
+	 */
+	public function del(UserTypeModel $userTypeModel, $id)
+	{
+		return json($userTypeModel->del($id));
+	}
+
+	/**
+	 * 修改角色状态（开启或者禁用）
+	 * @param UserTypeModel $userTypeModel
+	 * @return \think\response\Json
+	 */
+	public function change_status(UserTypeModel $userTypeModel)
+	{
+		$id = input('param.id', 0, 'intval');
+		$status = input('param.status', 1, 'intval');
+		return json($userTypeModel->changeStatus($id, $status));
+	}
 }

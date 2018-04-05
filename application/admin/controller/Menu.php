@@ -39,8 +39,9 @@ class Menu extends Base
 	}
 
 	/**
-	 * [getMenu 根据节点数据获取对应的菜单]
-	 * @author [田建龙] [864491238@qq.com]
+	 * 根据节点数据获取对应的菜单
+	 * @param string $nodeStr
+	 * @return array
 	 */
 	public function getMenu($nodeStr = '')
 	{
@@ -54,6 +55,18 @@ class Menu extends Base
 	public function change_status()
 	{
 
+	}
+
+	/**
+	 * 修改菜单排序
+	 * @param MenuModel $menuModel
+	 * @param           $id
+	 * @return \think\response\Json
+	 */
+	public function change_sort(MenuModel $menuModel, $id)
+	{
+		$sort = input('sort', 1000, 'intval');
+		return json($menuModel->changeSort($id, $sort));
 	}
 
 	/**

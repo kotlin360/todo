@@ -121,8 +121,9 @@ class Menu extends Model
 	}
 
 	/**
-	 * [editMenu 编辑菜单]
-	 * @author [田建龙] [864491238@qq.com]
+	 * 编辑菜单
+	 * @param $param
+	 * @return array
 	 */
 	public function editMenu($param)
 	{
@@ -163,5 +164,21 @@ class Menu extends Model
 		$menus = Db::name($this->name)->order('sort')->field('id,title,level,pid')->select();
 		$trees = prepareMenu($menus);
 		return $trees;
+	}
+
+	/**
+	 * 修改菜单排序
+	 * @param $id
+	 * @param $sort
+	 * @return array
+	 */
+	public function changeSort($id, $sort)
+	{
+		$result = $this->where("id={$id}")->update(['sort' => $sort]);
+		if ($result !== false) {
+			return ['code' => 1];
+		} else {
+			return ['code' => 0, 'msg' => '排序修改失败'];
+		}
 	}
 }

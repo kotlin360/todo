@@ -60,8 +60,7 @@ class Category extends Base
 	 * @param CategoryModel $categoryModel
 	 * @return mixed|\think\response\Json
 	 */
-	public
-	function edit(CategoryModel $categoryModel)
+	public function edit(CategoryModel $categoryModel)
 	{
 		$id = input('id', 0, 'intval');
 		if ($this->request->isAjax()) {
