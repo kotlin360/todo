@@ -11,6 +11,10 @@ function prepareMenu($menuTree, $id = 0)
 	foreach ($menuTree as $v) {
 		if ($v['pid'] == $id) {
 			$v['child'] = prepareMenu($menuTree, $v['id']);
+			if ($v['child'] == null) {
+				//如果子元素为空则unset()进行删除，说明已经到该分支的最后一个元素了（可选)
+				unset($v['child']);
+			}
 			$tree[] = $v;
 		}
 		continue;

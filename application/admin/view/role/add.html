@@ -1,4 +1,21 @@
 {include file="public/header" /}
+<style>
+	body {
+		background: #f2f2f2;
+	}
+
+	.layui-card-header {
+		font-size: 16px
+	}
+
+	.layui-elem-field legend {
+		font-size: 14px
+	}
+
+	.layui-elem-field {
+		border-color: #f2f2f2
+	}
+</style>
 <div>
 	<form class="layui-form" lay-filter="addForm" id="addForm">
 		<div class="layui-form-item">
@@ -10,15 +27,33 @@
 			<div class="layui-input-inline">
 				<input type="checkbox" name="status" value="1" lay-skin="switch" lay-text="开启|禁用" checked>
 			</div>
-			<div class="layui-form-mid layui-word-aux">默认开启</div>
 		</div>
 		<div class="hr-line-dashed2"></div>
+		{volist name="menuTree" id="v1"}
+		<div class="layui-card">
+			<div class="layui-card-header">{$v1.title}</div>
+			<div class="layui-card-body">
+				{volist name="v1.child" id="v2" }
+				<fieldset class="layui-elem-field site-demo-button">
+					<legend>{$v2.title}&emsp;<input type="checkbox" class="check_all" lay-filter="check_all" title="全选" lay-skin="primary"></legend>
+					<div class="rules">
+						{if condition="$v2['child']"}
+						{volist name="v2.child" id="v3"}
+						<input type="checkbox" name="rules[]" value="{$v3.id}" title="{$v3.title}" lay-skin="primary">
+						{/volist}
+						{/if}
+					</div>
+				</fieldset>
+				{/volist}
+			</div>
+		</div>
+		{/volist}
 		<div class="layui-form-item">
 			<div class="layui-input-block">
 				<input type="hidden" name="id" value="{$user.id|default=''}"/>
-				<button class="layui-btn" lay-submit lay-filter="addForm">立即提交</button>
+				<a class="layui-btn layui-btn-warm" id="reload">关闭窗口</a>
 				<button type="reset" class="layui-btn layui-btn-primary">重置</button>
-				<button type="reset" class="layui-btn layui-btn-primary">关闭窗口</button>
+				<button class="layui-btn" lay-submit lay-filter="addForm">立即提交</button>
 			</div>
 		</div>
 	</form>
@@ -27,20 +62,35 @@
 	layui.use(['form', 'layer', 'jquery'], function () {
 		var form = layui.form,
 			layer = layui.layer, $ = layui.jquery;
-		//获取窗口索引
-		var index = parent.layer.getFrameIndex(window.name);
+
+		$(function () {
+			$('#reload').on('click', function () {
+				window.location.href = "{:url('role/index')}";
+			})
+		});
+		// 监听全选
+		form.on('checkbox(check_all)', function (data) {
+			var inputs = $(data.elem).parents('fieldset').find('.rules').find('input');
+			inputs.prop('checked', data.elem.checked);
+			form.render('checkbox');
+		});
 		//监听新增角色提交
 		form.on('submit(addForm)', function (data) {
-			var url = "{:url('admin/add')}?t=", okMsg = '系统用户创建成功'; // 添加
+			var size = Object.getOwnPropertyNames(data.field).length;
+			if (parseInt(size) === 3) {
+				layer.msg('权限不能为空，请至少选择一个权限', {icon: 2});
+				return false;
+			}
+			var url = "{:url('role/add')}?t=", okMsg = '角色创建成功'; // 添加
 			if (data.field.id) {
 				// 修改
-				url = "{:url('admin/edit')}?t=";
-				okMsg = '系统用户修改成功';
+				url = "{:url('role/edit')}?t=";
+				okMsg = '角色修改成功';
 			}
 			$.post(url + new Date().getTime(), data.field, function (result) {
 				if (result.code == 1) {
-					window.parent.location.reload(); //刷新父页面
-					parent.layer.msg(okMsg, {icon: 1, time: 2000});
+					window.location.href = "{:url('role/index')}";
+					layer.msg(okMsg, {icon: 1, time: 2000});
 				} else {
 					layer.msg(result.msg, {icon: 2});
 				}

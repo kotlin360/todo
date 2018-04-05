@@ -42,14 +42,14 @@ class Menu extends Model
 	 * @param int    $leftpin
 	 * @return array
 	 */
-	public function makeMenuTree($menus, $lefthtml = '╍', $pid = 0, $lvl = 0, $leftpin = 0)
+	public function makeMenuTree($menus, $lefthtml = '---', $pid = 0, $lvl = 0, $leftpin = 0)
 	{
 		$tree = [];
 		foreach ($menus as $v) {
 			if ($v['pid'] == $pid) {
 				$v['lvl'] = $lvl + 1;
-				$v['leftpin'] = $leftpin + 2;//左边距
-				$v['lefthtml'] = $v['pid'] === 0 ? '' : '└' . str_repeat($lefthtml, $lvl);
+				$v['leftpin'] = $leftpin + 4;//左边距
+				$v['lefthtml'] = $v['pid'] === 0 ? '' : '|' . str_repeat($lefthtml, $lvl);
 				$tree[] = $v;
 				$tree = array_merge($tree, $this->makeMenuTree($menus, $lefthtml, $v['id'], $lvl + 1, $leftpin + 20));
 			}
@@ -96,8 +96,9 @@ class Menu extends Model
 	}
 
 	/**
-	 * [insertMenu 添加菜单]
-	 * @author [田建龙] [864491238@qq.com]
+	 * 添加菜单
+	 * @param $param
+	 * @return array
 	 */
 	public function insertMenu($param)
 	{
@@ -151,5 +152,16 @@ class Menu extends Model
 		} catch (\Exception $e) {
 			Log::error('获取单个菜单失败');
 		}
+	}
+
+	/**
+	 * 生成菜单数，用于添加角色的时候选择权限
+	 * @return array
+	 */
+	public function getTree()
+	{
+		$menus = Db::name($this->name)->order('sort')->field('id,title,level,pid')->select();
+		$trees = prepareMenu($menus);
+		return $trees;
 	}
 }

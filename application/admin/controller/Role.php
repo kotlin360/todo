@@ -1,6 +1,7 @@
 <?php
 namespace app\admin\controller;
 
+use app\admin\model\Menu as MenuModel;
 use app\admin\model\UserType as UserTypeModel;
 use app\admin\validate\UserType as UserTypeValidate;
 use think\facade\Config;
@@ -35,22 +36,28 @@ class Role extends Base
 	/**
 	 * 创建角色
 	 * @param UserTypeModel    $userTypeModel
-	 * @param userTypeValidate $userTypeValidate
-	 * @return \think\response\Json
+	 * @param UserTypeValidate $userTypeValidate
+	 * @param MenuModel        $menuModel
+	 * @return mixed|\think\response\Json
 	 */
-	public function add(UserTypeModel $userTypeModel, UserTypeValidate $userTypeValidate)
+	public function add(UserTypeModel $userTypeModel, UserTypeValidate $userTypeValidate,
+	                    MenuModel $menuModel)
 	{
 		if ($this->request->isAjax()) {
+			$rules = implode(',', input('rules/a'));
 			$data = [
 				'title' => input('title', ''),
-				'status' => input('status', 0, 'intval')
+				'status' => input('status', 0, 'intval'),
+				'rules' => $rules
 			];
 			if (!$userTypeValidate->check($data)) {
 				return json(['code' => 0, 'msg' => $userTypeValidate->getError()]);
 			}
 			return json($userTypeModel->insertRole($data));
 		} else {
-			return $this->fetch();
+			// 获取系统中所有配置的菜单
+			$menuTree = $menuModel->getTree();
+			return $this->assign('menuTree', $menuTree)->fetch();
 		}
 	}
 }

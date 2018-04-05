@@ -80,20 +80,20 @@ class UserType extends Model
 
 	/**
 	 * 插入角色信息
-	 * @param $param
+	 * @param $data
 	 * @return array
 	 */
-	public function insertRole($param)
+	public function insertRole($data)
 	{
 		try {
-			$result = $this->save($param);
+			$result = $this->save($data);
 			if (false === $result) {
-				return ['code' => 0, 'msg' => $this->getError()];
+				return ['code' => 0, 'msg' => '创建角色失败，请稍后再试'];
 			} else {
-				return ['code' => 1, 'msg' => '添加角色成功'];
+				return ['code' => 1, 'msg' => '创建角色成功'];
 			}
 		} catch (\Exception $e) {
-			return ['code' => 0, 'msg' => $e->getMessage()];
+			return ['code' => 0, 'msg' => '创建角色失败：' . $e->getMessage()];
 		}
 	}
 
