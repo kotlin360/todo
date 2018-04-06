@@ -2,6 +2,7 @@
 namespace app\admin\model;
 
 use think\Db;
+use think\facade\Config;
 use think\Model;
 
 /**
@@ -16,36 +17,35 @@ class Goods extends Model
 
 	/**
 	 * 创建商品
-	 * @param $data
+	 * @param $data       商品基本信息
+	 * @param $extend     规格扩展属性
 	 * @return array
 	 */
-	public function createGoods($data)
+	public function createGoods($data, $extend)
 	{
 		Db::startTrans();
 		try {
-
 			//1、首先处理规格笛卡尔积
 			$value_dcr = []; //value的笛卡尔积
 			$specs_goods = []; // 写入商品表的规格数组，需要序列化
 			$values_array = [];
-			$spec_key = $data['extend']['spec_key'];
-			$spec_key_array = explode(",", $spec_key);
-			$spec_value = $data['extend']['spec_value'];
+			$spec_key = $extend['spec_key'];
+			$spec_key_array = explode(',', $spec_key);
+			$spec_value = $extend['spec_value'];
 			if (is_array($spec_value)) {
-				// 如果开启了规格会进入此if
-				// 打个比方$spec['spec_value']为数组：[[0] => 2:金色,8:6G,[1] => 2:金色,9:8G]
+				// 开启了规格，打个比方$spec['spec_value']为数组：[[0] => 2:金色,8:6G,[1] => 2:金色,9:8G]
 				foreach ($spec_value as $item) {
 					// 第一次循环 $values = [ 2:金色，8:6G]
-					$values = explode(",", $item);
+					$values = explode(',', $item);
 					foreach ($values as $value) {
-						$value_items = explode(":", $value);
+						$value_items = explode(':', $value);
 						$values_array[$value_items[0]] = $value_items;
 					}
 				}
 				// $values_array为[[2=>[2,金色]],[8=>[8,6G]],[9=>[9,8G]]]
-				$value_ids = implode(",", array_keys($values_array));
+				$value_ids = implode(',', array_keys($values_array));
 				$specs = Db::name('goods_spec')->where("id in ({$spec_key})")->field('id,name,value,status')->select();
-				$values = Db::name('goods_spec_value')->where("id in ({$value_ids})")->sort('sort')->select();
+				$values = Db::name('goods_spec_value')->where("id in ({$value_ids})")->order('sort')->select();
 				$values_new = [];
 				foreach ($values as $k => $row) {
 					$current = $values_array[$row['id']];
@@ -56,10 +56,10 @@ class Goods extends Model
 					$specs_goods[$value['id']] = $value;
 				}
 				foreach ($spec_value as $item) {
-					$values = explode(",", $item);
+					$values = explode(',', $item);
 					$key_code = ';';
 					foreach ($values as $k => $value) {
-						$value_items = explode(":", $value);
+						$value_items = explode(':', $value);
 						$key = $spec_key_array[$k];
 						$tem[$key] = $specs_goods[$key];
 						$tem[$key]['value'] = $values_array[$value_items[0]];
@@ -69,12 +69,12 @@ class Goods extends Model
 				}
 			}
 			//2、把商品基本信息写入到表中，获得商品的id
-			$data['base']['specs'] = serialize($specs_goods);
-			$this->save($data['base']);
+			$data['specs'] = !empty($specs_goods) ? serialize($specs_goods) : null;
+			$this->save($data);
 			$goods_id = $this->getLastInsID();
 			//3、写商品的相册
 			$imgData = [];
-			foreach ($data['base']['imgs'] as $v) {
+			foreach ($data['imgs'] as $v) {
 				$imgData[] = ['goods_id' => $goods_id, 'img' => $v];
 			}
 			Db::name('goods_images')->insertAll($imgData);
@@ -82,31 +82,57 @@ class Goods extends Model
 			$k = 0;
 			foreach ($value_dcr as $key => $value) {
 				$products = [
-					'goods_id' => $goods_id, 
-					'spec_sn' => $data['extend']['spec_sn'][$k],
-					'spec' => serialize($value),
-					'specs_key' => $key,
-					'stock' => $data['extend']['stock'][$k],
-					'warning_line' => $data['extend']['warning_line'][$k],
-					'style' => $data['extend']['style'][$k],
-					'cash' => $data['extend']['cash'][$k],
-					'score' => $data['extend']['score'][$k],
-					'gift' => $data['extend']['gift'][$k],
-					'is_online' => $data['extend']['is_online'][$k]
+					'goods_id' => $goods_id,
+					'spec_sn' => $extend['spec_sn'][$k],
+					'spec_value' => serialize($value),
+					'spec_key' => $key,
+					'stock' => $extend['stock'][$k],
+					'warning_line' => $extend['warning_line'][$k],
+					'style' => $extend['style'][$k],
+					'cash' => $extend['cash'][$k],
+					'score' => $extend['score'][$k],
+					'gift' => $extend['gift'][$k],
+					'is_online' => $extend['is_online'][$k]
 				];
-				Db::name('products')->insert($products);
+				Db::name('goods_products')->insert($products);
 				$k++;
 			}
-			if($k == 0) {
+			if ($k == 0) {
 				// 没有规格
-				$data['extend']['goods_id'] = $goods_id;
-				Db::name('goods_products')->insert($spec,$data['extend']);
-			} 			
+				$extend['goods_id'] = $goods_id;
+				Db::name('goods_products')->insert($extend);
+			}
 			Db::commit();
-			//return ['code' => 1];
+			return ['code' => 1];
 		} catch (\Exception $e) {
 			Db::rollback();
 			return ['code' => 0, 'msg' => '创建失败：' . $e->getMessage()];
+		}
+	}
+
+	public function getSpecById($id)
+	{
+		$specs = $this->where("id={$id}")->value('specs');
+		$products = Db::name('goods_products')->where("goods_id={$id}")->field(true)->select();
+		return ['specs' => $specs, 'products' => $products];
+	}
+
+	/**
+	 * 修改商品上下架状态（上架或者下架）
+	 * @param $id
+	 * @param $status
+	 * @return array
+	 */
+	public function changeStatus($id, $status)
+	{
+		$msg = $status == 1 ? '下架' : '上架';
+		try {
+			$tableName = Config::get('database.prefix') . $this->name;
+			$sql = "UPDATE {$tableName} SET status = (case status when 0 then 1 else 0  end) WHERE id={$id}";
+			Db::execute($sql);
+			return ['code' => 1];
+		} catch (\Exception $e) {
+			return ['code' => 0, 'msg' => $msg . '商品失败：' . $e->getMessage()];
 		}
 	}
 
@@ -124,7 +150,7 @@ class Goods extends Model
 			$list = $this->alias('g')
 				->join('goods_category c', 'g.cate_id = c.id')
 				->where($map)->page($cur_page, $limits)
-				->field('g.*,c.name as cate_name')->select();
+				->field('g.*,c.name as cate_name')->order('g.update_time DESC')->select();
 			$json = [
 				'code' => 0,
 				'msg' => '',

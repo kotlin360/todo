@@ -189,11 +189,11 @@
 
 		//监听商品创建提交
 		form.on('submit(addForm)', function (data) {
-			if($('.imgs').length == 0) {
+			if ($('.imgs').length == 0) {
 				layer.msg('请上传商品相册,已选择图片请点击开始上传', {icon: 2});
 				return false;
 			}
-			if(ue.hasContents() === false) {
+			if (ue.hasContents() === false) {
 				layer.msg('商品详细介绍不能为空，请填写', {icon: 2});
 				return false;
 			}
@@ -203,14 +203,25 @@
 				url = "{:url('goods/edit')}?t=";
 				okMsg = '商品修改成功';
 			}
-			$.post(url + new Date().getTime(), data.field, function (result) {
-				if (result.code == 1) {
-					window.location.reload(); //刷新父页面
-					layer.msg(okMsg, {icon: 1, time: 2000});
-				} else {
-					layer.msg(result.msg, {icon: 2});
+			$.ajax({
+				url: url + new Date().getTime(),
+				type: 'post',
+				data: data.field,
+				dataType: 'json',
+				beforeSend: function () {
+					layer.load();
+				},
+				success: function (result) {
+					layer.closeAll();
+					if (result.code == 1) {
+						layer.msg(okMsg, {icon: 1, time: 1000, offset: 't'}, function () {
+							window.location.href = "{:url('goods/index')}";
+						});
+					} else {
+						layer.msg(result.msg, {icon: 2});
+					}
 				}
-			}, 'json');
+			});
 			return false;
 		});
 		// 添加商品规格监听

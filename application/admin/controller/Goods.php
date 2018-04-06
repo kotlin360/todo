@@ -45,23 +45,39 @@ class Goods extends Base
 	                    CategoryModel $categoryModel, ConfigModel $configModel)
 	{
 		if ($this->request->isAjax()) {
+			$spec_key = input('spec_key', null);
+			// 基本信息部分
 			$data = [
-				// 基本信息部分
-				'base' => [
-					'title' => input('title', ''),
-					'cate_id' => input('cate_id', 0, 'intval'),
-					'sn' => input('sn', ''),
-					'unit' => input('unit', ''),
-					'freight' => input('freight', 0, 'intval'),
-					'status' => input('status', 1, 'intval'),
-					'description' => input('description', ''),
-					'imgs' => input('imgs/a', '')
-				],
-				// 下面是规格扩展
-				'extend' => [
+				'title' => input('title', ''),
+				'cate_id' => input('cate_id/d', 0),
+				'sn' => input('sn', ''),
+				'unit' => input('unit', '件'),
+				'freight' => input('freight', 0),
+				'status' => input('status/d', 1),
+				'description' => input('description', ''),
+				'imgs' => input('imgs/a')
+			];
+			// 下面是规格扩展
+			if ($spec_key === null) {
+				// 没有规格
+				$extend = [
+					'spec_sn' => input('spec_sn'),
+					'spec_key' => null,
+					'spec_value' => null,
+					'stock' => input('stock/d', 0),
+					'warning_line' => input('warning_line/d', 0),
+					'style' => input('style/d'),
+					'cash' => input('cash'),
+					'score' => input('score'),
+					'gift' => input('gift', 0),
+					'is_online' => input('is_online/d', 1)
+				];
+			} else {
+				// 存在多个规格
+				$extend = [
 					'spec_sn' => input('spec_sn/a'),
-					'spec_key' => input('spec_key',null), // 只有一个，不需用数组接
-					'spec_value' => input('spec_value/a',null),
+					'spec_key' => $spec_key,
+					'spec_value' => input('spec_value/a', null),
 					'stock' => input('stock/a'),
 					'warning_line' => input('warning_line/a'),
 					'style' => input('style/a'),
@@ -69,12 +85,12 @@ class Goods extends Base
 					'score' => input('score/a'),
 					'gift' => input('gift/a'),
 					'is_online' => input('is_online/a')
-				]
-			];
-			if (!$goodsValidate->check($data['base'])) {
+				];
+			}
+			if (!$goodsValidate->check($data)) {
 				return json(['code' => 0, 'msg' => $goodsValidate->getError()]);
 			}
-			$result = $goodsModel->createGoods($data);
+			$result = $goodsModel->createGoods($data, $extend);
 			return json($result);
 		} else {
 			$cate = $categoryModel->getAllCate(); // 商品类别
@@ -87,6 +103,23 @@ class Goods extends Base
 			$this->assign(['sn' => $sn, 'cate' => $cate, 'params' => $params]);
 			return $this->fetch();
 		}
+	}
+
+	public function detail(GoodsModel $goodsModel, $id)
+	{
+		return json($goodsModel->getSpecById($id));
+	}
+
+	/**
+	 * 修改商品上下架状态（上架或者下架）
+	 * @param GoodsModel $goodsModel
+	 * @return \think\response\Json
+	 */
+	public function change_status(GoodsModel $goodsModel)
+	{
+		$id = input('param.id', 0, 'intval');
+		$status = input('param.status', 1, 'intval');
+		return json($goodsModel->changeStatus($id, $status));
 	}
 
 	/**
