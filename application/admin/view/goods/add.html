@@ -187,16 +187,16 @@
 
 		window.makeSpecHtml = makeSpecHtml; // 这句非常关键，iframe子页面调用的时候就靠这句
 
-		form.verify({
-			imgs: function (value, item) { //value：表单的值、item：表单的DOM对象
-				if (/[\S]+/.test(value)) {
-					return '请上传商品图册';
-				}
-			}
-		});
-
 		//监听商品创建提交
 		form.on('submit(addForm)', function (data) {
+			if($('.imgs').length == 0) {
+				layer.msg('请上传商品相册,已选择图片请点击开始上传', {icon: 2});
+				return false;
+			}
+			if(ue.hasContents() === false) {
+				layer.msg('商品详细介绍不能为空，请填写', {icon: 2});
+				return false;
+			}
 			var url = "{:url('goods/add')}?t=", okMsg = '商品创建成功'; // 添加
 			if (data.field.id) {
 				// 修改
@@ -287,7 +287,6 @@
 			</th>
 			{{# }); }}
 			<th width="80">
-				<input type="hidden" value="1" name="is_spec">
 				<input type="hidden" value="{{ d.name_id_string }}" name="spec_key">
 				<i class="must">*</i>库存
 			</th>
@@ -334,7 +333,7 @@
 				<input type="text" name="gift[]" value="{$params.config_after_buy_score}" lay-verify="required" autocomplete="off" class="layui-input">
 			</td>
 			<td class="td_center">
-				<input type="checkbox" name="is_online[]" lay-skin="switch" lay-text="上架|下架" checked>
+				<input type="checkbox" name="is_online[]" value="1" lay-skin="switch" lay-text="上架|下架" checked>
 			</td>
 			<td>
 				<a href="javascript:void(0)" class="lay-btn spec_del">删除</a>
