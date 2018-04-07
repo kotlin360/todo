@@ -110,11 +110,53 @@ class Goods extends Model
 		}
 	}
 
+	/**
+	 * 根据商品id获取商品所有信息，用于修改商品
+	 * @param $id
+	 * @return array|null
+	 */
+	public function getGoodsById($id)
+	{
+		try {
+			$base = Db::name('goods')->where("id={$id}")->find();
+			$base['imgs'] = Db::name('goods_images')->where("goods_id={$id}")->field('id,img')->select();
+			if ($base['specs'] == null) {
+				$products = Db::name('goods_products')->where("goods_id={$id}")->field(true)->find();
+			} else {
+				$cursor = Db::name('goods_products')->where("goods_id={$id}")->field('spec_sn,spec_value,stock,warning_line,style,cash,score,gift,is_online')->cursor();
+				foreach ($cursor as $k => $v) {
+					$products[$k] = $v;
+					$products[$k]['spec_value'] = unserialize($v['spec_value']);
+				}
+			}
+			return ['base' => $base, 'extend' => $products];
+		} catch (\Exception $e) {
+			return null;
+		}
+	}
+
+	/**
+	 * 根据商品ID获取商品规格信息，用于查看商品详情
+	 * @param $id
+	 * @return array
+	 */
 	public function getSpecById($id)
 	{
-		$specs = $this->where("id={$id}")->value('specs');
-		$products = Db::name('goods_products')->where("goods_id={$id}")->field(true)->select();
-		return ['specs' => $specs, 'products' => $products];
+		try {
+			$specs = $this->where("id={$id}")->value('specs');
+			if ($specs == null) {
+				$products = Db::name('goods_products')->where("goods_id={$id}")->field(true)->find();
+			} else {
+				$cursor = Db::name('goods_products')->where("goods_id={$id}")->field('spec_sn,spec_value,stock,warning_line,style,cash,score,gift,is_online')->cursor();
+				foreach ($cursor as $k => $v) {
+					$products[$k] = $v;
+					$products[$k]['spec_value'] = unserialize($v['spec_value']);
+				}
+			}
+			return ['code' => 1, 'specs' => unserialize($specs), 'products' => $products];
+		} catch (\Exception $e) {
+			return ['code' => 0, 'msg' => '获取详情失败：' . $e->getMessage()];
+		}
 	}
 
 	/**

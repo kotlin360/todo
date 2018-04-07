@@ -105,6 +105,38 @@ class Goods extends Base
 		}
 	}
 
+	/**
+	 * 修改商品
+	 * @param GoodsModel    $goodsModel
+	 * @param GoodsValidate $goodsValidate
+	 * @param CategoryModel $categoryModel
+	 * @param ConfigModel   $configModel
+	 * @return mixed
+	 */
+	public function edit(GoodsModel $goodsModel, GoodsValidate $goodsValidate,
+	                     CategoryModel $categoryModel, ConfigModel $configModel)
+	{
+		$goods_id = input('id/d', 0);
+		if ($this->request->isAjax()) {
+
+		} else {
+			$cate = $categoryModel->getAllCate(); // 商品类别
+			$goodsInfo = $goodsModel->getGoodsById($goods_id);
+			if ($cate === null || $goodsInfo == null) {
+				$this->redirect(url('system/mistake'));
+			}
+			$params = $configModel->getAllParam();
+			$this->assign(['cate' => $cate, 'base' => $goodsInfo['base'], 'extend' => $goodsInfo['extend'], 'params' => $params]);
+			return $this->fetch();
+		}
+	}
+
+	/**
+	 * 商品规格详情查看
+	 * @param GoodsModel $goodsModel
+	 * @param            $id
+	 * @return \think\response\Json
+	 */
 	public function detail(GoodsModel $goodsModel, $id)
 	{
 		return json($goodsModel->getSpecById($id));
