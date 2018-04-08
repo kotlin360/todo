@@ -1,0 +1,120 @@
+{if condition="$specs"}
+<a class="layui-btn layui-btn-warm resetSpec" href="javascript:void(0)"><i class="fa fa-times"></i> 关闭规格</a>
+<a class="layui-btn addSpec" href="javascript:void(0)"><i class="fa fa-plus"></i> 编辑规格</a>
+<table class="layui-table" id="defineSpecTable" lay-skin="line" lay-size="sm" style="text-align:center">
+	<thead>
+	<tr>
+		<th><i class="must">*</i>货号</th>
+		{volist name="$specs" id="header"}
+		<th>
+			{$header.name}
+		</th>
+		{/volist}
+		<th width="80">
+			<input type="hidden" value="{$spec_ids}" name="spec_key">
+			<i class="must">*</i>库存
+		</th>
+		<th width="80"><i class="must">*</i>预警线</th>
+		<th width="100"><i class="must">*</i>购买方式</th>
+		<th width="80"><i class="must">*</i>购买现金</th>
+		<th width="80"><i class="must">*</i>购买积分</th>
+		<th width="80"><i class="must">*</i>赠送积分</th>
+		<th width="80"><i class="must">*</i>是否上架</th>
+		<th width="50">操作</th>
+	</tr>
+	</thead>
+	<tbody>
+	{volist name="$extend" id="row"}
+	<tr class="spec_tr">
+		<td>
+			<input type="text" name="spec_sn[]" value="{$row.spec_sn}" layui-disabled disabled lay-verify="required" autocomplete="off" class="layui-input">
+		</td>
+		{volist name="row.spec_string" id="v"}
+		<td>{$v}</td>
+		{/volist}
+		<td>
+			<input type="hidden" value="{$row.spec_value}" name="spec_value[]">
+			<input type="text" name="stock[]" value="{$row.stock}" lay-verify="required" autocomplete="off" class="layui-input">
+		</td>
+		<td>
+			<input type="text" name="warning_line[]" value="{$row.warning_line}" lay-verify="required" autocomplete="off" class="layui-input">
+		</td>
+		<td>
+			<select name="style[]" lay-verify="required">
+				<option value="">==方式==</option>
+				<option value="1"
+				<?php if($row['style'] == 1) echo 'selected' ?>>积分</option>
+				<option value="2"
+				<?php if($row['style'] == 2) echo 'selected' ?>>现金</option>
+				<option value="3"
+				<?php if($row['style'] == 3) echo 'selected' ?>>组合</option>
+			</select>
+		</td>
+		<td>
+			<input type="text" name="cash[]" value="{$row.cash}" lay-verify="required" autocomplete="off" class="layui-input cashInput">
+		</td>
+		<td>
+			<input type="text" name="score[]" value="{$row.score}" lay-verify="required" autocomplete="off" class="layui-input scoreInput">
+		</td>
+		<td>
+			<input type="text" name="gift[]" value="{$row.gift}" lay-verify="required" autocomplete="off" class="layui-input">
+		</td>
+		<td class="td_center">
+			<input type="checkbox" name="is_online[]" value="1" lay-skin="switch" lay-text="上架|下架" {eq name="row.is_online" value="1" }checked{/eq}>
+		</td>
+		<td>
+			<a href="javascript:void(0)" class="lay-btn spec_del">删除</a>
+		</td>
+	</tr>
+	{/volist}
+	</tbody>
+</table>
+{else /}
+<a class="layui-btn addSpec" href="javascript:void(0)"><i class="fa fa-plus"></i> 开启规格</a>
+<table class="layui-table" lay-size="sm">
+	<thead>
+	<tr>
+		<th><i class="must">*</i>货号</th>
+		<th width="80"><i class="must">*</i>库存</th>
+		<th width="80"><i class="must">*</i>预警线</th>
+		<th width="130"><i class="must">*</i>购买方式</th>
+		<th width="100"><i class="must">*</i>购买现金</th>
+		<th width="100"><i class="must">*</i>购买积分</th>
+		<th width="100"><i class="must">*</i>赠送积分</th>
+	</tr>
+	</thead>
+	<tbody>
+	<tr>
+		<td>
+			<input type="text" name="spec_sn" value="{$extend.spec_sn|default=''}" layui-disabled disabled lay-verify="required" autocomplete="off" class="layui-input">
+		</td>
+		<td>
+			<input type="text" name="stock" value="{$extend.stock|default=''}" lay-verify="required" autocomplete="off" class="layui-input">
+		</td>
+		<td>
+			<input type="text" name="warning_line" value="{$extend.warning_line|default=''}" lay-verify="required" autocomplete="off" class="layui-input">
+		</td>
+		<td>
+			<select name="style" lay-verify="required">
+				<option value="">==方式==</option>
+				<option value="1"
+				<?php if($extend['style'] == 1) echo 'selected' ?>>积分</option>
+				<option value="2"
+				<?php if($extend['style'] == 2) echo 'selected' ?>>现金</option>
+				<option value="3"
+				<?php if($extend['style'] == 3) echo 'selected' ?>>组合</option>
+			</select>
+		</td>
+		<td>
+			<input type="text" name="cash" value="{$extend.cash}" lay-verify="required" autocomplete="off" class="layui-input cashInput">
+		</td>
+		<td>
+			<input type="text" name="score" value="{$extend.score}" lay-verify="required" autocomplete="off" class="layui-input scoreInput">
+		</td>
+		<td>
+			<input type="text" name="gift" value="{$extend.gift}" lay-verify="required" autocomplete="off" class="layui-input">
+		</td>
+	</tr>
+	</tbody>
+</table>
+{/if}

@@ -121,12 +121,12 @@ class Goods extends Base
 
 		} else {
 			$cate = $categoryModel->getAllCate(); // 商品类别
-			$goodsInfo = $goodsModel->getGoodsById($goods_id);
-			if ($cate === null || $goodsInfo == null) {
+			$base = $goodsModel->getGoodsById($goods_id); // 商品基本信息
+			if ($cate === null || $base == null) {
 				$this->redirect(url('system/mistake'));
 			}
 			$params = $configModel->getAllParam();
-			$this->assign(['cate' => $cate, 'base' => $goodsInfo['base'], 'extend' => $goodsInfo['extend'], 'params' => $params]);
+			$this->assign(['cate' => $cate, 'base' => $base, 'params' => $params]);
 			return $this->fetch();
 		}
 	}

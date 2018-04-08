@@ -119,17 +119,8 @@ class Goods extends Model
 	{
 		try {
 			$base = Db::name('goods')->where("id={$id}")->find();
-			$base['imgs'] = Db::name('goods_images')->where("goods_id={$id}")->field('id,img')->select();
-			if ($base['specs'] == null) {
-				$products = Db::name('goods_products')->where("goods_id={$id}")->field(true)->find();
-			} else {
-				$cursor = Db::name('goods_products')->where("goods_id={$id}")->field('spec_sn,spec_value,stock,warning_line,style,cash,score,gift,is_online')->cursor();
-				foreach ($cursor as $k => $v) {
-					$products[$k] = $v;
-					$products[$k]['spec_value'] = unserialize($v['spec_value']);
-				}
-			}
-			return ['base' => $base, 'extend' => $products];
+			$base['imgs'] = json_encode(Db::name('goods_images')->where("goods_id={$id}")->field('id,img')->select());
+			return $base;
 		} catch (\Exception $e) {
 			return null;
 		}

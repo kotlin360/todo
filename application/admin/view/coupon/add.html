@@ -1,0 +1,129 @@
+{include file="public/header" /}
+<div style="width:620px">
+	<form class="layui-form" lay-filter="addForm" id="addForm">
+		<div class="layui-form-item">
+			<label class="layui-form-label"><i class="must">*</i>优惠券名称</label>
+			<div class="layui-input-inline">
+				<input type="text" name="name" value="{$coupon.name|default=''}" lay-verify="required" placeholder="请输入优惠券名称" autocomplete="off" class="layui-input">
+			</div>
+			<div class="layui-form-mid layui-word-aux">字数越少越好，比方满1000减50</div>
+		</div>
+		<div class="layui-form-item">
+			<label class="layui-form-label"><i class="must">*</i>面值</label>
+			<div class="layui-input-inline">
+				<input type="text" name="value" value="{$coupon.value|default=''}" lay-verify="required|number2" placeholder="代金券在购买时所抵金额" autocomplete="off" class="layui-input">
+			</div>
+			<div class="layui-form-mid layui-word-aux">最多保留两位小数</div>
+		</div>
+		<div class="layui-form-item">
+			<label class="layui-form-label"><i class="must">*</i>消费金额</label>
+			<div class="layui-input-inline">
+				<input type="text" name="money" value="{$coupon.money|default=''}" lay-verify="required|number0" placeholder="订单需满足的最低消费金额才能使用" autocomplete="off" class="layui-input">
+			</div>
+			<div class="layui-form-mid layui-word-aux">必需为整数</div>
+		</div>
+
+		<div class="layui-form-item">
+			<label class="layui-form-label"><i class="must">*</i>开始时间</label>
+			<div class="layui-input-inline">
+				<input type="text" name="start" value="{$coupon.start|default=''}" lay-verify="required" autocomplete="off" class="layui-input" id="startDate">
+			</div>
+			<div class="layui-form-mid layui-word-aux">此时间后才能领取优惠券</div>
+		</div>
+
+		<div class="layui-form-item">
+			<label class="layui-form-label"><i class="must">*</i>结束时间</label>
+			<div class="layui-input-inline">
+				<input type="text" name="end" value="{$coupon.end|default=''}" lay-verify="required" autocomplete="off" class="layui-input" id="endDate">
+			</div>
+			<div class="layui-form-mid layui-word-aux">此时间后优惠券不能被领取</div>
+		</div>
+		<div class="layui-form-item">
+			<label class="layui-form-label"><i class="must">*</i>有效状态</label>
+			<div class="layui-input-inline">
+				<input type="checkbox" name="status" value="1" {eq name="coupon.status|default='1'" value="1" }checked{/eq} lay-skin="switch" lay-text="开启|禁用" >
+			</div>
+			<div class="layui-form-mid layui-word-aux">优惠券有效才能领取，默认开启</div>
+		</div>
+		<div class="hr-line-dashed2"></div>
+		<div class="layui-form-item">
+			<div class="layui-input-block">
+				<input type="hidden" name="id" value="{$coupon.id|default=''}"/>
+				<button class="layui-btn" lay-submit lay-filter="addForm">立即提交</button>
+				<button type="reset" class="layui-btn layui-btn-primary">重置</button>
+			</div>
+		</div>
+	</form>
+</div>
+<script type="text/javascript">
+	layui.use(['form', 'layer', 'jquery', 'laydate'], function () {
+		var form = layui.form, layer = layui.layer,
+			$ = layui.jquery, laydate = layui.laydate;
+
+		var start = {
+			elem: '#startDate',
+			format: 'yyyy-MM-dd HH:mm:ss',
+			istoday: true
+		};
+
+		// 渲染时间组件
+		var end = {
+			elem: '#endDate',
+			format: 'yyyy-MM-dd HH:mm:ss',
+			done: function (value, date) {
+				if ($('#startDate').val() == '') {
+					layer.msg('请先选择有效开始时间');
+					$('#endDate').val('');
+				}
+				if ($('#startDate').val() >= value) {
+					layer.msg('结束时间必须大于开始时间');
+					$('#endDate').val('');
+				}
+			}
+		};
+
+		laydate.render(start);
+		laydate.render(end);
+		form.verify({
+			number2: function (value, item) { //value：表单的值、item：表单的DOM对象
+				if (!/^\d+(\.\d{1,2})?$/.test(value)) {
+					return '面值为数字，最多保留两位小数';
+				}
+			},
+			number0: [/^\d+$/, '消费金额必须为正整数']
+		});
+		//获取窗口索引
+		var index = parent.layer.getFrameIndex(window.name);
+		//监听新增角色提交
+		form.on('submit(addForm)', function (data) {
+			var url = "{:url('coupon/add')}?t=", okMsg = '优惠券创建成功'; // 添加
+			if (data.field.id) {
+				// 修改
+				url = "{:url('coupon/edit')}?t=";
+				okMsg = '优惠券修改成功';
+			}
+			$.ajax({
+				url: url + new Date().getTime(),
+				data: data.field,
+				dataType: 'json',
+				beforeSend: function () {
+					if ($('input[name=value]').val() >= $('input[name=money]').val()) {
+						layer.msg('面值不能大于消费金额', {icon: 2});
+						return false;
+					}
+					layer.load();
+				},
+				success: function (result) {
+					if (result.code == 1) {
+						window.parent.location.reload(); //刷新父页面
+						parent.layer.msg(okMsg, {icon: 1, time: 2000});
+					} else {
+						layer.msg(result.msg, {icon: 2});
+					}
+				}
+			});
+			return false;
+		});
+	});
+</script>
+{include file="public/footer" /}

@@ -8,7 +8,7 @@
 	}
 </style>
 <div class="layui-card">
-	<div class="layui-card-header">新增商品</div>
+	<div class="layui-card-header">修改商品</div>
 	<div class="layui-card-body" style="padding:20px 10px">
 		<form class="layui-form" lay-filter="addForm" id="addForm">
 
@@ -24,10 +24,10 @@
 				<div class="layui-input-block">
 					<select name="cate_id" lay-verify="required">
 						<option value="">==请选择商品分类==</option>
-						{volist name="cate" id="v"}
-						<option value="{$v.id}" {eq name="base.cate_id" value="$v['id']" }selected{
-						/eq}>{$v.name}</option>
-						{/volist}
+						{foreach name="cate" item="v"}
+						<option value="{$v.id}"
+						<?php if($base['cate_id'] == $v['id']) echo 'selected' ?>>{$v.name}</option>
+						{/foreach}
 					</select>
 				</div>
 			</div>
@@ -57,120 +57,7 @@
 			<div class="layui-form-item">
 				<label class="layui-form-label"><i class="must">*</i>商品规格：</label>
 				<div class="layui-input-block" id="specView">
-					{if condition="$base.specs"}
-					<a class="layui-btn layui-btn-warm resetSpec" href="javascript:void(0)"><i class="fa fa-times"></i> 关闭规格</a>
-					<a class="layui-btn addSpec" href="javascript:void(0)"><i class="fa fa-plus"></i> 编辑规格</a>
-					<table class="layui-table" id="defineSpecTable" lay-skin="line" lay-size="sm" style="text-align:center">
-						<thead>
-						<tr>
-							<th><i class="must">*</i>货号</th>
-							{volist name="$base.specs|unserialize" id="header"}
-							<th>
-								{$header.name}
-							</th>
-							{/volist}
-							<th width="80">
-								<input type="hidden" value="" name="spec_key">
-								<i class="must">*</i>库存
-							</th>
-							<th width="80"><i class="must">*</i>预警线</th>
-							<th width="100"><i class="must">*</i>购买方式</th>
-							<th width="80"><i class="must">*</i>购买现金</th>
-							<th width="80"><i class="must">*</i>购买积分</th>
-							<th width="80"><i class="must">*</i>赠送积分</th>
-							<th width="80"><i class="must">*</i>是否上架</th>
-							<th width="50">操作</th>
-						</tr>
-						</thead>
-						<tbody>
-						{volist name="$extend" id="row"}
-						<tr class="spec_tr">
-							<td>
-								<input type="text" name="spec_sn[]" value="{$row.spec_sn}" layui-disabled disabled lay-verify="required" autocomplete="off" class="layui-input">
-							</td>
-							{volist name="row.spec_value" id="v"}
-							<td>{$v.value[1]}</td>
-							{/volist}
-							<td>
-								<input type="hidden" value="{{d.values[i]}}" name="spec_value[]">
-								<input type="text" name="stock[]" value="{$row.stock}" lay-verify="required" autocomplete="off" class="layui-input">
-							</td>
-							<td>
-								<input type="text" name="warning_line[]" value="{$row.warning_line}" lay-verify="required" autocomplete="off" class="layui-input">
-							</td>
-							<td>
-								<select name="style[]" lay-verify="required">
-									<option value="">==方式==</option>
-									<option value="1">积分</option>
-									<option value="2">现金</option>
-									<option value="3">组合</option>
-								</select>
-							</td>
-							<td>
-								<input type="text" name="cash[]" value="{$row.cash}" lay-verify="required" autocomplete="off" class="layui-input cashInput">
-							</td>
-							<td>
-								<input type="text" name="score[]" value="{$row.score}" lay-verify="required" autocomplete="off" class="layui-input scoreInput">
-							</td>
-							<td>
-								<input type="text" name="gift[]" value="{$row.gift}" lay-verify="required" autocomplete="off" class="layui-input">
-							</td>
-							<td class="td_center">
-								<input type="checkbox" name="is_online[]" value="1" lay-skin="switch" lay-text="上架|下架" {eq name="row.is_online" value="1" }checked{/eq}>
-							</td>
-							<td>
-								<a href="javascript:void(0)" class="lay-btn spec_del">删除</a>
-							</td>
-						</tr>
-						{/volist}
-						</tbody>
-					</table>
-					{else /}
-					<a class="layui-btn addSpec" href="javascript:void(0)"><i class="fa fa-plus"></i> 开启规格</a>
-					<table class="layui-table" lay-size="sm">
-						<thead>
-						<tr>
-							<th><i class="must">*</i>货号</th>
-							<th width="80"><i class="must">*</i>库存</th>
-							<th width="80"><i class="must">*</i>预警线</th>
-							<th width="130"><i class="must">*</i>购买方式</th>
-							<th width="100"><i class="must">*</i>购买现金</th>
-							<th width="100"><i class="must">*</i>购买积分</th>
-							<th width="100"><i class="must">*</i>赠送积分</th>
-						</tr>
-						</thead>
-						<tbody>
-						<tr>
-							<td>
-								<input type="text" name="spec_sn" value="{$base.sn|default=''}" layui-disabled disabled lay-verify="required" autocomplete="off" class="layui-input">
-							</td>
-							<td>
-								<input type="text" name="stock" lay-verify="required" autocomplete="off" class="layui-input">
-							</td>
-							<td>
-								<input type="text" name="warning_line" value="" lay-verify="required" autocomplete="off" class="layui-input">
-							</td>
-							<td>
-								<select name="style" lay-verify="required">
-									<option value="">==方式==</option>
-									<option value="1">积分</option>
-									<option value="2">现金</option>
-									<option value="3">组合</option>
-								</select>
-							</td>
-							<td>
-								<input type="text" name="cash" value="0" lay-verify="required" autocomplete="off" class="layui-input cashInput">
-							</td>
-							<td>
-								<input type="text" name="score" value="0" lay-verify="required" autocomplete="off" class="layui-input scoreInput">
-							</td>
-							<td>
-								<input type="text" name="gift" value="{$params.config_after_buy_score}" lay-verify="required" autocomplete="off" class="layui-input">
-							</td>
-						</tr>
-						</tbody>
-					</table>
-					{/if}
+					{:widget('Goods/spec',['id'=>$base['id']])}
 				</div>
 			</div>
 			<div class="hr-line-dashed20"></div>
@@ -221,7 +108,7 @@
 			<div class="hr-line-dashed2"></div>
 			<div class="layui-form-item">
 				<div class="layui-input-block">
-					<input type="hidden" name="id" value="{$user.id|default=''}"/>
+					<input type="hidden" name="id" value="{$base.id|default=''}"/>
 					<button class="layui-btn" lay-submit lay-filter="addForm">立即提交</button>
 					<button type="reset" class="layui-btn layui-btn-primary">重置</button>
 				</div>
@@ -236,6 +123,7 @@
 <script type="text/javascript" src="__WEBUPLOADER__/js/upload.js"></script>
 <script type="text/javascript">
 	var rate = "{$params.config_cash2score_rate|default=0}";
+	var imgList = "{$base.imgs}";
 	window.UMEDITOR_HOME_URL = "__UM__";
 	// 实例化编辑器
 	var ue = UM.getEditor('description', {
@@ -254,6 +142,8 @@
 	layui.use(['form', 'layer', 'jquery', 'laytpl'], function () {
 		var form = layui.form, layer = layui.layer,
 			$ = layui.jquery, laytpl = layui.laytpl;
+
+		form.render('select');
 
 		// 如果不想自定义规格的话，回复到原先的设置
 		function restore() {
