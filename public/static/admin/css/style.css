@@ -1,0 +1,111 @@
+.hr-line-dashed {
+	border-top: 1px dashed #e7eaec;
+	color: #fff;
+	background-color: #fff;
+	height: 1px;
+	margin: 10px 0 5px 0;
+}
+
+.hr-line-dashed2 {
+	border-top: 1px dashed #e7eaec;
+	color: #fff;
+	background-color: #fff;
+	height: 1px;
+	margin: 10px 0
+}
+
+.hr-line-dashed20 {
+	border-top: 1px dashed #e7eaec;
+	color: #fff;
+	background-color: #fff;
+	height: 1px;
+	margin: 20px 0
+}
+
+.must {
+	color: red;
+	font-size: 16px;
+}
+
+#specView {
+	margin-top: 20px;
+}
+
+#specView .td_center {
+	text-align: center;
+}
+
+#specView .layui-input {
+	padding-left: 0
+}
+
+.input80 {
+	width: 80px
+}
+
+.layui-form-item .layui-input-inline100 {
+	width: 100px
+}
+
+#specView .td_center .layui-form-switch {
+	margin-top: 0;
+}
+
+#specView .layui-input {
+	text-align: center;
+	height: 28px
+}
+
+#selectSpecDiv {
+	position: relative
+}
+
+#selectSpecDiv .specNameDIV a {
+	display: inline-block;
+	position: relative;
+}
+
+#selectSpecDiv .specNameDIV .current {
+	border: 1px solid #009688
+}
+
+#selectSpecDiv .specNameDIV .num {
+	position: absolute;
+	top: 0;
+	right: 0;
+	z-index: 999;
+	display: none;
+}
+
+.site-demo-button div {
+	margin: 10px;
+}
+
+.site-demo-button div a {
+	display: inline-block;
+	padding: 0 20px
+}
+
+.site-demo-button .layui-btn + .layui-btn {
+	margin-left: 0;
+}
+
+.site-demo-button .layui-btn {
+	margin: 0 7px 10px 0;
+}
+
+#selectSpecDiv .site-demo-button {
+	width: 650px;
+}
+
+#selectSpecDiv .valueFieldset {
+	display: none;
+}
+
+.centerTable th {
+	background: #FBFBFB;
+}
+
+.centerTable th, .centerTable td {
+	text-align: center
+}
