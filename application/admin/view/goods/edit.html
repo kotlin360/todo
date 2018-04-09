@@ -123,7 +123,7 @@
 <script type="text/javascript" src="__WEBUPLOADER__/js/upload.js"></script>
 <script type="text/javascript">
 	var rate = "{$params.config_cash2score_rate|default=0}";
-	var imgList = "{$base.imgs}";
+	var imgList = '{$base.imgs|raw|default=""}';
 	window.UMEDITOR_HOME_URL = "__UM__";
 	// 实例化编辑器
 	var ue = UM.getEditor('description', {

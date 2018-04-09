@@ -98,8 +98,6 @@ class Goods extends Base
 			$sn = 'G' . date('ymd') . time();
 			// 获取商品和积分的一些配置参数
 			$params = $configModel->getAllParam();
-			// $params_json_string = json_encode((object)$params, JSON_UNESCAPED_UNICODE);
-			// $this->assign(['sn' => $sn, 'cate' => $cate, 'params' => $params_json_string]);
 			$this->assign(['sn' => $sn, 'cate' => $cate, 'params' => $params]);
 			return $this->fetch();
 		}
@@ -118,7 +116,53 @@ class Goods extends Base
 	{
 		$goods_id = input('id/d', 0);
 		if ($this->request->isAjax()) {
-
+			$spec_key = input('spec_key', null);
+			// 基本信息部分
+			$base = [
+				'title' => input('title', ''),
+				'cate_id' => input('cate_id/d', 0),
+				'sn' => input('sn', ''),
+				'unit' => input('unit', '件'),
+				'freight' => input('freight', 0),
+				'status' => input('status/d', 1),
+				'description' => input('description', ''),
+				'imgs' => input('imgs/a')
+			];
+			// 下面是规格扩展
+			if ($spec_key === null) {
+				// 没有规格
+				$extend = [
+					'spec_sn' => input('spec_sn'),
+					'spec_key' => null,
+					'spec_value' => null,
+					'stock' => input('stock/d', 0),
+					'warning_line' => input('warning_line/d', 0),
+					'style' => input('style/d'),
+					'cash' => input('cash'),
+					'score' => input('score'),
+					'gift' => input('gift', 0),
+					'is_online' => input('is_online/d', 1)
+				];
+			} else {
+				// 存在多个规格
+				$extend = [
+					'spec_sn' => input('spec_sn/a'),
+					'spec_key' => $spec_key,
+					'spec_value' => input('spec_value/a', null),
+					'stock' => input('stock/a'),
+					'warning_line' => input('warning_line/a'),
+					'style' => input('style/a'),
+					'cash' => input('cash/a'),
+					'score' => input('score/a'),
+					'gift' => input('gift/a'),
+					'is_online' => input('is_online/a')
+				];
+			}
+			if (!$goodsValidate->check($base)) {
+				return json(['code' => 0, 'msg' => $goodsValidate->getError()]);
+			}
+			$result = $goodsModel->editGoods($goods_id, $base, $extend);
+			return json($result);
 		} else {
 			$cate = $categoryModel->getAllCate(); // 商品类别
 			$base = $goodsModel->getGoodsById($goods_id); // 商品基本信息

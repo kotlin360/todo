@@ -15,7 +15,7 @@
 			<div class="layui-form-item">
 				<label class="layui-form-label"><i class="must">*</i>商品名称：</label>
 				<div class="layui-input-block">
-					<input type="text" name="title" value="{$goods.title|default=''}" lay-verify="required" placeholder="请输入商品名称，最多200个字符" autocomplete="off" class="layui-input">
+					<input type="text" name="title" value="" lay-verify="required" placeholder="请输入商品名称，最多200个字符" autocomplete="off" class="layui-input">
 				</div>
 			</div>
 
@@ -25,8 +25,7 @@
 					<select name="cate_id" lay-verify="required">
 						<option value="">==请选择商品分类==</option>
 						{volist name="cate" id="v"}
-						<option value="{$v.id}" {in name="v.id" value="$goods.cate_id|default=1" }checked{
-						/in}>{$v.name}</option>
+						<option value="{$v.id}"></option>
 						{/volist}
 					</select>
 				</div>
@@ -36,19 +35,19 @@
 				<div class="layui-inline">
 					<label class="layui-form-label"><i class="must">*</i>商品编号：</label>
 					<div class="layui-input-inline">
-						<input type="text" name="sn" layui-disabled disabled id="sn" value="{$goods.sn|default=$sn}" lay-verify="required" autocomplete="off" class="layui-input">
+						<input type="text" name="sn" layui-disabled disabled id="sn" value="{$sn|default=''}" lay-verify="required" autocomplete="off" class="layui-input">
 					</div>
 				</div>
 				<div class="layui-inline">
 					<label class="layui-form-label"><i class="must">*</i>单位：</label>
 					<div class="layui-input-inline layui-input-inline100">
-						<input type="text" name="unit" value="{$goods.unit|default='件'}" lay-verify="required" autocomplete="off" class="layui-input input80">
+						<input type="text" name="unit" value="件" lay-verify="required" autocomplete="off" class="layui-input input80">
 					</div>
 				</div>
 				<div class="layui-inline">
 					<label class="layui-form-label"><i class="must">*</i>运费：</label>
 					<div class="layui-input-inline layui-input-inline100">
-						<input type="text" name="freight" id="freight" value="{$goods.freight|default=$params.config_freight}" lay-verify="required" autocomplete="off" class="layui-input input80">
+						<input type="text" name="freight" id="freight" value="{$params.config_freight|default=0}" lay-verify="required" autocomplete="off" class="layui-input input80">
 					</div>
 				</div>
 			</div>
@@ -98,16 +97,13 @@
 			<div class="layui-form-item">
 				<label class="layui-form-label">状态：</label>
 				<div class="layui-input-inline">
-					<input type="checkbox" name="status" value="1"
-					       {eq name="user.status|default='1'" value="1" }checked{/eq}
-					lay-skin="switch" lay-text="上架|下架" >
+					<input type="checkbox" name="status" value="1" lay-skin="switch" lay-text="上架|下架">
 				</div>
 				<div class="layui-form-mid layui-word-aux">默认上架，只有上架的商品小程序才能看到</div>
 			</div>
 			<div class="hr-line-dashed2"></div>
 			<div class="layui-form-item">
 				<div class="layui-input-block">
-					<input type="hidden" name="id" value="{$user.id|default=''}"/>
 					<button class="layui-btn" lay-submit lay-filter="addForm">立即提交</button>
 					<button type="reset" class="layui-btn layui-btn-primary">重置</button>
 				</div>
@@ -122,6 +118,7 @@
 <script type="text/javascript" src="__WEBUPLOADER__/js/upload.js"></script>
 <script type="text/javascript">
 	var rate = "{$params.config_cash2score_rate|default=0}";
+	var imgList = '';
 	window.UMEDITOR_HOME_URL = "__UM__";
 	// 实例化编辑器
 	var ue = UM.getEditor('description', {
