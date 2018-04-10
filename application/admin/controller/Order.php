@@ -26,10 +26,10 @@ class Order extends Controller
 			$status = input('status/d', 0);
 			$page_size = input('limit', Config::get('page_size'), 'intval');
 			$map = ' 1=1 ';
-			$map .= $order_no ? "AND o.order_no like '%{$order_no}%'" : '';
-			$map .= $accept_name ? "AND o.accept_name like '%{accept_name}%'" : '';
-			$map .= $phone ? "AND o.phone like '%{phone}%'" : '';
-			$map .= $status ? "AND o.status = {$status}" : '';
+			$map .= $order_no ? "AND order_no like '%{$order_no}%'" : '';
+			$map .= $accept_name ? "AND accept_name like '%{accept_name}%'" : '';
+			$map .= $phone ? "AND phone like '%{phone}%'" : '';
+			$map .= $status ? "AND status = {$status}" : '';
 			$json = $orderModel->getDataByWhere($map, $cur_page, $page_size);
 			return json($json);
 		} else {

@@ -244,25 +244,26 @@
 							<table class="layui-table" lay-skin="line">
 								<thead>
 								<tr>
-									<th width="260">购买商品</th>
-									<th>购买规格</th>
-									<th>购买数量</th>
-									<th>订单状态</th>
-									<th>操作</th>
+									<th width="30%">购买商品</th>
+									<th width="20%">购买规格</th>
+									<th width="20%">购买数量</th>
+									<th width="15%">购买方式</th>
+									<th width="15%">运费</th>
 								</tr>
 								</thead>
 								<tbody>
+								{{# layui.each(d.goods, function(k, v){ }}
 								<tr>
-									<td>{{ d.order.title }}</td>
-									<td>{{ d.order.goods_spec||'无' }}</td>
-									<td>{{ d.order.goods_num }}</td>
-									<td>
-										{{ d.order.status }}
-									</td>
-									<td>
-										这里是操作
-									</td>
+									<td>{{ v.title }}</td>
+									<td>{{ v.goods_spec||'无' }}</td>
+									<td>{{ v.goods_num }}</td>
 								</tr>
+								{{# }); }}
+								{{# if(d.goods.length === 0){ }}
+								<tr>
+									<td colspan="5">此订单未获取到商品信息，系统可能发生异常，请联系管理员</td>
+								</tr>
+								{{# } }}
 								</tbody>
 							</table>
 							<br>

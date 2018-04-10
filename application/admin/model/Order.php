@@ -23,14 +23,17 @@ class Order extends Model
 		try {
 			$order = $this->alias('o')
 				->join('user u', 'o.uid = u.id', 'LEFT')
-				->join('goods g', 'o.goods_id = g.id', 'LEFT')
 				->where("o.id={$id}")
-				->field('o.*,u.username,u.tel,g.title')->find();
+				->field('o.*,u.username,u.tel')->find();
+			$goods = Db::name('order_goods')->alias('og')
+				->join('goods g', 'og.goods_id=g.id', 'LEFT')
+				->where("og.order_id={$id}")
+				->field('og.*,g.title')->select();
 			$orderLog = Db::name('order_log')->alias('ol')
 				->join('user u', 'ol.uid = u.id', 'LEFT')
 				->where("ol.order_id={$id}")->order('id DESC')
 				->field('ol.*,u.username')->select();
-			return ['code' => 1, 'order' => $order, 'orderLog' => $orderLog];
+			return ['code' => 1, 'order' => $order, 'goods' => $goods, 'orderLog' => $orderLog];
 		} catch (\Exception $e) {
 			return ['code' => 0, 'msg' => '获取失败：' . $e->getMessage()];
 		}
@@ -46,12 +49,8 @@ class Order extends Model
 	public function getDataByWhere($map, $cur_page, $limits)
 	{
 		try {
-			$count = $this->alias('o')->where($map)->count();
-			$list = $this->alias('o')
-				->join('goods g', 'o.goods_id = g.id', 'LEFT')
-				->where($map)->page($cur_page, $limits)
-				->field('o.*,g.title')
-				->order('o.id desc')->select();
+			$count = $this->where($map)->count();
+			$list = $this->where($map)->page($cur_page, $limits)->field(true)->order('id desc')->select();
 			$json = [
 				'code' => 0,
 				'msg' => '',
@@ -62,6 +61,20 @@ class Order extends Model
 		} catch (\Exception $e) {
 			return ['code' => 404, 'msg' => '订单列表获取失败：' . $e->getMessage()];
 		}
+	}
+
+	/**
+	 * 订单支付状态获取器
+	 * @param $value
+	 * @return mixed
+	 */
+	public function getPayStatusAttr($value)
+	{
+		$status = [
+			0 => '<a class="layui-btn layui-btn-danger layui-btn-xs">未支付</a>',
+			1 => '<a class="layui-btn layui-btn-xs">已支付</a>'
+		];
+		return $status[$value];
 	}
 
 	/**
@@ -76,7 +89,7 @@ class Order extends Model
 	}
 
 	/**
-	 * 订单状态获取器
+	 * 支付类型状态获取器
 	 * @param $value
 	 * @return mixed
 	 */
