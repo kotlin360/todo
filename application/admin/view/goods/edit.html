@@ -45,12 +45,6 @@
 						<input type="text" name="unit" value="{$base.unit|default='件'}" lay-verify="required" autocomplete="off" class="layui-input input80">
 					</div>
 				</div>
-				<div class="layui-inline">
-					<label class="layui-form-label"><i class="must">*</i>运费：</label>
-					<div class="layui-input-inline layui-input-inline100">
-						<input type="text" name="freight" id="freight" value="{$base.freight|default=$params.config_freight}" lay-verify="required" autocomplete="off" class="layui-input input80">
-					</div>
-				</div>
 			</div>
 
 			<div class="hr-line-dashed"></div>
@@ -191,6 +185,14 @@
 
 		window.makeSpecHtml = makeSpecHtml; // 这句非常关键，iframe子页面调用的时候就靠这句
 
+		form.verify({
+			number2: function (value, item) {
+				if (!/^\d+(\.\d{1,2})?$/.test(value)) {
+					return '必须为数字，最多保留两位小数';
+				}
+			},
+			number0: [/^\d+$/, '必须为正整数，不能含有小数']
+		});
 		//监听商品创建提交
 		form.on('submit(addForm)', function (data) {
 			if ($('.imgs').length == 0) {
@@ -265,8 +267,8 @@
 			// 填入金额后根据汇率自动计算所需要的积分
 			$('#specView').on('blur', '.cashInput', function () {
 				var _this = $(this), cash = _this.val(), _scoreInput = _this.parent('td').next('td').find('.scoreInput');
-				if (0 != parseInt(rate)) {
-					_scoreInput.val(parseInt(cash) * parseInt(rate));
+				if (0 != parseInt(rate) && cash !== '') {
+					_scoreInput.val(parseInt(cash * rate));
 				}
 			});
 
@@ -294,23 +296,24 @@
 	<table class="layui-table" id="defineSpecTable" lay-skin="line" lay-size="sm" style="text-align:center">
 		<thead>
 		<tr>
-			<th><i class="must">*</i>货号</th>
+			<th width="100"><i class="must">*</i>货号</th>
 			{{# layui.each(d.names, function(i, v){ }}
-			<th>
+			<th width="70">
 				{{v}}
 			</th>
 			{{# }); }}
-			<th width="80">
+			<th width="55">
 				<input type="hidden" value="{{ d.name_id_string }}" name="spec_key">
 				<i class="must">*</i>库存
 			</th>
-			<th width="80"><i class="must">*</i>预警线</th>
-			<th width="100"><i class="must">*</i>购买方式</th>
-			<th width="80"><i class="must">*</i>购买现金</th>
+			<th width="50"><i class="must">*</i>预警线</th>
+			<th width="80"><i class="must">*</i>购买方式</th>
+			<th width="70"><i class="must">*</i>购买现金</th>
 			<th width="80"><i class="must">*</i>购买积分</th>
-			<th width="80"><i class="must">*</i>赠送积分</th>
-			<th width="80"><i class="must">*</i>是否上架</th>
-			<th width="50">操作</th>
+			<th width="50"><i class="must">*</i>运费</th>
+			<th width="60"><i class="must">*</i>赠送积分</th>
+			<th width="60"><i class="must">*</i>是否上架</th>
+			<th width="40">操作</th>
 		</tr>
 		</thead>
 		<tbody>
@@ -324,10 +327,10 @@
 			{{# }); }}
 			<td>
 				<input type="hidden" value="{{d.values[i]}}" name="spec_value[]">
-				<input type="text" name="stock[]" lay-verify="required" autocomplete="off" class="layui-input">
+				<input type="text" name="stock[]" lay-verify="required|number0" autocomplete="off" class="layui-input">
 			</td>
 			<td>
-				<input type="text" name="warning_line[]" value="" lay-verify="required" autocomplete="off" class="layui-input">
+				<input type="text" name="warning_line[]" value="" lay-verify="required|number0" autocomplete="off" class="layui-input">
 			</td>
 			<td>
 				<select name="style[]" lay-verify="required">
@@ -338,13 +341,16 @@
 				</select>
 			</td>
 			<td>
-				<input type="text" name="cash[]" value="0" lay-verify="required" autocomplete="off" class="layui-input cashInput">
+				<input type="text" name="cash[]" value="" lay-verify="required|number2" autocomplete="off" class="layui-input cashInput">
 			</td>
 			<td>
-				<input type="text" name="score[]" value="0" lay-verify="required" autocomplete="off" class="layui-input scoreInput">
+				<input type="text" name="score[]" value="" lay-verify="required|number0" autocomplete="off" class="layui-input scoreInput">
 			</td>
 			<td>
-				<input type="text" name="gift[]" value="" lay-verify="required" autocomplete="off" class="layui-input">
+				<input type="text" name="freight[]" value="{$params.config_freight|default=''}" lay-verify="required|number0" autocomplete="off" class="layui-input scoreInput">
+			</td>
+			<td>
+				<input type="text" name="gift[]" value="{$params.config_after_buy_score|default=''}" lay-verify="required|number0" autocomplete="off" class="layui-input">
 			</td>
 			<td class="td_center">
 				<input type="checkbox" name="is_online[]" value="1" lay-skin="switch" lay-text="上架|下架" checked>
@@ -362,12 +368,13 @@
 	<table class="layui-table" lay-size="sm">
 		<thead>
 		<tr>
-			<th><i class="must">*</i>货号</th>
+			<th width="160"><i class="must">*</i>货号</th>
 			<th width="80"><i class="must">*</i>库存</th>
 			<th width="80"><i class="must">*</i>预警线</th>
 			<th width="130"><i class="must">*</i>购买方式</th>
 			<th width="100"><i class="must">*</i>购买现金</th>
 			<th width="100"><i class="must">*</i>购买积分</th>
+			<th width="100"><i class="must">*</i>运费</th>
 			<th width="100"><i class="must">*</i>赠送积分</th>
 		</tr>
 		</thead>
@@ -377,10 +384,10 @@
 				<input type="text" name="spec_sn" value="{$base.sn|default=''}" layui-disabled disabled lay-verify="required" autocomplete="off" class="layui-input">
 			</td>
 			<td>
-				<input type="text" name="stock" lay-verify="required" autocomplete="off" class="layui-input">
+				<input type="text" name="stock" lay-verify="required|number0" autocomplete="off" class="layui-input">
 			</td>
 			<td>
-				<input type="text" name="warning_line" value="" lay-verify="required" autocomplete="off" class="layui-input">
+				<input type="text" name="warning_line" value="" lay-verify="required|number0" autocomplete="off" class="layui-input">
 			</td>
 			<td>
 				<select name="style" lay-verify="required">
@@ -391,13 +398,16 @@
 				</select>
 			</td>
 			<td>
-				<input type="text" name="cash" value="0" lay-verify="required" autocomplete="off" class="layui-input cashInput">
+				<input type="text" name="cash" value="" lay-verify="required|number2" autocomplete="off" class="layui-input cashInput">
 			</td>
 			<td>
-				<input type="text" name="score" value="0" lay-verify="required" autocomplete="off" class="layui-input scoreInput">
+				<input type="text" name="score" value="" lay-verify="required|number0" autocomplete="off" class="layui-input scoreInput">
 			</td>
 			<td>
-				<input type="text" name="gift" value="{$params.config_after_buy_score}" lay-verify="required" autocomplete="off" class="layui-input">
+				<input type="text" name="freight" value="{$params.config_freight|default=''}" lay-verify="required|number0" autocomplete="off" class="layui-input scoreInput">
+			</td>
+			<td>
+				<input type="text" name="gift" value="{$params.config_after_buy_score|default=''}" lay-verify="required|number0" autocomplete="off" class="layui-input">
 			</td>
 		</tr>
 		</tbody>

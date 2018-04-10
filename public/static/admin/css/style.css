@@ -109,3 +109,17 @@
 .centerTable th, .centerTable td {
 	text-align: center
 }
+
+#orderTable .layui-table tbody th {
+	text-align: center;
+}
+
+#orderTable .layui-table tbody tr:hover {
+	background: none
+}
+
+#orderTable #invoiceTd .label {
+	display: inline-block;
+	width: 90px;
+	text-align: right
+}

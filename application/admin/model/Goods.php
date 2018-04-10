@@ -95,6 +95,7 @@ class Goods extends Model
 					'style' => $extend['style'][$k],
 					'cash' => $extend['cash'][$k],
 					'score' => $extend['score'][$k],
+					'freight' => $extend['freight'][$k],
 					'gift' => $extend['gift'][$k],
 					'is_online' => $extend['is_online'][$k]
 				];
@@ -196,6 +197,7 @@ class Goods extends Model
 					'style' => $extend['style'][$k],
 					'cash' => $extend['cash'][$k],
 					'score' => $extend['score'][$k],
+					'freight' => $extend['freight'][$k],
 					'gift' => $extend['gift'][$k],
 					'is_online' => $extend['is_online'][$k]
 				];

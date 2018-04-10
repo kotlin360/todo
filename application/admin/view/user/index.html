@@ -6,22 +6,25 @@
 				<input type="text" name="keyword" autocomplete="off" placeholder="输入用户手机号码，如果为空查询全部" class="layui-input layui-btn-sm">
 			</div>
 			<button type="submit" lay-submit lay-filter="searchForm" class="layui-btn layui-btn-warm"><i class="fa fa-search"></i> 搜索</button>
-			<!--<button class="layui-btn" id="addBtn"><i class="fa fa-plus"></i> 新增用户</button>-->
 		</div>
 	</form>
 </fieldset>
 <div class="hr-line-dashed"></div>
 <table id="datatable" lay-filter="datatable"></table>
 <script type="text/html" id="toobar">
-	<a class="layui-btn layui-btn-warm layui-btn-xs" lay-event="edit"><i class="fa fa-edit"></i> 编辑</a>
+	<a class="layui-btn layui-btn-warm layui-btn-xs" lay-event="info"><i class="fa fa-eye"></i> 用户详情</a>
 </script>
 <script type="text/javascript">
 	layui.config({
 		base: '/static/admin/js/'
-	}).use(['table', 'form', 'layer', 'jquery', 'utils'], function () {
+	}).use(['table', 'form', 'layer', 'jquery', 'utils', 'element'], function () {
 		var table = layui.table, form = layui.form,
 			layer = layui.layer, $ = layui.jquery,
-			utils = layui.utils;
+			utils = layui.utils, element = layui.element;
+		//监听Tab切换，以改变地址hash值
+		element.on('tab(userinfo)', function () {
+			location.hash = 'userinfo=' + this.getAttribute('lay-id');
+		});
 		var datatable = table.render({
 			elem: '#datatable',
 			height: 'full-120',
@@ -34,14 +37,9 @@
 				{field: 'tel', title: '手机号码', align: 'center', width: 120},
 				{field: 'score', title: '总积分', align: 'center', width: 100},
 				{field: 'money', title: '现金余额', align: 'center', width: 110},
-				{
-					field: 'create_time', title: '注册时间', align: 'center', width: 180,
-					templet: '<span>{{ d.create_time }}</span>'
-				},
-				{
-					field: 'update_time', title: '修改时间', align: 'center', width: 180,
-					templet: '<span>{{ d.update_time }}</span>'
-				},
+				{field: 'station_name', title: '监测站', align: 'center', width: 110},
+				{field: 'manufactor', title: '设备厂家', align: 'center', width: 110},
+				{field: 'duty', title: '主要职务', align: 'center', width: 110},
 				{
 					field: 'status', title: '状态', align: 'center', width: 80, templet: function (v) {
 						if (v.status == 1) {
@@ -51,7 +49,7 @@
 						}
 					}
 				},
-				// {title: '操作', align: 'center', toolbar: '#toobar', width: 200}
+				{title: '操作', align: 'center', toolbar: '#toobar', width: 100}
 			]]
 		});
 		table.on('tool(datatable)', function (obj) {
@@ -69,6 +67,16 @@
 							layer.msg(result.msg, {offset: 't', icon: 2});
 						}
 					}, 'json');
+				});
+			} else if (layEvent == 'info') {
+				layer.open({
+					type: 1,
+					title: '用户详情',
+					area: ['720px', '450px'],
+					scrollbar: false,
+					anim: 2,
+					shadeClose: true,
+					content: $('#infoHtml').html()
 				});
 			}
 		});
@@ -92,5 +100,40 @@
 			return false;
 		});
 	});
+</script>
+<script type="text/x-template" id="infoHtml">
+	<div class="layui-tab layui-tab-brief" lay-filter="userinfo" style="padding:10px 20px">
+		<ul class="layui-tab-title">
+			<li class="layui-this">基本信息</li>
+			<li>积分信息</li>
+			<li>钱包信息</li>
+			<li>优惠券信息</li>
+		</ul>
+		<div class="layui-tab-content">
+			<div class="layui-tab-item layui-show" lay-id="base">
+				<table class="layui-table">
+					<tbody>
+					<tr>
+						<td>用户名</td>
+						<td>张三</td>
+						<td>手机号码</td>
+						<td>18620081234</td>
+					</tr>
+					<tr>
+						<td>总积分</td>
+						<td>1000</td>
+						<td>钱包余额</td>
+						<td>1288</td>
+						<td>1288</td>
+						<td>1288</td>
+					</tr>
+					</tbody>
+				</table>
+			</div>
+			<div class="layui-tab-item" lay-id="score">内容2</div>
+			<div class="layui-tab-item" lay-id="money">内容3</div>
+			<div class="layui-tab-item" lay-id="coupon">内容4</div>
+		</div>
+	</div>
 </script>
 {include file="public/footer" /}

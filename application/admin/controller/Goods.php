@@ -52,7 +52,6 @@ class Goods extends Base
 				'cate_id' => input('cate_id/d', 0),
 				'sn' => input('sn', ''),
 				'unit' => input('unit', '件'),
-				'freight' => input('freight', 0),
 				'status' => input('status/d', 1),
 				'description' => input('description', ''),
 				'imgs' => input('imgs/a')
@@ -69,6 +68,7 @@ class Goods extends Base
 					'style' => input('style/d'),
 					'cash' => input('cash'),
 					'score' => input('score'),
+					'freight' => input('freight', 0),
 					'gift' => input('gift', 0),
 					'is_online' => input('is_online/d', 1)
 				];
@@ -83,6 +83,7 @@ class Goods extends Base
 					'style' => input('style/a'),
 					'cash' => input('cash/a'),
 					'score' => input('score/a'),
+					'freight' => input('freight/a'),
 					'gift' => input('gift/a'),
 					'is_online' => input('is_online/a')
 				];
@@ -123,7 +124,6 @@ class Goods extends Base
 				'cate_id' => input('cate_id/d', 0),
 				'sn' => input('sn', ''),
 				'unit' => input('unit', '件'),
-				'freight' => input('freight', 0),
 				'status' => input('status/d', 1),
 				'description' => input('description', ''),
 				'imgs' => input('imgs/a')
@@ -140,6 +140,7 @@ class Goods extends Base
 					'style' => input('style/d'),
 					'cash' => input('cash'),
 					'score' => input('score'),
+					'freight' => input('freight', 0),
 					'gift' => input('gift', 0),
 					'is_online' => input('is_online/d', 1)
 				];
@@ -154,6 +155,7 @@ class Goods extends Base
 					'style' => input('style/a'),
 					'cash' => input('cash/a'),
 					'score' => input('score/a'),
+					'freight' => input('freight/a'),
 					'gift' => input('gift/a'),
 					'is_online' => input('is_online/a')
 				];

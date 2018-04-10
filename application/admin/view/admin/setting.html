@@ -63,7 +63,7 @@
 							<label class="layui-form-label">商品库存告警值：</label>
 							<div class="layui-input-inline">
 								<input type="hidden" name="config_warnning_line_uuid" value="{$config.config_warnning_line_uuid|default=''}">
-								<input type="text" name="config_warnning_line" value="{$config.config_warnning_line|default=''}" lay-verify="required|number" autocomplete="off" class="layui-input">
+								<input type="text" name="config_warnning_line" value="{$config.config_warnning_line|default=''}" lay-verify="required|number0" autocomplete="off" class="layui-input">
 							</div>
 							<div class="layui-form-mid layui-word-aux">告警值必须填写正整数</div>
 						</div>
@@ -71,17 +71,17 @@
 							<label class="layui-form-label">购买商品赠送积分：</label>
 							<div class="layui-input-inline">
 								<input type="hidden" name="config_after_buy_score_uuid" value="{$config.config_after_buy_score_uuid|default=''}">
-								<input type="text" name="config_after_buy_score" value="{$config.config_after_buy_score|default=''}" lay-verify="required|number" autocomplete="off" class="layui-input">
+								<input type="text" name="config_after_buy_score" value="{$config.config_after_buy_score|default=''}" lay-verify="required|number0" autocomplete="off" class="layui-input">
 							</div>
-							<div class="layui-form-mid layui-word-aux">请填写购买商品赠送多少积分，必须整数</div>
+							<div class="layui-form-mid layui-word-aux">购买商品默认赠送多少积分，必须正整数</div>
 						</div>
 						<div class="layui-form-item">
 							<label class="layui-form-label">商品默认运费：</label>
 							<div class="layui-input-inline">
 								<input type="hidden" name="config_freight_uuid" value="{$config.config_freight_uuid|default=''}">
-								<input type="text" name="config_freight" value="{$config.config_freight|default=''}" lay-verify="required|number" autocomplete="off" class="layui-input">
+								<input type="text" name="config_freight" value="{$config.config_freight|default=''}" lay-verify="required|number0" autocomplete="off" class="layui-input">
 							</div>
-							<div class="layui-form-mid layui-word-aux">商品默认运费，必须整数</div>
+							<div class="layui-form-mid layui-word-aux">商品默认运费，必须正整数</div>
 						</div>
 						<div class="layui-form-item">
 							<div class="layui-input-block">
@@ -102,7 +102,7 @@
 							<label class="layui-form-label">现金积分兑换率：</label>
 							<div class="layui-input-inline">
 								<input type="hidden" name="config_cash2score_rate_uuid" value="{$config.config_cash2score_rate_uuid|default=''}">
-								<input type="text" name="config_cash2score_rate" value="{$config.config_cash2score_rate|default=''}" lay-verify="required|number" autocomplete="off" class="layui-input">
+								<input type="text" name="config_cash2score_rate" value="{$config.config_cash2score_rate|default=''}" lay-verify="required|number0" autocomplete="off" class="layui-input">
 							</div>
 							<div class="layui-form-mid layui-word-aux">如果100积分兑换一元，就填写100，必填且为正整数</div>
 						</div>
@@ -110,25 +110,25 @@
 							<label class="layui-form-label">分享客户赠送积分：</label>
 							<div class="layui-input-inline">
 								<input type="hidden" name="config_share_score_uuid" value="{$config.config_share_score_uuid|default=''}">
-								<input type="text" name="config_share_score" value="{$config.config_share_score|default=''}" lay-verify="required|number" autocomplete="off" class="layui-input">
+								<input type="text" name="config_share_score" value="{$config.config_share_score|default=''}" lay-verify="required|number0" autocomplete="off" class="layui-input">
 							</div>
-							<div class="layui-form-mid layui-word-aux">分享客户赠送积分，比方分享一次送100积分就填写100</div>
+							<div class="layui-form-mid layui-word-aux">分享一次送100积分就填写100，必须正整数</div>
 						</div>
 
 						<div class="layui-form-item">
 							<label class="layui-form-label">分享客户赠送积分频率：</label>
 							<div class="layui-input-inline">
 								<input type="hidden" name="config_share_score_limit_uuid" value="{$config.config_share_score_limit_uuid|default=''}">
-								<input type="text" name="config_share_score_limit" value="{$config.config_share_score_limit|default=''}" lay-verify="required|number" autocomplete="off" class="layui-input">
+								<input type="text" name="config_share_score_limit" value="{$config.config_share_score_limit|default=''}" lay-verify="required|number0" autocomplete="off" class="layui-input">
 							</div>
-							<div class="layui-form-mid layui-word-aux">比方一天分享最多只能赠送10次，就填写10，如果不限制填写-1</div>
+							<div class="layui-form-mid layui-word-aux">一天分享最多赠送10次就填写10,必须正整数</div>
 						</div>
 
 						<div class="layui-form-item">
 							<label class="layui-form-label">被分享人送积分：</label>
 							<div class="layui-input-inline">
 								<input type="hidden" name="config_share_goods_after_buy_score_uuid" value="{$config.config_share_goods_after_buy_score_uuid|default=''}">
-								<input type="text" name="config_share_goods_after_buy_score" value="{$config.config_share_goods_after_buy_score|default=''}" lay-verify="required|number" autocomplete="off" class="layui-input">
+								<input type="text" name="config_share_goods_after_buy_score" value="{$config.config_share_goods_after_buy_score|default=''}" lay-verify="required|number0" autocomplete="off" class="layui-input">
 							</div>
 							<div class="layui-form-mid layui-word-aux">分享的客户购买了商品，被分享人赠送多少积分</div>
 						</div>
@@ -157,7 +157,7 @@
 					<div class="layui-form-item">
 						<label class="layui-form-label">商品默认运费：</label>
 						<div class="layui-input-inline">
-							<input type="text" name="config_freight" value="" lay-verify="required|number" autocomplete="off" class="layui-input">
+							<input type="text" name="config_freight" value="" lay-verify="required|number0" autocomplete="off" class="layui-input">
 						</div>
 						<div class="layui-form-mid layui-word-aux">商品默认运费，必须整数</div>
 					</div>
@@ -217,6 +217,14 @@
 			}, 'json');
 		}
 
+		form.verify({
+			number2: function (value, item) {
+				if (!/^\d+(\.\d{1,2})?$/.test(value)) {
+					return '必须为数字，最多保留两位小数';
+				}
+			},
+			number0: [/^\d+$/, '必须为正整数，不能含有小数']
+		});
 		form.on('submit(siteConfig)', function (data) {
 			ajax_post(data);
 			return false;

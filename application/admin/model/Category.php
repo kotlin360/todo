@@ -3,7 +3,6 @@ namespace app\admin\model;
 
 use app\common\facade\Log;
 use think\Db;
-use think\exception\DbException;
 use think\facade\Config;
 use think\Model;
 
@@ -119,7 +118,7 @@ class Category extends Model
 	{
 		try {
 			return $this->where('status=1')->field('id,name')->order('sort')->selectOrFail();
-		} catch (DbException $e) {
+		} catch (\Exception $e) {
 			return null;
 		}
 	}
