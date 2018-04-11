@@ -58,14 +58,17 @@ class Goods extends Model
 				foreach ($spec_value as $item) {
 					$values = explode(',', $item);
 					$key_code = ';';
+					$value_string = '';
 					foreach ($values as $k => $value) {
 						$value_items = explode(':', $value);
+						$value_string .= $value_items[1] . ',';
 						$key = $spec_key_array[$k];
 						$tem[$key] = $specs_goods[$key];
 						$tem[$key]['value'] = $values_array[$value_items[0]];
 						$key_code .= $key . ':' . $values_array[$value_items[0]][0] . ';';
 					}
-					$value_dcr[$key_code] = $tem;
+					$value_string = trim($value_string, ',');
+					$value_dcr[$key_code] = ['tem' => $tem, 'value_string' => $value_string];
 				}
 			}
 			//2、把商品基本信息写入到表中，获得商品的id
@@ -88,7 +91,8 @@ class Goods extends Model
 				$products = [
 					'goods_id' => $goods_id,
 					'spec_sn' => $extend['spec_sn'][$k],
-					'spec_value' => serialize($value),
+					'spec_value' => serialize($value['tem']),
+					'spec_value_string' => $value['value_string'],
 					'spec_key' => $key,
 					'stock' => $extend['stock'][$k],
 					'warning_line' => $extend['warning_line'][$k],
@@ -159,14 +163,17 @@ class Goods extends Model
 				foreach ($spec_value as $item) {
 					$values = explode(',', $item);
 					$key_code = ';';
+					$value_string = '';
 					foreach ($values as $k => $value) {
 						$value_items = explode(':', $value);
+						$value_string .= $value_items[1] . ',';
 						$key = $spec_key_array[$k];
 						$tem[$key] = $specs_goods[$key];
 						$tem[$key]['value'] = $values_array[$value_items[0]];
 						$key_code .= $key . ':' . $values_array[$value_items[0]][0] . ';';
 					}
-					$value_dcr[$key_code] = $tem;
+					$value_string = trim($value_string, ',');
+					$value_dcr[$key_code] = ['tem' => $tem, 'value_string' => $value_string];
 				}
 			}
 			//2、把商品基本信息更新到商品表中
@@ -190,7 +197,8 @@ class Goods extends Model
 				$products = [
 					'goods_id' => $goods_id,
 					'spec_sn' => $extend['spec_sn'][$k],
-					'spec_value' => serialize($value),
+					'spec_value' => serialize($value['tem']),
+					'spec_value_string' => $value['value_string'],
 					'spec_key' => $key,
 					'stock' => $extend['stock'][$k],
 					'warning_line' => $extend['warning_line'][$k],
@@ -246,7 +254,7 @@ class Goods extends Model
 			if ($specs == null) {
 				$products = Db::name('goods_products')->where("goods_id={$id}")->field(true)->find();
 			} else {
-				$cursor = Db::name('goods_products')->where("goods_id={$id}")->field('spec_sn,spec_value,stock,warning_line,style,cash,score,gift,is_online')->cursor();
+				$cursor = Db::name('goods_products')->where("goods_id={$id}")->field('spec_sn,spec_value,stock,warning_line,style,cash,score,gift,freight,is_online')->cursor();
 				foreach ($cursor as $k => $v) {
 					$products[$k] = $v;
 					$products[$k]['spec_value'] = unserialize($v['spec_value']);

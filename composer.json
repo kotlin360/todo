@@ -20,7 +20,8 @@
 		"topthink/framework": "5.1.*",
 		"topthink/think-captcha": "^2.0",
 		"wanghayo/think-auth": "^1.0",
-		"tp5er/tp5-databackup": "^1.0"
+		"tp5er/tp5-databackup": "^1.0",
+		"zoujingli/ip2region": "^1.0"
 	},
 	"autoload": {
 		"psr-4": {

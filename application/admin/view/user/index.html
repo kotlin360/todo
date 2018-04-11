@@ -17,13 +17,13 @@
 <script type="text/javascript">
 	layui.config({
 		base: '/static/admin/js/'
-	}).use(['table', 'form', 'layer', 'jquery', 'utils', 'element'], function () {
-		var table = layui.table, form = layui.form,
-			layer = layui.layer, $ = layui.jquery,
-			utils = layui.utils, element = layui.element;
+	}).use(['table', 'form', 'layer', 'jquery', 'utils', 'element', 'laytpl', 'flow'], function () {
+		var table = layui.table, form = layui.form, layer = layui.layer, $ = layui.jquery,
+			utils = layui.utils, element = layui.element, laytpl = layui.laytpl, flow = layui.flow;
 		//监听Tab切换，以改变地址hash值
 		element.on('tab(userinfo)', function () {
-			location.hash = 'userinfo=' + this.getAttribute('lay-id');
+			var lay_id = this.getAttribute('lay-id');
+			location.hash = 'userinfo=' + lay_id;
 		});
 		var datatable = table.render({
 			elem: '#datatable',
@@ -69,14 +69,41 @@
 					}, 'json');
 				});
 			} else if (layEvent == 'info') {
-				layer.open({
-					type: 1,
-					title: '用户详情',
-					area: ['720px', '450px'],
-					scrollbar: false,
-					anim: 2,
-					shadeClose: true,
-					content: $('#infoHtml').html()
+				$.ajax({
+					type: 'post',
+					dataType: 'json',
+					data: 'id=' + data.id,
+					url: "{:url('user/detail')}?t=" + new Date().getTime(),
+					beforeSend: function () {
+						layer.load();
+					},
+					success: function (result) {
+						layer.closeAll();
+						if (result.code == 1) {
+							var getTpl = $('#infoHtml').html();
+							laytpl(getTpl).render(result, function (html) {
+								layer.open({
+									type: 1,
+									title: '用户【 ' + data.username + ' 】详情',
+									area: ['80%', '500px'],
+									scrollbar: false,
+									anim: 2,
+									shadeClose: true,
+									content: html
+								});
+							});
+						} else {
+							layer.open({
+								type: 2,
+								title: '用户详情获取失败，联系系统管理员',
+								area: ['600px', '350px'],
+								scrollbar: false,
+								anim: 2,
+								shadeClose: true,
+								content: "{:url('system/mistake')}"
+							})
+						}
+					}
 				});
 			}
 		});
@@ -99,40 +126,211 @@
 			datatable.reload({where: {keyword: keyword, page: 1}});
 			return false;
 		});
+		// 用户详情中的更多
+		$('body').on('click', '.layui-flow-more a', function () {
+			var _this = $(this), url = _this.attr('href'), uid = _this.attr('uid'),
+				page = _this.attr('page'), cate = _this.attr('cate');
+			$.post(url + '?t=' + new Date().getTime(), {id: uid, cate: cate, page: page}, function (data) {
+				console.log(data);
+				if (data.code === 1) {
+					_this.attr('page', ++page);
+					var rows = '';
+					switch (cate.toLowerCase()) {
+						case 'score':
+							layui.each(data.list, function (i, v) {
+								rows += '<tr><td>' + v.id + '</td>';
+								rows += '<td>' + moment(v.create_time * 1000).format('YYYY-MM-DD HH:mm:ss') + '</td>';
+								rows += '<td>' + v.value + '</td>';
+								rows += '<td>' + v.note + '</td></tr>';
+							});
+							_this.closest('tr').before(rows);
+							break;
+						case 'money':
+							break;
+						case 'coupon':
+							break;
+					}
+				} else {
+
+				}
+			});
+			return false;
+		})
 	});
 </script>
 <script type="text/x-template" id="infoHtml">
-	<div class="layui-tab layui-tab-brief" lay-filter="userinfo" style="padding:10px 20px">
+	<div class="layui-tab layui-tab-brief" lay-filter="userinfo" id="userInfoBox" style="padding:10px 20px">
 		<ul class="layui-tab-title">
-			<li class="layui-this">基本信息</li>
-			<li>积分信息</li>
-			<li>钱包信息</li>
-			<li>优惠券信息</li>
+			<li class="layui-this" lay-id="base">基本信息</li>
+			<li lay-id="score">积分信息</li>
+			<li lay-id="money">钱包信息</li>
+			<li lay-id="coupon">优惠券信息</li>
 		</ul>
 		<div class="layui-tab-content">
-			<div class="layui-tab-item layui-show" lay-id="base">
-				<table class="layui-table">
+			<div class="layui-tab-item layui-show">
+				<table class="layui-table" id="userTable2">
 					<tbody>
 					<tr>
-						<td>用户名</td>
-						<td>张三</td>
-						<td>手机号码</td>
-						<td>18620081234</td>
+						<td class="tHead">用户名</td>
+						<td>{{ d.user.username }}</td>
+						<td class="tHead">手机号码</td>
+						<td>{{ d.user.tel }}</td>
+						<td class="tHead">生日</td>
+						<td>{{ d.user.birthday }}</td>
 					</tr>
 					<tr>
-						<td>总积分</td>
-						<td>1000</td>
-						<td>钱包余额</td>
-						<td>1288</td>
-						<td>1288</td>
-						<td>1288</td>
+						<td class="tHead">总积分</td>
+						<td>{{ d.user.score }}</td>
+						<td class="tHead">钱包余额</td>
+						<td>{{ d.user.money }}</td>
+						<td class="tHead">优惠券</td>
+						<td>2张</td>
+					</tr>
+					<tr>
+						<td class="tHead">监测站名称</td>
+						<td colspan="5">{{ d.user.station_name }}</td>
+					</tr>
+					<tr>
+						<td class="tHead">设备厂家名称</td>
+						<td colspan="5">{{ d.user.manufactor }}</td>
+					</tr>
+					<tr>
+						<td class="tHead">主要职务</td>
+						<td colspan="5">{{ d.user.duty }}</td>
+					</tr>
+					<tr>
+						<td class="tHead">注册时间</td>
+						<td>{{ moment(d.user.create_time * 1000).format('YYYY-MM-DD HH:mm:ss') }}</td>
+						<td class="tHead">最后登录时间</td>
+						<td>{{ moment(d.user.last_time * 1000).format('YYYY-MM-DD HH:mm:ss') }}</td>
+						<td class="tHead">状态</td>
+						<td>{{ d.user.status==1?'有效':'禁用' }}</td>
+					</tr>
+					<tr>
+						<td class="tHead">注册IP</td>
+						<td colspan="5">
+							{{ d.user.create_ip }}&emsp;
+							{{ d.user.create_region }}
+						</td>
+					</tr>
+					<tr>
+						<td class="tHead">最后登录ip</td>
+						<td colspan="5">
+							{{ d.user.last_ip }}&emsp;
+							{{ d.user.last_region }}
+						</td>
 					</tr>
 					</tbody>
 				</table>
 			</div>
-			<div class="layui-tab-item" lay-id="score">内容2</div>
-			<div class="layui-tab-item" lay-id="money">内容3</div>
-			<div class="layui-tab-item" lay-id="coupon">内容4</div>
+			<div class="layui-tab-item">
+				<table class="layui-table">
+					<tr>
+						<th>序号</th>
+						<th>时间</th>
+						<th>收入/支出</th>
+						<th>详细说明</th>
+					</tr>
+					{{# layui.each(d.score, function(i,v){ }}
+					<tr>
+						<td>{{ v.id }}</td>
+						<td>{{ moment(v.create_time * 1000).format('YYYY-MM-DD HH:mm:ss') }}</td>
+						<td>{{ v.value }}</td>
+						<td>{{ v.note }}</td>
+					</tr>
+					{{# }); }}
+					{{# if(d.score.length === 0){ }}
+					<tr>
+						<td colspan="4">暂无积分明细</td>
+					</tr>
+					{{# } else { }}
+					<tr class="moreTR">
+						<td colspan="4">
+							<div class="layui-flow-more"><a href="{:url('user/detail')}" uid="{{d.user.id}}" cate="score" page="2"><cite>加载更多</cite></a></div>
+						</td>
+					</tr>
+					{{# } }}
+				</table>
+			</div>
+			<div class="layui-tab-item">
+				<table class="layui-table" id="moneyTable">
+					<tr>
+						<th>序号</th>
+						<th>时间</th>
+						<th>收入/支出</th>
+						<th>详细说明</th>
+					</tr>
+					{{# layui.each(d.money, function(i,v){ }}
+					<tr>
+						<td>{{ v.id }}</td>
+						<td>{{ moment(v.create_time * 1000).format('YYYY-MM-DD HH:mm:ss') }}</td>
+						<td>{{ v.value }}</td>
+						<td>{{ v.note }}</td>
+					</tr>
+					{{# }); }}
+					{{# if(d.money.length === 0){ }}
+					<tr>
+						<td colspan="4">暂无钱包明细</td>
+					</tr>
+					{{# } else { }}
+					<tr class="moreTR">
+						<td colspan="4">
+							<div class="layui-flow-more"><a href="{:url('user/detail')}" uid="{{d.user.id}}" cate="money" page="2"><cite>加载更多</cite></a></div>
+						</td>
+					</tr>
+					{{# } }}
+				</table>
+			</div>
+			<div class="layui-tab-item">
+				<table class="layui-table" id="couponTable">
+					<tr>
+						<th>序号</th>
+						<th>优惠券名称</th>
+						<th>面值</th>
+						<th>消费金额</th>
+						<th>状态</th>
+						<th>领取时间</th>
+						<th>使用时间</th>
+						<th>有效期开始</th>
+						<th>有效期结束</th>
+					</tr>
+					{{# layui.each(d.coupon, function(i,v){ }}
+					<tr>
+						<td>{{ v.id }}</td>
+						<td>{{ v.name }}</td>
+						<td>{{ v.value }}</td>
+						<td>{{ v.money }}</td>
+						<td>
+							{{# if(v.status == 0){ }}
+							<span class="layui-badge layui-bg-gray">未使用</span>
+							{{# }else{ }}
+							<span class="layui-badge layui-bg-green">已使用</span>
+							{{# } }}
+						</td>
+						<td>{{ moment(v.create_time * 1000).format('YYYY-MM-DD') }}</td>
+						<td>{{ v.update_time?moment(v.update_time * 1000).format('YYYY-MM-DD'):'-' }}</td>
+						<td>{{ moment(v.start * 1000).format('YYYY-MM-DD') }}</td>
+						<td>
+							{{ moment(v.end * 1000).format('YYYY-MM-DD') }}
+							{{# if(v.status == 0 && v.expire === 1){ }}
+							<img src="__IMG__/expire.png">
+							{{# } }}
+						</td>
+					</tr>
+					{{# }); }}
+					{{# if(d.coupon.length === 0){ }}
+					<tr>
+						<td colspan="9">暂无优惠券明细</td>
+					</tr>
+					{{# } else { }}
+					<tr class="moreTR">
+						<td colspan="9">
+							<div class="layui-flow-more"><a href="{:url('user/detail')}" uid="{{d.user.id}}" cate="coupon" page="2"><cite>加载更多</cite></a></div>
+						</td>
+					</tr>
+					{{# } }}
+				</table>
+			</div>
 		</div>
 	</div>
 </script>

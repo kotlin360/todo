@@ -44,4 +44,22 @@ class User extends Controller
 		$status = input('param.status', 1, 'intval');
 		return json($userModel->changeStatus($id, $status));
 	}
+
+	/**
+	 * 获取用户详情，包括基本信息，积分信息，钱包信息，优惠券信息等
+	 * @param UserModel $userModel
+	 * @return \think\response\Json
+	 */
+	public function detail(UserModel $userModel)
+	{
+		$id = input('id/d', 0);
+		$cate = input('cate', '');
+		if ($cate) {
+			$page = input('page/d');
+			$userinfo = $userModel->getUserInfoMore($id, $cate, $page);
+		} else {
+			$userinfo = $userModel->getUserInfo($id);
+		}
+		return json($userinfo);
+	}
 }

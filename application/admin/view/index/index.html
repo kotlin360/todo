@@ -68,6 +68,19 @@
 <script type="text/javascript" src="__JS__/jquery.min.js"></script>
 <script type="text/javascript" src="__JS__/moment.min.js"></script>
 <script type="text/javascript">
+	function getPurchaseStyle(style) {
+		switch (style) {
+			case 1:
+				return '积分';
+			case 2:
+				return '现金';
+			case 3:
+				return '组合';
+			default:
+				return '未知';
+		}
+	}
+
 	var message;
 	layui.config({
 		base: '__JS__/',
@@ -97,7 +110,6 @@
 					layer.load();
 				},
 				success: function (data) {
-					console.log(data)
 					layer.closeAll();
 					if (data.code == 1) {
 						var getTpl = $('#orderInfoBox').html();
@@ -244,19 +256,27 @@
 							<table class="layui-table" lay-skin="line">
 								<thead>
 								<tr>
-									<th width="30%">购买商品</th>
-									<th width="20%">购买规格</th>
-									<th width="20%">购买数量</th>
-									<th width="15%">购买方式</th>
-									<th width="15%">运费</th>
+									<th width="25%">购买商品</th>
+									<th width="15%">购买规格</th>
+									<th width="10%">购买数量</th>
+									<th width="10%">购买方式</th>
+									<th width="10%">购买现金</th>
+									<th width="10%">购买积分</th>
+									<th width="10%">运费</th>
+									<th width="10%">赠送积分</th>
 								</tr>
 								</thead>
 								<tbody>
 								{{# layui.each(d.goods, function(k, v){ }}
 								<tr>
 									<td>{{ v.title }}</td>
-									<td>{{ v.goods_spec||'无' }}</td>
+									<td>{{ v.spec_value_string || '无' }}</td>
 									<td>{{ v.goods_num }}</td>
+									<td>{{ getPurchaseStyle(v.style) }}</td>
+									<td>{{ v.cash }}</td>
+									<td>{{ v.score }}</td>
+									<td>{{ v.freight }}</td>
+									<td>{{ v.gift }}</td>
 								</tr>
 								{{# }); }}
 								{{# if(d.goods.length === 0){ }}

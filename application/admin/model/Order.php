@@ -13,6 +13,8 @@ use think\Model;
 class Order extends Model
 {
 
+	protected $name = 'order';
+
 	/**
 	 * 根据商品ID获取商品详情
 	 * @param $id
@@ -20,20 +22,20 @@ class Order extends Model
 	 */
 	public function getGoodsInfo($id)
 	{
+		$prefix = Config::get('database.prefix');
 		try {
-			$order = $this->alias('o')
-				->join('user u', 'o.uid = u.id', 'LEFT')
-				->where("o.id={$id}")
-				->field('o.*,u.username,u.tel')->find();
-			$goods = Db::name('order_goods')->alias('og')
-				->join('goods g', 'og.goods_id=g.id', 'LEFT')
-				->where("og.order_id={$id}")
-				->field('og.*,g.title')->select();
-			$orderLog = Db::name('order_log')->alias('ol')
-				->join('user u', 'ol.uid = u.id', 'LEFT')
-				->where("ol.order_id={$id}")->order('id DESC')
-				->field('ol.*,u.username')->select();
-			return ['code' => 1, 'order' => $order, 'goods' => $goods, 'orderLog' => $orderLog];
+			// 订单信息
+			$orderSQL = "SELECT o.*,u.username,u.tel FROM {$prefix}order o LEFT JOIN {$prefix}user u ON o.uid = u.id WHERE o.id=:id LIMIT 1";
+			$order = Db::query($orderSQL, ['id' => $id]);
+			// 订单商品
+			$goodsSQL = "SELECT og.*,g.title FROM {$prefix}order_goods og " .
+				"LEFT JOIN {$prefix}goods g ON og.goods_id=g.id WHERE og.order_id=:id";
+			$goods = Db::query($goodsSQL, ['id' => $id]);
+			// 订单日志
+			$orderLogSQL = "SELECT ol.*,u.username FROM {$prefix}order_log ol " .
+				"LEFT JOIN {$prefix}user u ON ol.uid=u.id WHERE ol.order_id=:id ORDER BY ol.id DESC";
+			$orderLog = Db::query($orderLogSQL, ['id' => $id]);
+			return ['code' => 1, 'order' => $order[0], 'goods' => $goods, 'orderLog' => $orderLog];
 		} catch (\Exception $e) {
 			return ['code' => 0, 'msg' => '获取失败：' . $e->getMessage()];
 		}

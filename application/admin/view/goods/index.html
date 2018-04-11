@@ -63,11 +63,10 @@
 			page: true,
 			cols: [[
 				{field: 'id', title: 'id', align: 'center', width: 80},
-				{field: 'title', title: '商品名称', align: 'center', width: 200},
+				{field: 'title', title: '商品名称', align: 'center', width: 220},
 				{field: 'sn', title: '商品编号', align: 'center', width: 170},
 				{field: 'cate_name', title: '所属分类', align: 'center', width: 120},
-				{field: 'unit', title: '单位', align: 'center', width: 50},
-				{field: 'freight', title: '运费', align: 'center', width: 50},
+				{field: 'unit', title: '单位', align: 'center', width: 60},
 				{
 					field: 'status', title: '状态', align: 'center', width: 70, templet: function (v) {
 						if (v.status == 1) {
@@ -141,6 +140,7 @@
 			<th>购买方式</th>
 			<th>价格</th>
 			<th>购买积分</th>
+			<th>运费</th>
 			<th>赠送积分</th>
 			<th>是否在架</th>
 		</tr>
@@ -153,6 +153,7 @@
 			<td>{{ purchaseStyle(d.products.style) }}</td>
 			<td>{{d.products.cash}}</td>
 			<td>{{d.products.score}}</td>
+			<td>{{d.products.freight}}</td>
 			<td>{{d.products.gift}}</td>
 			<td>{{ is_online(d.products.is_online) }}</td>
 		</tr>
@@ -171,6 +172,7 @@
 			<th>购买方式</th>
 			<th>价格</th>
 			<th>购买积分</th>
+			<th>运费</th>
 			<th>赠送积分</th>
 			<th>是否在架</th>
 		</tr>
@@ -187,6 +189,7 @@
 			<td>{{ purchaseStyle(v.style) }}</td>
 			<td>{{v.cash}}</td>
 			<td>{{v.score}}</td>
+			<td>{{v.freight}}</td>
 			<td>{{v.gift}}</td>
 			<td>{{ is_online(v.is_online) }}</td>
 		</tr>
