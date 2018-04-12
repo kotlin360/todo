@@ -12,6 +12,8 @@ use think\Model;
  */
 class Goods extends Model
 {
+	public $username = 'just a test';
+
 	// 开启自动写入时间
 	protected $autoWriteTimestamp = true;
 

@@ -103,7 +103,7 @@ layui.define(['layer', 'laytpl', 'element'], function (exports) {
 					_doc.find('div.layui-footer').removeClass('kit-footer-folded');
 					menu.attr('class', 'fa fa-arrow-left');
 					$('#logo span').css('display', 'block');
-					$('#logo').css('width', '220px');
+					$('#logo').css('width', '200px');
 					$('.tplay-left-icon').css('display', 'none');
 					$('.layui-layout-left').css('left', '220px');
 				} else {

@@ -130,28 +130,63 @@
 		$('body').on('click', '.layui-flow-more a', function () {
 			var _this = $(this), url = _this.attr('href'), uid = _this.attr('uid'),
 				page = _this.attr('page'), cate = _this.attr('cate');
-			$.post(url + '?t=' + new Date().getTime(), {id: uid, cate: cate, page: page}, function (data) {
-				console.log(data);
-				if (data.code === 1) {
-					_this.attr('page', ++page);
-					var rows = '';
-					switch (cate.toLowerCase()) {
-						case 'score':
-							layui.each(data.list, function (i, v) {
-								rows += '<tr><td>' + v.id + '</td>';
-								rows += '<td>' + moment(v.create_time * 1000).format('YYYY-MM-DD HH:mm:ss') + '</td>';
-								rows += '<td>' + v.value + '</td>';
-								rows += '<td>' + v.note + '</td></tr>';
-							});
-							_this.closest('tr').before(rows);
-							break;
-						case 'money':
-							break;
-						case 'coupon':
-							break;
+			var _img = _this.siblings('img');
+			$.ajax({
+				url: url + '?t=' + new Date().getTime(),
+				type: 'post',
+				data: {id: uid, cate: cate, page: page},
+				dataType: 'json',
+				beforeSend: function () {
+					_this.hide();
+					_img.show();
+				},
+				success: function (data) {
+					if (data.code === 1) {
+						var rows = '';
+						switch (cate.toLowerCase()) {
+							case 'score':
+							case 'money':
+								layui.each(data.list, function (i, v) {
+									rows += '<tr><td>' + v.id + '</td>';
+									rows += '<td>' + moment(v.create_time * 1000).format('YYYY-MM-DD HH:mm:ss') + '</td>';
+									rows += '<td>' + v.value + '</td>';
+									rows += '<td>' + v.note + '</td></tr>';
+								});
+								break;
+							case 'coupon':
+								layui.each(data.list, function (i, v) {
+									var statusString = '', expireString = '';
+									if (v.status == 0) {
+										statusString = '<span class="layui-badge layui-bg-gray">未使用</span>';
+									} else {
+										statusString = '<span class="layui-badge layui-bg-green">已使用</span>';
+									}
+									if (v.status == 0 && v.expire === 1) {
+										expireString = '<img src="__IMG__/expire.png">';
+									}
+									var useString = v.update_time ? moment(v.update_time * 1000).format('YYYY-MM-DD') : '-';
+									rows += '<tr><td>' + v.id + '</td>';
+									rows += '<td>' + v.name + '</td>';
+									rows += '<td>' + v.value + '</td>';
+									rows += '<td>' + v.money + '</td>';
+									rows += '<td>' + statusString + '</td>';
+									rows += '<td>' + moment(v.create_time * 1000).format('YYYY-MM-DD') + '</td>';
+									rows += '<td>' + useString + '</td>';
+									rows += '<td>' + moment(v.start * 1000).format('YYYY-MM-DD') + '</td>';
+									rows += '<td>' + moment(v.end * 1000).format('YYYY-MM-DD') + expireString + '</td></tr>';
+								});
+								break;
+						}
+						_this.closest('tr').before(rows);
+						if (data.more === 0) {
+							_this.closest('.layui-flow-more').html('全部加载完毕，没有更多了');
+						} else {
+							_this.attr('page', ++page).show();
+							_img.hide();
+						}
+					} else {
+						_this.closest('.layui-flow-more').html('全部加载完毕，没有更多了');
 					}
-				} else {
-
 				}
 			});
 			return false;
@@ -246,7 +281,7 @@
 					{{# } else { }}
 					<tr class="moreTR">
 						<td colspan="4">
-							<div class="layui-flow-more"><a href="{:url('user/detail')}" uid="{{d.user.id}}" cate="score" page="2"><cite>加载更多</cite></a></div>
+							<div class="layui-flow-more"><a href="{:url('user/detail')}" uid="{{d.user.id}}" cate="score" page="2"><cite>加载更多</cite></a><img src="__IMG__/loading.gif" alt="正在加载数据"></div>
 						</td>
 					</tr>
 					{{# } }}
@@ -275,7 +310,7 @@
 					{{# } else { }}
 					<tr class="moreTR">
 						<td colspan="4">
-							<div class="layui-flow-more"><a href="{:url('user/detail')}" uid="{{d.user.id}}" cate="money" page="2"><cite>加载更多</cite></a></div>
+							<div class="layui-flow-more"><a href="{:url('user/detail')}" uid="{{d.user.id}}" cate="money" page="2"><cite>加载更多</cite></a><img src="__IMG__/loading.gif" alt="正在加载数据"></div>
 						</td>
 					</tr>
 					{{# } }}
@@ -325,7 +360,7 @@
 					{{# } else { }}
 					<tr class="moreTR">
 						<td colspan="9">
-							<div class="layui-flow-more"><a href="{:url('user/detail')}" uid="{{d.user.id}}" cate="coupon" page="2"><cite>加载更多</cite></a></div>
+							<div class="layui-flow-more"><a href="{:url('user/detail')}" uid="{{d.user.id}}" cate="coupon" page="2"><cite>加载更多</cite></a><img src="__IMG__/loading.gif" alt="正在加载数据"></div>
 						</td>
 					</tr>
 					{{# } }}

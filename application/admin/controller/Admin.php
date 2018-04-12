@@ -120,6 +120,9 @@ class Admin extends Base
 	/**
 	 * 修改网站参数，保存到配置表config
 	 * @return mixed|\think\response\Json
+	 * @throws \think\db\exception\DataNotFoundException
+	 * @throws \think\db\exception\ModelNotFoundException
+	 * @throws \think\exception\DbException
 	 */
 	public function setting()
 	{
@@ -150,6 +153,8 @@ class Admin extends Base
 				$config[$v['key'] . '_uuid'] = $v['id'];
 				$config[$v['key']] = $v['value'];
 			}
+			// 保存到缓存
+			Cache::set('system_params', $config);
 			return $this->assign('config', $config)->fetch();
 		}
 	}

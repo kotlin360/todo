@@ -2,7 +2,8 @@
 namespace app\admin\controller;
 
 use app\admin\model\Menu as MenuModel;
-use think\facade\Config;
+use app\admin\model\System as SystemModel;
+use think\Db;
 use think\facade\Session;
 
 /**
@@ -25,18 +26,44 @@ class Index extends Base
 	}
 
 	/**
-	 * 后台iframe首页
+	 * 后台iframe首页,主要展示统计信息
+	 * @param SystemModel $systemModel
 	 * @return mixed
 	 */
-	public function main()
+	public function main(SystemModel $systemModel)
 	{
-		$info = [
-			'web_server' => $_SERVER['SERVER_SOFTWARE'],
-			'onload' => ini_get('upload_max_filesize'),
-			'think_v' => Config::get('THINK_VERSION'),
+		$statistics = $systemModel->statistic();
+		$server = PHP_SAPI;
+		if (strpos($server, 'cgi') !== false) {
+			$server = 'nginx';
+		} else {
+			$server = 'apache';
+		}
+		$base = [
+			'version' => '1.0.0',
+			'front' => 'layui2.2.5',
+			'backend' => 'ThinkPHP' . $this->app->version(),
 			'phpversion' => phpversion(),
 		];
+		$info = [
+			'mysql' => $this->_mysql_version(),
+			'environment' => $server,
+			'onload' => ini_get('upload_max_filesize'),
+			'timezone' => date_default_timezone_get()
+		];
+		$this->assign('statistics', $statistics);
+		$this->assign('base', $base);
 		$this->assign('info', $info);
 		return $this->fetch();
+	}
+
+	/**
+	 * 获取mysql版本
+	 * @return mixed
+	 */
+	private function _mysql_version()
+	{
+		$version = Db::query("select version() as ver");
+		return $version[0]['ver'];
 	}
 }

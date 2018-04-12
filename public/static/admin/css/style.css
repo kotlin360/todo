@@ -140,3 +140,12 @@
 #userInfoBox .moreTR:hover {
 	background: none
 }
+
+.layui-flow-more {
+	height: 32px;
+	line-height: 32px;
+}
+
+.layui-flow-more img {
+	display: none;
+}
