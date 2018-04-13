@@ -1,6 +1,7 @@
 <?php
 namespace app\api\controller;
 
+use app\api\model\Alidayu as AlidayuModel;
 use app\api\model\User as UserModel;
 use think\Request;
 
@@ -19,10 +20,7 @@ class Login
 	 */
 	public function user_register(Request $request, UserModel $userModel)
 	{
-		$code = $request->post('code');
-		$encryptedData = $request->post('encryptedData');
-		$iv = input('iv');
-		return json($userModel->register($code, $encryptedData, $iv));
+		return json($userModel->register($request));
 	}
 
 	/**
@@ -31,5 +29,16 @@ class Login
 	public function user_login()
 	{
 
+	}
+
+	/**
+	 * 注册发送验证码
+	 * @param AlidayuModel $alidayuModel
+	 * @return \think\response\Json
+	 */
+	public function send(AlidayuModel $alidayuModel)
+	{
+		$phone = input('phone');
+		return json($alidayuModel->send($phone, 1));
 	}
 }

@@ -2,8 +2,6 @@
 namespace app\api\model;
 
 use GuzzleHttp\Exception\GuzzleException;
-use think\Db;
-use think\facade\Cache;
 use think\facade\Env;
 use think\Model;
 
@@ -14,16 +12,19 @@ use think\Model;
  */
 class User extends Model
 {
-
 	/**
 	 * 小程序注册接口逻辑
-	 * @param $code
-	 * @param $encryptedData    加密的用户数据
-	 * @param $iv               与用户数据一同返回的初始向量
-	 * @return array
+	 * @param $request
+	 * @return array|\think\response\Json
 	 */
-	public function register($code, $encryptedData, $iv)
+	public function register($request)
 	{
+		$code = $request->post('code');
+		$encryptedData = $request->post('encryptedData');
+		$iv = input('iv');
+		$username = input('username');
+		$verify_code = input('verify_code', '');
+		// 需要首先验证短信验证码是否正确
 		/**
 		 * 正式
 		 * $this->_getWeChatParam();
@@ -62,37 +63,14 @@ class User extends Model
 			}
 			$info = json_decode($data);
 			p($info);
-
 			// 写自己的逻辑，把用户信息openid，昵称，头像信息写入到数据库
+			$user = [
+				'username' => '123'
+			];
 		} catch (GuzzleException $e) {
 			return ['code' => 0, 'msg' => '登录失败：' . $e->getMessage()];
 		}
 
 	}
 
-	/**
-	 * 获取微信小程序配置参数
-	 * 如果缓存不存在，就到数据库中查询
-	 */
-	private function _getWeChatParam()
-	{
-		$config = Cache::get('system_params', null);
-		if ($config) {
-			$this['appid'] = $config['config_wechat_appid'];
-			$this['secret'] = $config['config_wechat_appsecret'];
-			$this['request_url'] = $config['config_wechat_url'];
-		} else {
-			// 如果不存在查询全部的配置数据，并放入缓存
-			$cursor = Db::name('config')->cursor();
-			$config = [];
-			foreach ($cursor as $v) {
-				$config[$v['key']] = $v['value'];
-			}
-			$this['appid'] = $config['config_wechat_appid'];
-			$this['secret'] = $config['config_wechat_appsecret'];
-			$this['request_url'] = $config['config_wechat_url'];
-			// 写入缓存
-			Cache::set('system_params', $config);
-		}
-	}
 }

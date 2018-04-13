@@ -10,7 +10,7 @@
 		<li>商品参数</li>
 		<li>积分参数</li>
 		<li>微信参数</li>
-		<li>短信接口</li>
+		<li>阿里云短信</li>
 	</ul>
 	<div class="layui-tab-content">
 
@@ -184,28 +184,60 @@
 		</div>
 		<div class="layui-tab-item">
 			<div class="layui-card">
-				<div class="layui-card-header">短信接口参数</div>
+				<div class="layui-card-header">阿里云短信接口参数</div>
 				<div class="layui-card-body">
-					<div class="layui-form-item">
-						<label class="layui-form-label">网站名称：</label>
-						<div class="layui-input-inline">
-							<input type="text" name="config_site_name" value="" lay-verify="required|number" autocomplete="off" class="layui-input">
+					<form class="layui-form" action="" lay-filter="dayuConfig">
+						<div class="layui-form-item">
+							<label class="layui-form-label">AccessKeyId：</label>
+							<div class="layui-input-inline">
+								<input type="hidden" name="config_dy_accesskeyid_uuid" value="{$config.config_dy_accesskeyid_uuid|default=''}">
+								<input type="text" name="config_dy_accesskeyid" value="{$config.config_dy_accesskeyid|default=''}" lay-verify="required" autocomplete="off" class="layui-input">
+							</div>
+							<div class="layui-form-mid layui-word-aux">大于短信AccessKeyId</div>
 						</div>
-						<div class="layui-form-mid layui-word-aux">请填写购买商品赠送多少积分，必须整数</div>
-					</div>
-					<div class="layui-form-item">
-						<label class="layui-form-label">商品默认运费：</label>
-						<div class="layui-input-inline">
-							<input type="text" name="config_freight" value="" lay-verify="required|number" autocomplete="off" class="layui-input">
+
+						<div class="layui-form-item">
+							<label class="layui-form-label">AccessKeySecret：</label>
+							<div class="layui-input-inline">
+								<input type="hidden" name="config_dy_accesskeysecret_uuid" value="{$config.config_dy_accesskeysecret_uuid|default=''}">
+								<input type="text" name="config_dy_accesskeysecret" value="{$config.config_dy_accesskeysecret|default=''}" lay-verify="required" autocomplete="off" class="layui-input">
+							</div>
+							<div class="layui-form-mid layui-word-aux">大于短信AccessKeySecret</div>
 						</div>
-						<div class="layui-form-mid layui-word-aux">商品默认运费，必须整数</div>
-					</div>
-					<div class="layui-form-item">
-						<div class="layui-input-block">
-							<button class="layui-btn" lay-submit="" lay-filter="demo1">立即提交</button>
-							<button type="reset" class="layui-btn layui-btn-primary">重置</button>
+						<div class="layui-form-item">
+							<label class="layui-form-label">签名管理：</label>
+							<div class="layui-input-inline">
+								<input type="hidden" name="config_dy_signname_uuid" value="{$config.config_dy_signname_uuid|default=''}">
+								<input type="text" name="config_dy_signname" value="{$config.config_dy_signname|default=''}" lay-verify="required" autocomplete="off" class="layui-input">
+							</div>
+							<div class="layui-form-mid layui-word-aux">必须在阿里云服务中存在</div>
 						</div>
-					</div>
+
+						<div class="layui-form-item">
+							<label class="layui-form-label">注册模版CODE：</label>
+							<div class="layui-input-inline">
+								<input type="hidden" name="config_dy_regist_code_uuid" value="{$config.config_dy_regist_code_uuid|default=''}">
+								<input type="text" name="config_dy_regist_code" value="{$config.config_dy_regist_code|default=''}" lay-verify="required" autocomplete="off" class="layui-input">
+							</div>
+							<div class="layui-form-mid layui-word-aux">必须在阿里云服务中存在</div>
+						</div>
+
+						<div class="layui-form-item">
+							<label class="layui-form-label">找回密码模版CODE：</label>
+							<div class="layui-input-inline">
+								<input type="hidden" name="config_dy_passwd_code_uuid" value="{$config.config_dy_passwd_code_uuid|default=''}">
+								<input type="text" name="config_dy_passwd_code" value="{$config.config_dy_passwd_code|default=''}" lay-verify="required" autocomplete="off" class="layui-input">
+							</div>
+							<div class="layui-form-mid layui-word-aux">必须在阿里云服务中存在</div>
+						</div>
+
+						<div class="layui-form-item">
+							<div class="layui-input-block">
+								<button class="layui-btn" lay-submit="" lay-filter="dayuConfig">立即提交</button>
+								<button type="reset" class="layui-btn layui-btn-primary">重置</button>
+							</div>
+						</div>
+					</form>
 				</div>
 			</div>
 		</div>
@@ -250,10 +282,14 @@
 			return false;
 		});
 		form.on('submit(wechatConfig)', function (data) {
-			console.log(data)
 			ajax_post(data);
 			return false;
 		});
+		form.on('submit(dayuConfig)', function (data) {
+			ajax_post(data);
+			return false;
+		});
+
 	});
 </script>
 {include file="public/footer" /}
