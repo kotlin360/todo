@@ -4,6 +4,7 @@ namespace app\admin\controller;
 use app\admin\model\Admin as AdminModel;
 use app\admin\validate\Login as LoginValidate;
 use app\admin\validate\Passwd as PasswdValidate;
+use app\common\facade\Param as ParamFacade;
 use think\captcha\Captcha;
 use think\Controller;
 use think\facade\Session;
@@ -21,7 +22,8 @@ class Login extends Controller
 	 */
 	public function index()
 	{
-		$this->assign('site', '某某公司');
+		$config = ParamFacade::getSystemParam();
+		$this->assign('site', $config['config_site_name']);
 		return $this->fetch();
 	}
 

@@ -1,6 +1,7 @@
 <?php
 namespace app\admin\controller;
 
+use app\common\facade\Param as ParamFacade;
 use think\auth\Auth;
 use think\Controller;
 use think\facade\App;
@@ -16,7 +17,8 @@ class Base extends Controller
 	public function __construct(Auth $auth)
 	{
 		parent::__construct();
-		$this->assign('site', '深邦智能');
+		$config = ParamFacade::getSystemParam();
+		$this->assign('site', $config['config_site_name']);
 		$uid = Session::get('auth.uid');
 		// 检测SESSION中的uid，如果没有登录跳转到登录页面
 		if (!$uid) {

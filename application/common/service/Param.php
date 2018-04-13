@@ -1,5 +1,5 @@
 <?php
-namespace app\api\service;
+namespace app\common\service;
 
 use think\Db;
 use think\facade\Cache;
@@ -9,7 +9,7 @@ use think\facade\Cache;
  * @author   千叶
  * @date     2018-04-13
  */
-class ParamService
+class Param
 {
 	/**
 	 * 获取系统配置参数

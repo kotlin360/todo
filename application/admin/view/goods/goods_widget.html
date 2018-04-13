@@ -4,19 +4,20 @@
 <table class="layui-table" id="defineSpecTable" lay-skin="line" lay-size="sm" style="text-align:center">
 	<thead>
 	<tr>
-		<th width="100"><i class="must">*</i>货号</th>
+		<th width="80"><i class="must">*</i>货号</th>
 		{volist name="$specs" id="header"}
 		<th width="70">
 			{$header.name}
 		</th>
 		{/volist}
+		<th width="70"><i class="must">*</i>推荐位</th>
 		<th width="55">
 			<input type="hidden" value="{$spec_ids}" name="spec_key">
 			<i class="must">*</i>库存
 		</th>
 		<th width="50"><i class="must">*</i>预警线</th>
-		<th width="80"><i class="must">*</i>购买方式</th>
-		<th width="70"><i class="must">*</i>购买现金</th>
+		<th width="70"><i class="must">*</i>购买方式</th>
+		<th width="70"><i class="must">*</i>现金</th>
 		<th width="80"><i class="must">*</i>购买积分</th>
 		<th width="50"><i class="must">*</i>运费</th>
 		<th width="60"><i class="must">*</i>赠送积分</th>
@@ -34,6 +35,16 @@
 		<td>{$v}</td>
 		{/volist}
 		<td>
+			<select name="location[]" lay-verify="required">
+				<option value="1"
+				<?php if($row['location'] == 1) echo 'selected' ?>>首页</option>
+				<option value="2"
+				<?php if($row['location'] == 2) echo 'selected' ?>>精选</option>
+				<option value="3"
+				<?php if($row['location'] == 3) echo 'selected' ?>>热门</option>
+			</select>
+		</td>
+		<td>
 			<input type="hidden" value="{$row.spec_value}" name="spec_value[]">
 			<input type="text" name="stock[]" value="{$row.stock}" lay-verify="required|number0" autocomplete="off" class="layui-input">
 		</td>
@@ -42,7 +53,6 @@
 		</td>
 		<td>
 			<select name="style[]" lay-verify="required">
-				<option value="">==方式==</option>
 				<option value="1"
 				<?php if($row['style'] == 1) echo 'selected' ?>>积分</option>
 				<option value="2"
@@ -79,6 +89,7 @@
 	<thead>
 	<tr>
 		<th width="160"><i class="must">*</i>货号</th>
+		<th width="130"><i class="must">*</i>推荐位</th>
 		<th width="80"><i class="must">*</i>库存</th>
 		<th width="80"><i class="must">*</i>预警线</th>
 		<th width="130"><i class="must">*</i>购买方式</th>
@@ -93,6 +104,16 @@
 			<input type="text" name="spec_sn" value="{$extend.spec_sn|default=''}" layui-disabled disabled lay-verify="required" autocomplete="off" class="layui-input">
 		</td>
 		<td>
+			<select name="location" lay-verify="required">
+				<option value="1"
+				<?php if($row['location'] == 1) echo 'selected' ?>>首页</option>
+				<option value="2"
+				<?php if($row['location'] == 2) echo 'selected' ?>>精选</option>
+				<option value="3"
+				<?php if($row['location'] == 3) echo 'selected' ?>>热门</option>
+			</select>
+		</td>
+		<td>
 			<input type="text" name="stock" value="{$extend.stock|default=''}" lay-verify="required|number0" autocomplete="off" class="layui-input">
 		</td>
 		<td>
@@ -100,7 +121,6 @@
 		</td>
 		<td>
 			<select name="style" lay-verify="required">
-				<option value="">==方式==</option>
 				<option value="1"
 				<?php if($extend['style'] == 1) echo 'selected' ?>>积分</option>
 				<option value="2"

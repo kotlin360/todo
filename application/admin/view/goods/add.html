@@ -44,8 +44,14 @@
 						<input type="text" name="unit" value="件" lay-verify="required" autocomplete="off" class="layui-input input80">
 					</div>
 				</div>
-			</div>
 
+				<div class="layui-inline">
+					<label class="layui-form-label">状态：</label>
+					<div class="layui-input-inline layui-input-inline100">
+						<input type="checkbox" name="status" value="1" checked lay-skin="switch" lay-text="上架|下架">
+					</div>
+				</div>
+			</div>
 			<div class="hr-line-dashed"></div>
 
 			<div class="layui-form-item">
@@ -62,7 +68,7 @@
 							<div class="queueList">
 								<div id="dndArea" class="placeholder">
 									<div id="filePicker"></div>
-									<p>单次最多可选10张，单张限制10兆</p>
+									<p>单次最多可选10张，单张限制2兆</p>
 								</div>
 							</div>
 							<div class="statusBar" style="display:none;">
@@ -87,13 +93,6 @@
 					<!-- 加载编辑器的容器 -->
 					<script id="description" name="description" type="text/plain"></script>
 				</div>
-			</div>
-			<div class="layui-form-item">
-				<label class="layui-form-label">状态：</label>
-				<div class="layui-input-inline">
-					<input type="checkbox" name="status" value="1" lay-skin="switch" lay-text="上架|下架">
-				</div>
-				<div class="layui-form-mid layui-word-aux">默认上架，只有上架的商品小程序才能看到</div>
 			</div>
 			<div class="hr-line-dashed2"></div>
 			<div class="layui-form-item">
@@ -135,7 +134,7 @@
 		// 如果不想自定义规格的话，回复到原先的设置
 		function restore() {
 			var tpl = document.getElementById('noSpecHtml').innerHTML; //读取模版
-			render = laytpl(tpl).render([]);
+			var render = laytpl(tpl).render([]);
 			document.getElementById('specView').innerHTML = render;
 			form.render();
 		}
@@ -290,19 +289,20 @@
 	<table class="layui-table" id="defineSpecTable" lay-skin="line" lay-size="sm" style="text-align:center">
 		<thead>
 		<tr>
-			<th width="100"><i class="must">*</i>货号</th>
+			<th width="80"><i class="must">*</i>货号</th>
 			{{# layui.each(d.names, function(i, v){ }}
 			<th width="70">
 				{{v}}
 			</th>
 			{{# }); }}
+			<th width="70"><i class="must">*</i>推荐位</th>
 			<th width="55">
 				<input type="hidden" value="{{ d.name_id_string }}" name="spec_key">
 				<i class="must">*</i>库存
 			</th>
 			<th width="50"><i class="must">*</i>预警线</th>
-			<th width="80"><i class="must">*</i>购买方式</th>
-			<th width="70"><i class="must">*</i>购买现金</th>
+			<th width="70"><i class="must">*</i>购买方式</th>
+			<th width="70"><i class="must">*</i>现金</th>
 			<th width="80"><i class="must">*</i>购买积分</th>
 			<th width="50"><i class="must">*</i>运费</th>
 			<th width="60"><i class="must">*</i>赠送积分</th>
@@ -320,6 +320,13 @@
 			<td>{{getPureName(item)}}</td>
 			{{# }); }}
 			<td>
+				<select name="location[]" lay-verify="required">
+					<option value="1">首页</option>
+					<option value="2">精选</option>
+					<option value="3">热门</option>
+				</select>
+			</td>
+			<td>
 				<input type="hidden" value="{{d.values[i]}}" name="spec_value[]">
 				<input type="text" name="stock[]" lay-verify="required|number0" autocomplete="off" class="layui-input">
 			</td>
@@ -328,7 +335,6 @@
 			</td>
 			<td>
 				<select name="style[]" lay-verify="required">
-					<option value="">==方式==</option>
 					<option value="1">积分</option>
 					<option value="2">现金</option>
 					<option value="3">组合</option>
@@ -363,10 +369,11 @@
 		<thead>
 		<tr>
 			<th width="160"><i class="must">*</i>货号</th>
+			<th width="130"><i class="must">*</i>推荐位</th>
 			<th width="80"><i class="must">*</i>库存</th>
 			<th width="80"><i class="must">*</i>预警线</th>
 			<th width="130"><i class="must">*</i>购买方式</th>
-			<th width="100"><i class="must">*</i>购买现金</th>
+			<th width="100"><i class="must">*</i>现金</th>
 			<th width="100"><i class="must">*</i>购买积分</th>
 			<th width="100"><i class="must">*</i>运费</th>
 			<th width="100"><i class="must">*</i>赠送积分</th>
@@ -378,6 +385,13 @@
 				<input type="text" name="spec_sn" value="{$goods.sn|default=$sn}" layui-disabled disabled lay-verify="required" autocomplete="off" class="layui-input">
 			</td>
 			<td>
+				<select name="location" lay-verify="required">
+					<option value="1">首页</option>
+					<option value="2">精选</option>
+					<option value="3">热门</option>
+				</select>
+			</td>
+			<td>
 				<input type="text" name="stock" lay-verify="required" autocomplete="off" class="layui-input">
 			</td>
 			<td>
@@ -385,7 +399,6 @@
 			</td>
 			<td>
 				<select name="style" lay-verify="required">
-					<option value="">==方式==</option>
 					<option value="1">积分</option>
 					<option value="2">现金</option>
 					<option value="3">组合</option>

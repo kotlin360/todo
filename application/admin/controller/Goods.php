@@ -17,7 +17,8 @@ class Goods extends Base
 {
 	/**
 	 * 商品列表
-	 * @return mixed
+	 * @param GoodsModel $goodsModel
+	 * @return mixed|\think\response\Json
 	 */
 	public function index(GoodsModel $goodsModel)
 	{
@@ -39,6 +40,7 @@ class Goods extends Base
 	 * @param GoodsModel    $goodsModel
 	 * @param GoodsValidate $goodsValidate
 	 * @param CategoryModel $categoryModel
+	 * @param ConfigModel   $configModel
 	 * @return mixed|\think\response\Json
 	 */
 	public function add(GoodsModel $goodsModel, GoodsValidate $goodsValidate,
@@ -61,6 +63,7 @@ class Goods extends Base
 				// 没有规格
 				$extend = [
 					'spec_sn' => input('spec_sn'),
+					'location' => input('location'),
 					'spec_key' => null,
 					'spec_value' => null,
 					'stock' => input('stock/d', 0),
@@ -76,6 +79,7 @@ class Goods extends Base
 				// 存在多个规格
 				$extend = [
 					'spec_sn' => input('spec_sn/a'),
+					'location' => input('location/a'),
 					'spec_key' => $spec_key,
 					'spec_value' => input('spec_value/a', null),
 					'stock' => input('stock/a'),
@@ -133,6 +137,7 @@ class Goods extends Base
 				// 没有规格
 				$extend = [
 					'spec_sn' => input('spec_sn'),
+					'location' => input('loation'),
 					'spec_key' => null,
 					'spec_value' => null,
 					'stock' => input('stock/d', 0),
@@ -148,6 +153,7 @@ class Goods extends Base
 				// 存在多个规格
 				$extend = [
 					'spec_sn' => input('spec_sn/a'),
+					'location' => input('location/a'),
 					'spec_key' => $spec_key,
 					'spec_value' => input('spec_value/a', null),
 					'stock' => input('stock/a'),
@@ -202,6 +208,7 @@ class Goods extends Base
 
 	/**
 	 * 添加商品选择规格界面
+	 * @param SpecModel $specModel
 	 * @return mixed
 	 */
 	public function spec_select(specModel $specModel)

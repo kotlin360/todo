@@ -1,13 +1,22 @@
 /** layuiAdmin-v1.0.0-beta5 GPL-v2 License By http://www.layui.com/admin/ */
+
 #LAY_app, body, html {
-	height: 100%
+	height: 100%;
+}
+
+.admin-login-box {
+	display: block;
+	width: 100%;
+	height: 100%;
+	position: absolute;
+	background: url(../images/login.png) no-repeat center;
 }
 
 .layui-layout-body {
 	width: 100%;
 	margin: auto;
 	padding-top: 42px;
-	background: url(../images/login_bj.jpg) no-repeat center top;
+	background: #F8F8F8;
 	background-size: 100%;
 	overflow: hidden;
 }
@@ -20,17 +29,17 @@
 	position: relative;
 	left: 0;
 	top: 0;
-	padding: 90px 0;
+	padding: 80px 0;
 	min-height: 100%;
 	box-sizing: border-box
 }
 
 .layadmin-user-login-main {
-	width: 375px;
+	width: 410px;
 	margin: 0 auto;
 	box-sizing: border-box;
 	border-radius: 10px;
-	background-color: rgba(204, 204, 204, 0.8) !important;
+	background-color: rgba(204, 204, 204, 0.2) !important;
 	background-color: #000;
 	filter: Alpha(opacity=50);
 }
@@ -46,7 +55,7 @@
 .layadmin-user-login-header h2 {
 	font-weight: 300;
 	font-size: 30px;
-	color: #fff
+	color: #888;
 }
 
 .layui-form-item {

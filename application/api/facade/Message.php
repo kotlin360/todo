@@ -3,11 +3,11 @@ namespace app\api\facade;
 
 use think\Facade;
 
-class ParamService extends Facade
+class Message extends Facade
 {
 	protected static function getFacadeClass()
 	{
-		return '\\app\\api\\service\\ParamService';
+		return '\\app\\api\\model\\Message';
 	}
 
 }

@@ -6,7 +6,10 @@ namespace app\api\controller;
  * @author   千叶
  * @date     2018-04-12
  */
-class User
+class User extends Base
 {
+	public function index()
+	{
 
+	}
 }
