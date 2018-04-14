@@ -1,0 +1,102 @@
+{include file="public/header" /}
+<style>
+	.layui-form-item .layui-input-inline {
+		width: 280px
+	}
+</style>
+<div style="width:620px;padding:5px">
+	<form class="layui-form" lay-filter="addForm" id="addForm">
+		<div class="layui-form-item">
+			<label class="layui-form-label">广告名称</label>
+			<div class="layui-input-inline">
+				<input type="text" name="name" value="{$ad.name|default=''}" lay-verify="required" placeholder="请输入广告名称" autocomplete="off" class="layui-input">
+			</div>
+			<div class="layui-form-mid layui-word-aux">字数越少越好</div>
+		</div>
+		<div class="layui-form-item">
+			<label class="layui-form-label">广告位置</label>
+			<div class="layui-input-inline">
+				<input type="radio" name="location" value="1" title="首页750*260" {eq name="ad.location|default='1'" value="1" }checked{/eq}>
+				<input type="radio" name="location" value="2" title="内页514*160" {eq name="ad.location|default='1'" value="2" }checked{/eq}>
+			</div>
+		</div>
+
+		<div class="layui-form-item">
+			<label class="layui-form-label">图片</label>
+			<div class="layui-input-inline">
+				<div class="layui-upload-drag" id="imgBox" style="padding:0;wdith:248px;height:94px">
+					{present name="$ad"}
+					<img style="wdith:268px;height:94px" src="/uploads/{$ad.img|default=''}">
+					{else /}
+					<i class="layui-icon"></i>
+					<p>点击上传图片，首页轮播推荐大小：750*260；内页大小：514*160</p>
+					{/present}
+				</div>
+			</div>
+			<input type="hidden" name="img" value="{$ad.img|default=''}">
+			<div class="layui-form-mid layui-word-aux"></div>
+		</div>
+		<div class="layui-form-item">
+			<label class="layui-form-label">排序值</label>
+			<div class="layui-input-inline">
+				<input type="text" name="sort" value="{$ad.sort|default=1000}" lay-verify="required" placeholder="请输入分类排序值" autocomplete="off" class="layui-input">
+			</div>
+			<div class="layui-form-mid layui-word-aux">数值越小越优先显示</div>
+		</div>
+		<div class="layui-form-item">
+			<label class="layui-form-label">状态</label>
+			<div class="layui-input-inline">
+				<input type="checkbox" name="status" value="1" {eq name="ad.status|default='1'" value="1" }checked{/eq} lay-skin="switch" lay-text="开启|禁用" >
+			</div>
+			<div class="layui-form-mid layui-word-aux">默认开启,如禁用此广告不显示</div>
+		</div>
+		<div class="hr-line-dashed2"></div>
+		<div class="layui-form-item">
+			<div class="layui-input-block">
+				<input type="hidden" name="id" value="{$ad.id|default=''}"/>
+				<button class="layui-btn" lay-submit lay-filter="addForm">立即提交</button>
+				<button type="reset" class="layui-btn layui-btn-primary">重置</button>
+			</div>
+		</div>
+	</form>
+</div>
+<script type="text/javascript">
+	layui.use(['form', 'layer', 'jquery', 'upload'], function () {
+		var form = layui.form, upload = layui.upload,
+			layer = layui.layer, $ = layui.jquery;
+		upload.render({
+			elem: '#imgBox',
+			url: "{:url('system/upload')}",
+			done: function (res) {
+				if (res.code == 1) {
+					var img = '/uploads/' + res.filename;
+					$('input[name=img]').val(res.filename);
+					$('#imgBox').html('<img style="wdith:268px;height:94px" src="' + img + '">');
+				} else {
+					layer.msg(result.msg, {icon: 2});
+				}
+			}
+		});
+		//获取窗口索引
+		var index = parent.layer.getFrameIndex(window.name);
+		//监听新增角色提交
+		form.on('submit(addForm)', function (data) {
+			var url = "{:url('ad/add')}?t=", okMsg = '广告创建成功'; // 添加
+			if (data.field.id) {
+				// 修改
+				url = "{:url('ad/edit')}?t=";
+				okMsg = '广告修改成功';
+			}
+			$.post(url + new Date().getTime(), data.field, function (result) {
+				if (result.code == 1) {
+					window.parent.location.reload(); //刷新父页面
+					parent.layer.msg(okMsg, {icon: 1, time: 2000});
+				} else {
+					layer.msg(result.msg, {icon: 2});
+				}
+			}, 'json');
+			return false;
+		});
+	});
+</script>
+{include file="public/footer" /}

@@ -2,6 +2,7 @@
 namespace app\api\model;
 
 use app\common\facade\Log;
+use app\common\facade\Param as ParamFacade;
 use GuzzleHttp\Exception\GuzzleException;
 use think\facade\Env;
 use think\facade\Request as RequestFacade;
@@ -30,36 +31,25 @@ class User extends Model
 		$encryptedData = $request->post('encryptedData');
 		$iv = $request->post('iv');
 		// 需要首先验证短信验证码是否正确
-		/**
-		 * $realcode = MessageFacade::getCode($phone);
-		 * if (!$realcode) {
-		 * return ['code' => 0, 'msg' => '验证码已过期，请重新获取'];
-		 * }
-		 * if ($realcode !== $verifyCode) {
-		 * return ['code' => 0, 'msg' => '您填写的验证码不正确'];
-		 * }
-		 **/
-		/**
-		 * 正式
-		 * $this->_getWeChatParam();
-		 * $param = [
-		 * 'appid' => $this['appid'],
-		 * 'secret' => $this['secret'],
-		 * 'js_code' => $code,
-		 * 'grant_type' => 'authorization_code'
-		 * ];
-		 **/
+		$realcode = MessageFacade::getCode($phone);
+		if (!$realcode) {
+			return ['code' => 0, 'msg' => '验证码已过期，请重新获取'];
+		}
+		if ($realcode !== $verifyCode) {
+			return ['code' => 0, 'msg' => '您填写的验证码不正确'];
+		}
+		$params = ParamFacade::getSystemParam();
 		$param = [
-			'appid' => 'wxe0437523294fb4e7',
-			'secret' => '47f531085429b940fdb7c3428863f7cc',
+			'appid' => $params['config_wechat_appid'],
+			'secret' => $params['config_wechat_appsecret'],
 			'js_code' => $code,
-			'grant_type' => 'authorization_code'
+			'grant_type' => 'authorization_code',
+			'request_url' => $params['config_wechat_url']
 		];
-		$this['request_url'] = 'https://api.weixin.qq.com/sns/jscode2session';
 		try {
 			$client = new \GuzzleHttp\Client();
 			// 发送请求获取session_key和openid
-			$response = $client->request('get', $this['request_url'], ['query' => $param]);
+			$response = $client->request('get', $params['request_url'], ['query' => $param]);
 			$body = json_decode($response->getBody());
 			if (isset($body->errcode) && $body->errcode !== 0) {
 				return json(['code' => 0, 'msg' => '注册失败：' . $body->errmsg]);
@@ -69,7 +59,6 @@ class User extends Model
 			// 如果需要获取敏感数据，需要对前台接口返回的加密数据(encryptedData)进行对称解密
 			$extend_path = Env::get('extend_path');
 			include_once($extend_path . "weixinCrypt/wxBizDataCrypt.php");
-			// $pc = new \wxBizDataCrypt($this['appid'], $session_key);
 			$pc = new \wxBizDataCrypt($param['appid'], $session_key);
 			$errCode = $pc->decryptData($encryptedData, $iv, $data);
 			if ($errCode != 0) {
