@@ -13,10 +13,11 @@ class Index
 	/**
 	 * 获取首页商品接口
 	 * @param GoodsModel $goodsModel
+	 * @return \think\response\Json
 	 */
 	public function index(GoodsModel $goodsModel)
 	{
-		return json($goodsModel->get)
+		return json($goodsModel->getIndexGoods());
 	}
 
 	public function search()
