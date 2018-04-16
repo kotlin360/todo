@@ -9,7 +9,9 @@ class Base implements \ArrayAccess
 	public function __construct()
 	{
 		$authUser = input('token', '');
-		$this['auth'] = authcode($authUser);
+		if ($authUser) {
+			$this['auth'] = authcode($authUser);
+		}
 	}
 
 	public function offsetExists($offset)
