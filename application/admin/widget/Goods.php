@@ -34,7 +34,7 @@ class Goods extends Controller
 				$spec_key[] = $v['name'];
 			}
 			$spec_ids = rtrim($spec_ids, ',');
-			$cursor = Db::name('goods_products')->where("goods_id={$id}")->field('spec_sn,spec_value,stock,warning_line,style,cash,score,freight,gift,location,is_online')->cursor();
+			$cursor = Db::name('goods_products')->where("goods_id={$id}")->field('spec_sn,spec_value,stock,warning_line,style,cash,score,freight,gift,is_online')->cursor();
 			// 3:银色,8:6G
 			foreach ($cursor as $k => $v) {
 				$spec_value = '';

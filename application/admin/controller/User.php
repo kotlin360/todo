@@ -12,7 +12,6 @@ use think\Facade\Config;
  */
 class User extends Controller
 {
-
 	/**
 	 * 前台用户列表展示
 	 * @param UserModel $userModel
@@ -61,5 +60,39 @@ class User extends Controller
 			$userinfo = $userModel->getUserInfo($id);
 		}
 		return json($userinfo);
+	}
+
+	/**
+	 * 客户提现明细
+	 * @param UserModel $userModel
+	 * @return mixed|\think\response\Json
+	 */
+	public function withdraw(UserModel $userModel)
+	{
+		if ($this->request->isAjax()) {
+			$cur_page = input('page/d', 1);
+			$username = input('username', '');
+			$status = input('status/d', 0);
+			$page_size = input('limit/d', Config::get('page_size'));
+			$map = '1=1';
+			$map .= $username ? ' AND username=' . $username : '';
+			$map .= $status ? ' AND status=' . $status : '';
+			$json = $userModel->getWithdrawList($map, $cur_page, $page_size);
+			return json($json);
+		} else {
+			$page_size = Config::get('page_size');
+			return $this->assign('page_size', $page_size)->fetch();
+		}
+	}
+
+	/**
+	 * 获取提现日志
+	 * @param UserModel $userModel
+	 * @return \think\response\Json
+	 */
+	public function withdraw_log(UserModel $userModel)
+	{
+		$id = input('id/d', 0);
+		return json($userModel->getWithdrawLog($id));
 	}
 }

@@ -4,6 +4,10 @@ namespace app\api\model;
 use app\common\facade\Log;
 use app\common\facade\Param as ParamFacade;
 use GuzzleHttp\Exception\GuzzleException;
+use think\Db;
+use think\db\exception\DataNotFoundException;
+use think\db\exception\ModelNotFoundException;
+use think\exception\DbException;
 use think\facade\Env;
 use think\facade\Request as RequestFacade;
 use think\Model;
@@ -19,6 +23,26 @@ class User extends Model
 	protected $autoWriteTimestamp = true;
 
 	/**
+	 * 用户中心首页
+	 * @param $uid
+	 * @return array
+	 */
+	public function getUserInfo($uid)
+	{
+		try {
+			$user = $this->where("id={$uid}")->field('id,username,nickname,score,money,avatar')->find();
+			// 获取有效尚未使用优惠券的数量
+			$now = $_SERVER['REQUEST_TIME'];
+			$where = "uid={$uid} AND status=0 AND start <= {$now} AND end >= {$now}";
+			$couponCount = Db::name('coupon_log')->where($where)->count();
+			$user['coupon'] = $couponCount;
+			return ['code' => 1, 'data' => $user];
+		} catch (\Exception $e) {
+			return ['code' => 0, 'msg' => '获取用户信息失败：' . $e->getMessage()];
+		}
+	}
+
+	/**
 	 * 小程序注册接口逻辑
 	 * @param $request
 	 * @return array|\think\response\Json
@@ -31,44 +55,52 @@ class User extends Model
 		$encryptedData = $request->post('encryptedData');
 		$iv = $request->post('iv');
 		// 需要首先验证短信验证码是否正确
-		$realcode = MessageFacade::getCode($phone);
-		if (!$realcode) {
-			return ['code' => 0, 'msg' => '验证码已过期，请重新获取'];
-		}
-		if ($realcode !== $verifyCode) {
-			return ['code' => 0, 'msg' => '您填写的验证码不正确'];
-		}
+//		$realcode = MessageFacade::getCode($phone);
+//		if (!$realcode) {
+//			return ['code' => 0, 'msg' => '验证码已过期，请重新获取'];
+//		}
+//		if ($realcode !== $verifyCode) {
+//			return ['code' => 0, 'msg' => '您填写的验证码不正确'];
+//		}
 		$params = ParamFacade::getSystemParam();
-		$param = [
+		// 下面是正式的数据
+		$weixinParam = [
 			'appid' => $params['config_wechat_appid'],
 			'secret' => $params['config_wechat_appsecret'],
 			'js_code' => $code,
-			'grant_type' => 'authorization_code',
-			'request_url' => $params['config_wechat_url']
+			'grant_type' => 'authorization_code'
+		];
+		// 下面是本人自己的测试数据
+		$weixinParam = [
+			'appid' => 'wxe0437523294fb4e7',
+			'secret' => 'ce048c9b8f071bb516398b0baf2289a9',
+			'js_code' => $code,
+			'grant_type' => 'authorization_code'
 		];
 		try {
 			$client = new \GuzzleHttp\Client();
 			// 发送请求获取session_key和openid
-			$response = $client->request('get', $params['request_url'], ['query' => $param]);
+			$response = $client->request('get', $params['config_wechat_url'], ['query' => $weixinParam]);
 			$body = json_decode($response->getBody());
 			if (isset($body->errcode) && $body->errcode !== 0) {
-				return json(['code' => 0, 'msg' => '注册失败：' . $body->errmsg]);
+				return ['code' => 0, 'msg' => '注册失败：' . $body->errmsg];
 			}
 			$openid = $body->openid;
 			$session_key = $body->session_key;
 			// 如果需要获取敏感数据，需要对前台接口返回的加密数据(encryptedData)进行对称解密
 			$extend_path = Env::get('extend_path');
 			include_once($extend_path . "weixinCrypt/wxBizDataCrypt.php");
-			$pc = new \wxBizDataCrypt($param['appid'], $session_key);
+			$pc = new \wxBizDataCrypt($weixinParam['appid'], $session_key);
 			$errCode = $pc->decryptData($encryptedData, $iv, $data);
 			if ($errCode != 0) {
-				return json(['code' => 0, 'msg' => '获取用户信息失败']);
+				return ['code' => 0, 'msg' => '获取用户信息失败'];
 			}
 			$info = json_decode($data);
 			// 写自己的逻辑，把用户信息openid，昵称，头像信息写入到数据库
 			$userinfo = [
 				'username' => $phone,
 				'tel' => $phone,
+				'gender' => $info->gender,
 				'open_id' => $info->openId,
 				'passwd' => password_hash($request->post('passwd'), PASSWORD_DEFAULT),
 				'nickname' => $info->nickName,

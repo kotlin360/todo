@@ -45,11 +45,11 @@
 						if (v.status == 1) {
 							return '<a class="layui-btn layui-btn-xs changeStatus" lay-event="changeStatus">已开启</a>';
 						} else {
-							return '<a class="layui-btn layui-btn-danger layui-btn-xs changeStatus" lay-event="changeStatus">已禁用</a>\n';
+							return '<a class="layui-btn layui-btn-danger layui-btn-xs changeStatus" lay-event="changeStatus">已禁用</a>';
 						}
 					}
 				},
-				{title: '操作', align: 'center', toolbar: '#toobar', width: 100}
+				{title: '操作', align: 'center', toolbar: '#toobar', width: 120}
 			]]
 		});
 		table.on('tool(datatable)', function (obj) {

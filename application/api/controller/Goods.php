@@ -21,13 +21,12 @@ class Goods
 		return json($goodsModel->search($key));
 	}
 
-	/**
-	 * 首页获取商品
+	/**首页获取商品
 	 * @param GoodsModel $goodsModel
-	 * @param null       $location null获取所有 1首页展示 2精选 3热门
+	 * @param int        $location 1首页展示 2精选 3热门
 	 * @return \think\response\Json
 	 */
-	public function get_goods(GoodsModel $goodsModel, $location = null)
+	public function get_goods(GoodsModel $goodsModel, $location = 1)
 	{
 		return json($goodsModel->getGoods($location));
 	}

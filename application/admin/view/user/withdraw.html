@@ -1,0 +1,174 @@
+{include file="public/header" /}
+<fieldset class="layui-elem-field" style="border:0">
+	<form class="layui-form" lay-filter="searchForm" id="searchForm">
+		<div class="layui-form-item" style="float: left;">
+			<div class="layui-input-inline">
+				<input type="text" name="username" lay-verify="IsMobilePhoneNumber" autocomplete="off" placeholder="输入用户手机号码，如果为空查询全部" class="layui-input layui-btn-sm">
+			</div>
+			<div class="layui-input-inline">
+				<select name="status">
+					<option value="">==请选择提现状态==</option>
+					<option value="1">提交申请，等待审核</option>
+					<option value="2">审核通过，到账中</option>
+					<option value="3">审核拒绝，提现失败</option>
+					<option value="4">提现成功，已到账</option>
+				</select>
+			</div>
+			<button type="submit" lay-submit lay-filter="searchForm" class="layui-btn layui-btn-warm"><i class="fa fa-search"></i> 搜索</button>
+		</div>
+	</form>
+</fieldset>
+<div class="hr-line-dashed"></div>
+<table id="datatable" lay-filter="datatable"></table>
+<script type="text/html" id="toobar">
+	<a class="layui-btn layui-btn-warm layui-btn-xs" lay-event="log"><i class="fa fa-eye"></i> 查看记录</a>
+	{{#  if(d.status < 2){ }}
+	<a class="layui-btn layui-btn-xs" lay-event="check"><i class="fa fa-gavel"></i> 审核</a>
+	{{#  } }}
+</script>
+<script type="text/javascript">
+	layui.config({
+		base: '/static/admin/js/'
+	}).use(['table', 'form', 'layer', 'jquery', 'utils', 'element', 'laytpl'], function () {
+		var table = layui.table, form = layui.form, layer = layui.layer, $ = layui.jquery,
+			utils = layui.utils, element = layui.element, laytpl = layui.laytpl;
+
+		var datatable = table.render({
+			elem: '#datatable',
+			height: 'full-120',
+			limit: "{$page_size}",
+			url: "{:url('user/withdraw')}?t=" + new Date().getTime(),
+			page: true,
+			cols: [[
+				{field: 'id', title: '序号', align: 'center', width: 80},
+				{field: 'username', title: '手机号码', align: 'center', width: 120},
+				{
+					field: 'cate', title: '提现类型', align: 'center', width: 100, templet: function (v) {
+						return v.cate === 1 ? '积分提现' : '钱包提现';
+					}
+				},
+				{field: 'value', title: '提现额度', align: 'center', width: 100},
+				{
+					field: 'create_time', title: '申请时间', align: 'center', width: 180, templet: function (v) {
+						return moment(v.create_time * 1000).format('YYYY-MM-DD HH:mm:ss');
+					}
+				},
+				{
+					field: 'status', title: '状态', align: 'center', width: 180, templet: function (v) {
+						switch (v.status) {
+							case 1:
+								return '<span style="color:#01AAED">提交申请，等待审核</span>';
+							case 2:
+								return '<span style="color:#5FB878">审核成功，系统处理中</span>';
+							case 3:
+								return '<span style="color:#FF5722">审核拒绝，提现失败</span>';
+							case 4:
+								return '<span style="color:#009688">提现成功，已到账</span>';
+							default:
+								return '未知状态';
+						}
+					}
+				},
+				{title: '操作', align: 'left', toolbar: '#toobar', width: 180}
+			]]
+		});
+		table.on('tool(datatable)', function (obj) {
+			var data = obj.data;
+			var layEvent = obj.event;
+			if (layEvent === 'check') {
+				layer.open({
+					type: 1,
+					title: '用户提现审核',
+					area: ['390px', '330px'],
+					content: '111111111111',
+					btn: ['审核通过', '审核拒绝'],
+					yes: function () {
+						alert(111)
+					},
+					btn2: function () {
+						alert(333)
+					}
+				});
+				layer.confirm('确定要' + tip + '【' + data.username + '】此用户吗？<br>注意：如禁用此用户无法登录小程序', {title: '修改用户状态', icon: 0, btn: ['确定', '取消']}, function () {
+					$.post("{:url('user/change_status')}?t=" + new Date().getTime(), {id: data.id, status: data.status}, function (result) {
+						if (result.code == 1) {
+							layer.msg('用户状态修改成功', {icon: 1, time: 1000, offset: 't'}, function () {
+								datatable.reload();
+							});
+						} else {
+							layer.msg(result.msg, {offset: 't', icon: 2});
+						}
+					}, 'json');
+				});
+			} else if (layEvent == 'log') {
+				$.ajax({
+					type: 'post',
+					dataType: 'json',
+					data: 'id=' + data.id,
+					url: "{:url('user/withdraw_log')}?t=" + new Date().getTime(),
+					beforeSend: function () {
+						layer.load();
+					},
+					success: function (data) {
+						layer.closeAll();
+						if (data.code == 1) {
+							var getTpl = $('#logHtml').html();
+							laytpl(getTpl).render(data, function (html) {
+								layer.open({
+									type: 1,
+									title: '用户提现日志',
+									area: ['600px', '450px'],
+									scrollbar: false,
+									anim: 2,
+									shadeClose: true,
+									content: html
+								})
+							});
+						}
+					}
+				});
+			}
+		});
+		form.verify({
+			IsMobilePhoneNumber: function (value) {
+				var regex = /^\s*$|^1\d{10}$/;
+				if (!value.match(regex)) {
+					return '请输入正确的手机号码';
+				}
+			}
+		});
+		//监听搜索提交
+		form.on('submit(searchForm)', function (data) {
+			var username = $('input[name=username]').val();
+			var status = $('select[name=status]').val();
+			datatable.reload({
+				where: {
+					username: username,
+					status: status,
+					page: 1
+				}
+			});
+			return false;
+		});
+	});
+</script>
+<script type="text/html" id="logHtml">
+	<div class="layui-row">
+		<div class="layui-col-md12">
+			<ul class="layui-timeline">
+				{{# layui.each(d.logs, function(index, item){ }}
+				<li class="layui-timeline-item">
+					<i class="layui-icon layui-timeline-axis"></i>
+					<div class="layui-timeline-content layui-text">
+						<div class="layui-timeline-title">{{ moment(parseInt(item.create_time * 1000)).format('YYYY-MM-DD HH:mm:ss') }}&emsp;操作人：【 {{ item.username }} 】&emsp;{{ item.note }}</div>
+					</div>
+				</li>
+				{{# }); }}
+				{{# if(d.logs === null){ }}
+				暂无提现日志数据
+				{{# } }}
+			</ul>
+		</div>
+	</div>
+</script>
+{include file="public/footer" /}

@@ -55,6 +55,7 @@ class Goods extends Base
 				'sn' => input('sn', ''),
 				'unit' => input('unit', '件'),
 				'status' => input('status/d', 1),
+				'location' => input('location/d', 1),
 				'description' => input('description', ''),
 				'imgs' => input('imgs/a')
 			];
@@ -63,7 +64,6 @@ class Goods extends Base
 				// 没有规格
 				$extend = [
 					'spec_sn' => input('spec_sn'),
-					'location' => input('location'),
 					'spec_key' => null,
 					'spec_value' => null,
 					'stock' => input('stock/d', 0),
@@ -79,7 +79,6 @@ class Goods extends Base
 				// 存在多个规格
 				$extend = [
 					'spec_sn' => input('spec_sn/a'),
-					'location' => input('location/a'),
 					'spec_key' => $spec_key,
 					'spec_value' => input('spec_value/a', null),
 					'stock' => input('stock/a'),
@@ -129,6 +128,7 @@ class Goods extends Base
 				'sn' => input('sn', ''),
 				'unit' => input('unit', '件'),
 				'status' => input('status/d', 1),
+				'location' => input('loation'),
 				'description' => input('description', ''),
 				'imgs' => input('imgs/a')
 			];
@@ -137,7 +137,6 @@ class Goods extends Base
 				// 没有规格
 				$extend = [
 					'spec_sn' => input('spec_sn'),
-					'location' => input('loation'),
 					'spec_key' => null,
 					'spec_value' => null,
 					'stock' => input('stock/d', 0),
@@ -153,7 +152,6 @@ class Goods extends Base
 				// 存在多个规格
 				$extend = [
 					'spec_sn' => input('spec_sn/a'),
-					'location' => input('location/a'),
 					'spec_key' => $spec_key,
 					'spec_value' => input('spec_value/a', null),
 					'stock' => input('stock/a'),

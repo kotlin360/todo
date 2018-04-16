@@ -235,7 +235,7 @@ class Goods extends Model
 	public function getGoodsById($id)
 	{
 		try {
-			$base = Db::name('goods')->where("id={$id}")->find();
+			$base = Db::name('goods')->where("id={$id}")->field('specs', true)->find();
 			$base['imgs'] = json_encode(Db::name('goods_images')->where("goods_id={$id}")->field(true)->select(), true);
 			return $base;
 		} catch (\Exception $e) {
@@ -255,7 +255,7 @@ class Goods extends Model
 			if ($specs == null) {
 				$products = Db::name('goods_products')->where("goods_id={$id}")->field(true)->find();
 			} else {
-				$cursor = Db::name('goods_products')->where("goods_id={$id}")->field('spec_sn,spec_value,stock,warning_line,style,cash,score,gift,freight,is_online')->cursor();
+				$cursor = Db::name('goods_products')->where("goods_id={$id}")->field(true)->cursor();
 				foreach ($cursor as $k => $v) {
 					$products[$k] = $v;
 					$products[$k]['spec_value'] = unserialize($v['spec_value']);

@@ -65,7 +65,7 @@ class User extends Model
 	}
 
 	/**
-	 * 获取用户积分信息
+	 * 获取用户基本、积分、钱包、优惠券等信息
 	 * @param $id
 	 * @return array
 	 */
@@ -111,5 +111,62 @@ class User extends Model
 		} else {
 			return ['code' => 0];
 		}
+	}
+
+	/**
+	 * 获取用户提现列表
+	 * @param $map
+	 * @param $cur_page
+	 * @param $page_size
+	 * @return array
+	 */
+	public function getWithdrawList($map, $cur_page, $page_size)
+	{
+		try {
+			$count = Db::name('withdraw')->where($map)->count();
+			$list = Db::name('withdraw')->where($map)->page($cur_page, $page_size)->order('id desc')->field(true)->select();
+			$json = [
+				'code' => 0,
+				'msg' => '',
+				'count' => $count,
+				'data' => $list
+			];
+			return $json;
+		} catch (\Exception $e) {
+			return ['code' => 404, 'msg' => '获取用户提现列表：' . $e->getMessage()];
+		}
+	}
+
+	/**
+	 * 获取用户提现日志记录
+	 * @param $id
+	 * @return array
+	 */
+	public function getWithdrawLog($id)
+	{
+		$log = Db::name('withdraw')->where("id={$id}")->value('log');
+		return ['code' => 1, 'logs' => unserialize($log)];
+	}
+
+	/**
+	 * [buildLog 需要单独处理自动序列化问题]
+	 * 解决方案：取出之前的详情字段再加入当前的详情内容,构造出完整的数据段插入数据库中的info字段中
+	 * @param  [type] $id      [当前的申请ID]
+	 * @param  [type] $nowData [当前的处理数据段]
+	 * @return [type]  bool    [description]
+	 */
+	public function buildLog($id, $nowData)
+	{
+		$data = [];
+		$before = unserialize(Db::name('withdraw')->where("id={$id}")->value('log'));
+		if ($before) {
+			//之前存在数据
+			$before[] = $nowData;
+			$data = serialize($before);
+		} else {
+			$now[] = $nowData;
+			$data = serialize($now);
+		}
+		Db::name('withdraw')->where("id={$id}")->save(['log' => $data]);
 	}
 }

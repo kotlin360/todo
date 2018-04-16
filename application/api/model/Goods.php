@@ -25,13 +25,13 @@ class Goods extends Model
 		$where = "title like '{$key}' AND status=1";
 		try {
 			$goods = $this->where($where)->field(true)->select();
-			$goods->each(function ($good) {
+			$goods->each(function ($g) {
 				// 获取图片
-				$img = Db::name('goods_images')->where("goods_id={$good['id']}")->order('id')->value('img');
-				$goods['img'] = $img;
+				$img = Db::name('goods_images')->where("goods_id={$g['id']}")->order('id')->value('img');
+				$g['img'] = $img;
 				// 获取价格
 			});
-			return ['code' => 1, 'goods' => $goods];
+			return ['code' => 1, 'data' => $goods];
 		} catch (\Exception $e) {
 			return ['code' => 0, 'msg' => '没有搜索到任何的商品'];
 		}
@@ -39,13 +39,18 @@ class Goods extends Model
 
 	public function getGoods($location)
 	{
-		$where = "";
-		if ($location != null) {
-			$where = "location={$location} AND status=1";
-		}
+		$where = "location={$location} AND status=1";
 		try {
-			$goods = Db::name('')->where($where)->field(true)->select();
+			$goods = $this->where($where)->field('id,title,is_score')->select();
+			$goods->each(function ($g) {
+				// 获取图片
+				$img = Db::name('goods_images')->where("goods_id={$g['id']}")->order('id')->value('img');
+				$g['img'] = '/uploads/' . $img;
+				// 获取价格或者积分
+			});
+			return ['code' => 1, 'data' => $goods];
 		} catch (\Exception $e) {
+			return ['code' => 0, 'msg' => '获取商品失败：' . $e->getMessage()];
 		}
 	}
 }

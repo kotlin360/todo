@@ -49,8 +49,22 @@
 					<label class="layui-form-label">状态：</label>
 					<div class="layui-input-inline layui-input-inline100">
 						<input type="checkbox" name="status" value="1"
-						       {eq name="user.status|default='1'" value="1" }checked{/eq}
+						       {eq name="base.status|default='1'" value="1" }checked{/eq}
 						lay-skin="switch" lay-text="上架|下架" >
+					</div>
+				</div>
+
+				<div class="layui-inline">
+					<label class="layui-form-label"><i class="must">*</i>推荐位：</label>
+					<div class="layui-input-inline layui-input-inline100">
+						<select name="location" lay-verify="required">
+							<option value="1"
+							<?php if($base['location'] == 1) echo 'selected' ?>>首页</option>
+							<option value="2"
+							<?php if($base['location'] == 2) echo 'selected' ?>>精选</option>
+							<option value="3"
+							<?php if($base['location'] == 3) echo 'selected' ?>>热门</option>
+						</select>
 					</div>
 				</div>
 			</div>
@@ -301,7 +315,6 @@
 				{{v}}
 			</th>
 			{{# }); }}
-			<th width="70"><i class="must">*</i>推荐位</th>
 			<th width="55">
 				<input type="hidden" value="{{ d.name_id_string }}" name="spec_key">
 				<i class="must">*</i>库存
@@ -325,13 +338,6 @@
 			{{# layui.each(d.values[i], function(index, item){ }}
 			<td>{{getPureName(item)}}</td>
 			{{# }); }}
-			<td>
-				<select name="location[]" lay-verify="required">
-					<option value="1">首页</option>
-					<option value="2">精选</option>
-					<option value="3">热门</option>
-				</select>
-			</td>
 			<td>
 				<input type="hidden" value="{{d.values[i]}}" name="spec_value[]">
 				<input type="text" name="stock[]" lay-verify="required|number0" autocomplete="off" class="layui-input">
@@ -375,7 +381,6 @@
 		<thead>
 		<tr>
 			<th width="160"><i class="must">*</i>货号</th>
-			<th width="130"><i class="must">*</i>推荐位</th>
 			<th width="80"><i class="must">*</i>库存</th>
 			<th width="80"><i class="must">*</i>预警线</th>
 			<th width="130"><i class="must">*</i>购买方式</th>
@@ -389,13 +394,6 @@
 		<tr>
 			<td>
 				<input type="text" name="spec_sn" value="{$base.sn|default=''}" layui-disabled disabled lay-verify="required" autocomplete="off" class="layui-input">
-			</td>
-			<td>
-				<select name="location" lay-verify="required">
-					<option value="1">首页</option>
-					<option value="2">精选</option>
-					<option value="3">热门</option>
-				</select>
 			</td>
 			<td>
 				<input type="text" name="stock" lay-verify="required|number0" autocomplete="off" class="layui-input">

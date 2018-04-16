@@ -1,6 +1,11 @@
 <?php
 namespace app\api\controller;
 
+/**
+ * @project  接口基类
+ * @author   千叶
+ * @date     2018-04-16
+ */
 class Base implements \ArrayAccess
 {
 
@@ -10,7 +15,10 @@ class Base implements \ArrayAccess
 	{
 		$authUser = input('token', '');
 		if ($authUser) {
-			$this['auth'] = authcode($authUser);
+			$token = explode("|", authcode($authUser));
+			$this['uid'] = $token[0];
+			$this['username'] = $token[1];
+			$this['openid'] = $token[2];
 		}
 	}
 
