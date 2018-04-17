@@ -32,7 +32,6 @@
 	}).use(['table', 'form', 'layer', 'jquery', 'utils', 'element', 'laytpl'], function () {
 		var table = layui.table, form = layui.form, layer = layui.layer, $ = layui.jquery,
 			utils = layui.utils, element = layui.element, laytpl = layui.laytpl;
-
 		var datatable = table.render({
 			elem: '#datatable',
 			height: 'full-120',
@@ -72,35 +71,51 @@
 				{title: '操作', align: 'left', toolbar: '#toobar', width: 180}
 			]]
 		});
+
+		/**
+		 * 异步提交审核信息
+		 * @param id
+		 * @param type
+		 * @param remark
+		 */
+		function ajaxCheck(id, type, remark) {
+			$.post("{:url('user/check_withdraw')}", {id: id, type: type, remark: remark}, function (data) {
+				layer.closeAll();
+				if (data.code === 1) {
+					parent.message.show({msg: '提现审核操作成功'});
+					datatable.reload();
+				} else {
+					parent.message.show({skin: 'red', msg: data.msg});
+				}
+			});
+		}
+
 		table.on('tool(datatable)', function (obj) {
 			var data = obj.data;
 			var layEvent = obj.event;
 			if (layEvent === 'check') {
 				layer.open({
 					type: 1,
-					title: '用户提现审核',
-					area: ['390px', '330px'],
-					content: '111111111111',
+					title: '用户 【 ' + data.username + ' 】 提现审核',
+					area: ['420px', '300px'],
+					btnAlign: 'c',
+					content: $('#checkHtml').html(),
+					shadeClose: true,
 					btn: ['审核通过', '审核拒绝'],
 					yes: function () {
-						alert(111)
+						ajaxCheck(data.id, 1, '');
 					},
 					btn2: function () {
-						alert(333)
+						var remark = $.trim($('textarea[name=remark]').val());
+						if (remark === '') {
+							parent.message.show({skin: 'red', msg: '请输入拒绝原因'});
+							return false;
+						}
+						ajaxCheck(data.id, 0, remark);
+						return false;
 					}
 				});
-				layer.confirm('确定要' + tip + '【' + data.username + '】此用户吗？<br>注意：如禁用此用户无法登录小程序', {title: '修改用户状态', icon: 0, btn: ['确定', '取消']}, function () {
-					$.post("{:url('user/change_status')}?t=" + new Date().getTime(), {id: data.id, status: data.status}, function (result) {
-						if (result.code == 1) {
-							layer.msg('用户状态修改成功', {icon: 1, time: 1000, offset: 't'}, function () {
-								datatable.reload();
-							});
-						} else {
-							layer.msg(result.msg, {offset: 't', icon: 2});
-						}
-					}, 'json');
-				});
-			} else if (layEvent == 'log') {
+			} else if (layEvent === 'log') {
 				$.ajax({
 					type: 'post',
 					dataType: 'json',
@@ -109,15 +124,15 @@
 					beforeSend: function () {
 						layer.load();
 					},
-					success: function (data) {
+					success: function (result) {
 						layer.closeAll();
-						if (data.code == 1) {
+						if (result.code === 1) {
 							var getTpl = $('#logHtml').html();
-							laytpl(getTpl).render(data, function (html) {
+							laytpl(getTpl).render(result, function (html) {
 								layer.open({
 									type: 1,
-									title: '用户提现日志',
-									area: ['600px', '450px'],
+									title: '用户【' + data.username + '】提现日志',
+									area: ['600px', '380px'],
 									scrollbar: false,
 									anim: 2,
 									shadeClose: true,
@@ -153,21 +168,39 @@
 	});
 </script>
 <script type="text/html" id="logHtml">
+	<div class="layui-fluid">
+		<div class="layui-row" style="padding:20px">
+			<div class="layui-col-md12">
+				<ul class="layui-timeline">
+					{{# layui.each(d.log, function(i, v){ }}
+					<li class="layui-timeline-item">
+						<i class="layui-icon layui-timeline-axis"></i>
+						<div class="layui-timeline-content layui-text">
+							<div class="layui-timeline-title">{{ moment(parseInt(v.time * 1000)).format('YYYY-MM-DD HH:mm:ss') }}&emsp;操作人：【 {{ v.uname }} 】&emsp;{{ v.content }}</div>
+						</div>
+					</li>
+					{{# }); }}
+					{{# if(d.log === null){ }}
+					<div class="layui-col-md12">
+						暂无提现日志数据
+					</div>
+					{{# } }}
+				</ul>
+			</div>
+		</div>
+	</div>
+</script>
+<script type="text/html" id="checkHtml">
 	<div class="layui-row">
 		<div class="layui-col-md12">
-			<ul class="layui-timeline">
-				{{# layui.each(d.logs, function(index, item){ }}
-				<li class="layui-timeline-item">
-					<i class="layui-icon layui-timeline-axis"></i>
-					<div class="layui-timeline-content layui-text">
-						<div class="layui-timeline-title">{{ moment(parseInt(item.create_time * 1000)).format('YYYY-MM-DD HH:mm:ss') }}&emsp;操作人：【 {{ item.username }} 】&emsp;{{ item.note }}</div>
+			<form class="layui-form layui-form-pane" lay-filter="rejectForm">
+				<div class="layui-form-item layui-form-text" style="padding:20px">
+					<label class="layui-form-label">拒绝原因</label>
+					<div class="layui-input-block">
+						<textarea name="remark" placeholder="如果通过，不用填写；审核拒绝必须填写理由，不能超过15个字符" class="layui-textarea" style="resize:none"></textarea>
 					</div>
-				</li>
-				{{# }); }}
-				{{# if(d.logs === null){ }}
-				暂无提现日志数据
-				{{# } }}
-			</ul>
+				</div>
+			</form>
 		</div>
 	</div>
 </script>

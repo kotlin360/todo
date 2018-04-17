@@ -86,6 +86,19 @@ class User extends Controller
 	}
 
 	/**
+	 * 提现审核
+	 * @param UserModel $userModel
+	 * @return \think\response\Json
+	 */
+	public function check_withdraw(UserModel $userModel)
+	{
+		$id = input('id/d');
+		$type = input('type/d');
+		$remark = input('remark', '');
+		return json($userModel->checkWithdraw($id, $type, $remark));
+	}
+
+	/**
 	 * 获取提现日志
 	 * @param UserModel $userModel
 	 * @return \think\response\Json

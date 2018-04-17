@@ -31,7 +31,7 @@ class System extends Controller
 		$ext_allow = 'gif,jpg,jpeg,bmp,png';
 		$subpath = date('Ym'); // 子目录格式
 		$info = $file->validate(['size' => $size_allow, 'ext' => $ext_allow])->rule('uniqid')
-			->move('./uploads' . '/' . date('Ym'));
+			->move('./uploads' . '/' . $subpath);
 		if ($info) {
 			// 成功上传后 获取上传信息
 			$json = ['code' => 1, 'filename' => $subpath . '/' . $info->getSaveName()];

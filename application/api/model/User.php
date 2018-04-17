@@ -4,14 +4,14 @@ namespace app\api\model;
 use app\common\facade\Log;
 use app\common\facade\Param as ParamFacade;
 use GuzzleHttp\Exception\GuzzleException;
+use think\Container;
 use think\Db;
-use think\db\exception\DataNotFoundException;
-use think\db\exception\ModelNotFoundException;
-use think\exception\DbException;
 use think\facade\Env;
 use think\facade\Request as RequestFacade;
 use think\Model;
 use think\Request;
+use think\facade\Config;
+use app\api\facade\Message as MessageFacade;
 
 /**
  * @project  用户接口模型
@@ -31,6 +31,10 @@ class User extends Model
 	{
 		try {
 			$user = $this->where("id={$uid}")->field('id,username,nickname,score,money,avatar')->find();
+			if (strpos($user['avatar'], 'https') === false) {
+				//  用户修改了头像
+				$user['avatar'] = Container::get('request')->domain() . $user['avatar'];
+			}
 			// 获取有效尚未使用优惠券的数量
 			$now = $_SERVER['REQUEST_TIME'];
 			$where = "uid={$uid} AND status=0 AND start <= {$now} AND end >= {$now}";
@@ -170,6 +174,28 @@ class User extends Model
 			return ['code' => 1];
 		} else {
 			return ['code' => 0, 'msg' => '密码更新失败，请稍后再试'];
+		}
+	}
+
+	/**
+	 * 头像上传
+	 * @param $uid
+	 * @param $file
+	 * @return array
+	 */
+	public function avatarUpload($uid = 1, $file)
+	{
+		try {
+			$subpath = date('Ym'); // 子目录格式
+			$size_allow = Config::get('file_upload_size');
+			$ext_allow = 'gif,jpg,jpeg,bmp,png';
+			$info = $file->validate(['size' => $size_allow, 'ext' => $ext_allow])->rule('uniqid')
+				->move('./uploads' . '/' . date('Ym'));
+			// 更新用户头像信息
+			$this->where("id={$uid}")->update(['avatar' => '/uploads/' . $subpath . '/' . $info->getSaveName()]);
+			return ['code' => 1];
+		} catch (\Exception $e) {
+			return ['code' => 0, 'msg' => $file->getError()];
 		}
 	}
 

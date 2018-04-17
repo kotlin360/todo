@@ -6,6 +6,7 @@ use app\common\facade\Money;
 use app\common\facade\Score;
 use think\Db;
 use think\Facade\Config;
+use think\facade\Session;
 use think\Model;
 
 /**
@@ -138,6 +139,28 @@ class User extends Model
 	}
 
 	/**
+	 * 提现审核
+	 * @param $id       审核的提现申请id
+	 * @param $type     审核结果 1通过 0拒绝
+	 * @param $remark   拒绝原因
+	 */
+	public function checkWithdraw($id, $type, $remark)
+	{
+		$status = $type === 1 ? 2 : 3;
+		$msg = $type === 1 ? '通过' : '拒绝';
+		$username = Session::get('auth.real_name');
+		$frame = [
+			'time' => $_SERVER['REQUEST_TIME'],
+			'uname' => Session::get('auth.real_name'),
+			'content' => '执行审核：' . $msg
+		];
+		$log = $this->makeLog($id, $frame);
+		$data = ['status' => $status, 'remark' => $remark, 'log' => $log];
+		Db::name('withdraw')->where("id={$id}")->update($data);
+		return ['code' => 1];
+	}
+
+	/**
 	 * 获取用户提现日志记录
 	 * @param $id
 	 * @return array
@@ -145,17 +168,17 @@ class User extends Model
 	public function getWithdrawLog($id)
 	{
 		$log = Db::name('withdraw')->where("id={$id}")->value('log');
-		return ['code' => 1, 'logs' => unserialize($log)];
+		return ['code' => 1, 'log' => $log ? unserialize($log) : null];
 	}
 
 	/**
-	 * [buildLog 需要单独处理自动序列化问题]
+	 * [makeLog 需要单独处理自动序列化问题]
 	 * 解决方案：取出之前的详情字段再加入当前的详情内容,构造出完整的数据段插入数据库中的info字段中
 	 * @param  [type] $id      [当前的申请ID]
 	 * @param  [type] $nowData [当前的处理数据段]
-	 * @return [type]  bool    [description]
+	 * @return [string] $data    [返回序列化之后的日志]
 	 */
-	public function buildLog($id, $nowData)
+	public function makeLog($id, $nowData)
 	{
 		$data = [];
 		$before = unserialize(Db::name('withdraw')->where("id={$id}")->value('log'));
@@ -167,6 +190,6 @@ class User extends Model
 			$now[] = $nowData;
 			$data = serialize($now);
 		}
-		Db::name('withdraw')->where("id={$id}")->save(['log' => $data]);
+		return $data;
 	}
 }

@@ -16,9 +16,11 @@ class Base implements \ArrayAccess
 		$authUser = input('token', '');
 		if ($authUser) {
 			$token = explode("|", authcode($authUser));
-			$this['uid'] = $token[0];
-			$this['username'] = $token[1];
-			$this['openid'] = $token[2];
+			$this['auth'] = [
+				'uid' => $token[0],
+				'username' => $token[1],
+				'openid' => $token[2],
+			];
 		}
 	}
 

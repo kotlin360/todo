@@ -2,6 +2,7 @@
 namespace app\api\controller;
 
 use app\api\model\User as UserModel;
+use think\Request;
 
 /**
  * @project  用户接口控制器
@@ -17,16 +18,18 @@ class User extends Base
 	 */
 	public function index(UserModel $userModel)
 	{
-		return json($userModel->getUserInfo($this['uid']));
+		return json($userModel->getUserInfo($this['auth']['uid']));
 	}
 
 	/**
-	 * 我的积分
+	 * 用户头像上传
 	 * @param UserModel $userModel
+	 * @param Request   $request
 	 * @return \think\response\Json
 	 */
-	public function total(UserModel $userModel)
+	public function avatar_upload(UserModel $userModel, Request $request)
 	{
-		return json($userModel->total($this['uid']));
+		$file = $request->file('file');
+		return json($userModel->avatarUpload(1, $file));
 	}
 }
