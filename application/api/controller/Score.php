@@ -16,7 +16,7 @@ class Score extends Base
 	 * @param ScoreModel $scoreModel
 	 * @return \think\response\Json
 	 */
-	public function index(ScoreModel $scoreModel)
+	public function get_score_list(ScoreModel $scoreModel)
 	{
 		$page = input('page/d', 1);
 		return json($scoreModel->getScoreList($this['auth']['uid'], $page));
@@ -61,10 +61,10 @@ class Score extends Base
 	 * @param ScoreModel $scoreModel
 	 * @return \think\response\Json
 	 */
-	public function get_withdraw_list(ScoreModel $scoreModel)
-	{
-		$page = input('page/d', 1);
-		return json($scoreModel->getWithdrawList($this['auth']['uid'], $page));
-	}
+//	public function get_withdraw_list(ScoreModel $scoreModel)
+//	{
+//		$page = input('page/d', 1);
+//		return json($scoreModel->getWithdrawList($this['auth']['uid'], $page));
+//	}
 
 }

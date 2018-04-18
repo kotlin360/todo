@@ -2,6 +2,9 @@
 namespace app\admin\model;
 
 use think\Db;
+use think\db\exception\DataNotFoundException;
+use think\db\exception\ModelNotFoundException;
+use think\exception\DbException;
 use think\facade\Config;
 use think\Model;
 
@@ -101,6 +104,22 @@ class Coupon extends Model
 			return $json;
 		} catch (\Exception $e) {
 			return ['code' => 404, 'msg' => $e->getMessage()];
+		}
+	}
+
+	/**
+	 * 获取系统中有效的优惠券，用于后台定义充值额度的时候选择优惠券
+	 * @return array|null|\PDOStatement|string|\think\Collection
+	 */
+	public function getAllCouponForRecharge()
+	{
+		$now = $_SERVER['REQUEST_TIME'];
+		$where = "status=1 AND start <= {$now} AND end >= {$now}";
+		try {
+			$coupon = $this->where($where)->field('id,name')->select();
+			return $coupon;
+		} catch (\Exception $e) {
+			return null;
 		}
 	}
 }

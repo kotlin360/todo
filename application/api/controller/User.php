@@ -16,7 +16,7 @@ class User extends Base
 	 * @param UserModel $userModel
 	 * @return \think\response\Json
 	 */
-	public function index(UserModel $userModel)
+	public function get_userinfo(UserModel $userModel)
 	{
 		return json($userModel->getUserInfo($this['auth']['uid']));
 	}
@@ -30,6 +30,6 @@ class User extends Base
 	public function avatar_upload(UserModel $userModel, Request $request)
 	{
 		$file = $request->file('file');
-		return json($userModel->avatarUpload(1, $file));
+		return json($userModel->avatarUpload($this['auth']['uid'], $file));
 	}
 }

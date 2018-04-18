@@ -30,7 +30,8 @@ class User extends Model
 	public function getUserInfo($uid)
 	{
 		try {
-			$user = $this->where("id={$uid}")->field('id,username,nickname,score,money,avatar')->find();
+			$user = $this->where("id={$uid}")
+				->field('id,username,nickname,score,money,avatar,tel,nickname,gender,birthday,station_name,manufactor,duty')->find();
 			if (strpos($user['avatar'], 'https') === false) {
 				//  用户修改了头像
 				$user['avatar'] = Container::get('request')->domain() . $user['avatar'];

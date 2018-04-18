@@ -1,0 +1,94 @@
+{include file="public/header" /}
+<blockquote class="layui-elem-quote layui-quote-nm" style="position: relative">
+	1、创建充值额度的时候，请先到优惠券管理中定义优惠券；如果某个充值额度挂载的优惠券过期或者被删除，那么充值的时候优惠券无法赠送<br>
+	2、创建充值额度的时候，优惠券非必选，也就是不赠送优惠券
+	<button class="layui-btn layui-btn-primary" style="position:absolute;right:10px;top:20px" id="addBtn"><i class="fa fa-plus"></i> 新增充值额度</button>
+</blockquote>
+<div class="hr-line-dashed"></div>
+<table id="datatable" lay-filter="datatable"></table>
+<script type="text/html" id="toobar">
+	<a class="layui-btn layui-btn-warm layui-btn-xs" lay-event="edit"><i class="fa fa-edit"></i> 编辑</a>
+</script>
+<script type="text/javascript">
+	layui.config({
+		base: '/static/admin/js/'
+	}).use(['table', 'form', 'layer', 'jquery', 'utils'], function () {
+		var table = layui.table, form = layui.form,
+			layer = layui.layer, $ = layui.jquery,
+			utils = layui.utils;
+		var datatable = table.render({
+			elem: '#datatable',
+			height: 'full-160',
+			limit: "{$page_size}",
+			url: "{:url('recharge/index')}?t=" + new Date().getTime(),
+			page: true,
+			cols: [[
+				{field: 'id', title: '序号', align: 'center', width: 70},
+				{field: 'value', title: '充值额度', align: 'center', width: 100},
+				{field: 'title', title: '赠送优惠券名称', align: 'center', width: 160},
+				{field: 'num', title: '赠送张数', align: 'center', width: 100},
+				{field: 'coupon_status', title: '优惠券状态', align: 'center', width: 120},
+				{
+					field: 'create_time', title: '创建时间', align: 'center', width: 170,
+					templet: '<span>{{ d.create_time }}</span>'
+				},
+				{
+					field: 'update_time', title: '修改时间', align: 'center', width: 170,
+					templet: '<span>{{ d.update_time }}</span>'
+				},
+				{
+					field: 'status', title: '状态', align: 'center', width: 70, templet: function (v) {
+						if (v.status == 1) {
+							return '<a class="layui-btn layui-btn-xs changeStatus" lay-event="changeStatus">已开启</a>';
+						} else {
+							return '<a class="layui-btn layui-btn-danger layui-btn-xs changeStatus" lay-event="changeStatus">已禁用</a>';
+						}
+					}
+				},
+				{title: '操作', align: 'center', toolbar: '#toobar', width: 120}
+			]]
+		});
+		table.on('tool(datatable)', function (obj) {
+			var data = obj.data;
+			var layEvent = obj.event;
+			if (layEvent === 'edit') {
+				layer.open({
+					type: 2,
+					title: '修改充值额度',
+					area: ['720px', '500px'],
+					scrollbar: false,
+					anim: 2,
+					shadeClose: true,
+					content: "{:url('recharge/edit')}?t=" + new Date().getTime() + '&id=' + data.id
+				});
+			} else if (layEvent === 'changeStatus') {
+				var tip = parseInt(data.status) === 1 ? '禁用' : '启用';
+				layer.confirm('确定要' + tip + '此充值额度吗？<br>注意：如禁用小程序充值不再显示', {title: '修改充值额度状态', icon: 0, btn: ['确定', '取消']}, function () {
+					$.post("{:url('recharge/change_status')}?t=" + new Date().getTime(), {id: data.id, status: data.status}, function (result) {
+						layer.closeAll();
+						if (result.code === 1) {
+							top.message.show({msg: '充值额度状态修改成功'});
+							datatable.reload();
+						} else {
+							top.message.show({skin: 'red', msg: result.msg});
+						}
+					}, 'json');
+				});
+			}
+		});
+		// 添加菜单事件
+		$('#addBtn').on('click', function () {
+			layer.open({
+				type: 2,
+				title: '新增充值额度',
+				area: ['720px', '500px'],
+				scrollbar: false,
+				anim: 2,
+				shadeClose: true,
+				content: "{:url('recharge/add')}?t=" + new Date().getTime()
+			});
+			return false;
+		});
+	});
+</script>
+{include file="public/footer" /}

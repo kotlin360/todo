@@ -1,0 +1,75 @@
+{include file="public/header" /}
+<div style="width:620px;padding:10px 5px">
+	<form class="layui-form" lay-filter="addForm" id="addForm">
+		<div class="layui-form-item">
+			<label class="layui-form-label">充值额度：</label>
+			<div class="layui-input-inline">
+				<input type="text" name="value" value="{$recharge.value|default=''}" lay-verify="required|number0" placeholder="请输入充值额度" autocomplete="off" class="layui-input">
+			</div>
+			<div class="layui-form-mid layui-word-aux">充值额度必须是正整数</div>
+		</div>
+		<div class="layui-form-item">
+			<label class="layui-form-label">赠优惠券：</label>
+			<div class="layui-input-block" style="width:90%">
+				{volist name="coupons" id="coupon" empty="
+				<div style='line-height:38px;color:red'>暂无有效优惠券，请到优惠券中心创建</div>
+				"}
+				<div style="display:inline-block;width:30%">
+					<input type="radio" name="coupon_id" value="{$coupon.id}" title="{$coupon.name}" {eq name="recharge.coupon_id|default=''" value="$coupon['id']" }checked{/eq}>
+				</div>
+				{/volist}
+			</div>
+		</div>
+		<div class="layui-form-item">
+			<label class="layui-form-label">赠送张数：</label>
+			<div class="layui-input-inline">
+				<input type="text" name="num" value="{$recharge.num|default=1}" lay-verify="required|number0" autocomplete="off" class="layui-input">
+			</div>
+			<div class="layui-form-mid layui-word-aux">赠送张数必须是正整数</div>
+		</div>
+		<div class="layui-form-item">
+			<label class="layui-form-label">状态：</label>
+			<div class="layui-input-inline">
+				<input type="checkbox" name="status" value="1" {eq name="cate.status|default='1'" value="1" }checked{/eq} lay-skin="switch" lay-text="开启|禁用" >
+			</div>
+			<div class="layui-form-mid layui-word-aux">默认开启,如禁用分类下的商品不显示</div>
+		</div>
+		<div class="hr-line-dashed2"></div>
+		<div class="layui-form-item">
+			<div class="layui-input-block">
+				<input type="hidden" name="id" value="{$recharge.id|default=''}"/>
+				<button class="layui-btn" lay-submit lay-filter="addForm">立即提交</button>
+				<button type="reset" class="layui-btn layui-btn-primary">重置</button>
+			</div>
+		</div>
+	</form>
+</div>
+<script type="text/javascript">
+	layui.use(['form', 'layer', 'jquery'], function () {
+		var form = layui.form,
+			layer = layui.layer, $ = layui.jquery;
+
+		form.verify({
+			number0: [/^[1-9]\d*$/, '必须为正整数，不能含有小数']
+		});
+		//监听新增角色提交
+		form.on('submit(addForm)', function (data) {
+			var url = "{:url('recharge/add')}?t=", okMsg = '充值额度创建成功'; // 添加
+			if (data.field.id) {
+				// 修改
+				url = "{:url('recharge/edit')}?t=";
+				okMsg = '充值额度修改成功';
+			}
+			$.post(url + new Date().getTime(), data.field, function (result) {
+				if (result.code == 1) {
+					top.message.show({msg: okMsg});
+					window.parent.location.reload(); //刷新父页面
+				} else {
+					top.message.show({skin: 'red', msg: result.msg});
+				}
+			}, 'json');
+			return false;
+		});
+	});
+</script>
+{include file="public/footer" /}
