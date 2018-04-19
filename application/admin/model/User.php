@@ -5,6 +5,8 @@ use app\common\facade\Coupon;
 use app\common\facade\Money;
 use app\common\facade\Score;
 use think\Db;
+use think\Exception;
+use think\exception\PDOException;
 use think\Facade\Config;
 use think\facade\Session;
 use think\Model;
@@ -149,15 +151,42 @@ class User extends Model
 		$status = $type === 1 ? 2 : 3;
 		$msg = $type === 1 ? '通过' : '拒绝';
 		$username = Session::get('auth.real_name');
+		// 生成提现审核表withdraw数据
 		$frame = [
 			'time' => $_SERVER['REQUEST_TIME'],
 			'uname' => Session::get('auth.real_name'),
 			'content' => '执行审核：' . $msg
 		];
 		$log = $this->makeLog($id, $frame);
-		$data = ['status' => $status, 'remark' => $remark, 'log' => $log];
-		Db::name('withdraw')->where("id={$id}")->update($data);
-		return ['code' => 1];
+		$withDrawData = ['status' => $status, 'remark' => $remark, 'check_time' => $_SERVER['REQUEST_TIME'], 'log' => $log];
+		Db::startTrans();
+		try {
+			$widthDraw = Db::name('withdraw')->where("id={$id}")
+				->field('uid,cate,value,real_value')->find();
+			if ($type === 0) {
+				// 拒绝的话返回用户的积分或者现金余额
+				if ($widthDraw['cate'] == 1) {
+					// 返回积分
+					Db::name('user')->where("id={$widthDraw['uid']}")->setInc('score', $widthDraw['real_value']);
+					// 写入积分记录表
+					$scoreData = ['uid' => $widthDraw['uid'], 'value' => $widthDraw['real_value'], 'note' => '提现审核拒绝，返还积分', 'create_time' => $_SERVER['REQUEST_TIME']];
+					Db::name('score_log')->insert($scoreData);
+				} else {
+					// 返回现金
+					Db::name('user')->where("id={$widthDraw['uid']}")->setInc('money', $widthDraw['real_value']);
+					// 写入现金记录表
+					$moneyData = ['uid' => $widthDraw['uid'], 'value' => $widthDraw['real_value'], 'note' => '提现审核拒绝，返还现金', 'create_time' => $_SERVER['REQUEST_TIME']];
+					Db::name('money_log')->insert($moneyData);
+				}
+			}
+			Db::name('withdraw')->where("id={$id}")->update($withDrawData);
+			// TODO 这里还需要完成微信支付，给用户付款功能
+			Db::commit();
+			return ['code' => 1];
+		} catch (\Exception $e) {
+			Db::rollback();
+			return ['coce' => 0, 'msg' => '审核失败：' . $e->getMessage()];
+		}
 	}
 
 	/**

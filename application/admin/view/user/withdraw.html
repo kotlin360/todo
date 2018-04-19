@@ -48,7 +48,7 @@
 				},
 				{field: 'value', title: '提现额度', align: 'center', width: 100},
 				{
-					field: 'create_time', title: '申请时间', align: 'center', width: 180, templet: function (v) {
+					field: 'create_time', title: '申请时间', align: 'center', width: 170, templet: function (v) {
 						return moment(v.create_time * 1000).format('YYYY-MM-DD HH:mm:ss');
 					}
 				},
@@ -68,6 +68,7 @@
 						}
 					}
 				},
+				{field: 'remark', title: '备注', align: 'center', width: 110},
 				{title: '操作', align: 'left', toolbar: '#toobar', width: 180}
 			]]
 		});
@@ -107,6 +108,10 @@
 					},
 					btn2: function () {
 						var remark = $.trim($('textarea[name=remark]').val());
+						if (remark.length > 15) {
+							parent.message.show({skin: 'red', msg: '备注不能超过15个字符'});
+							return false;
+						}
 						if (remark === '') {
 							parent.message.show({skin: 'red', msg: '请输入拒绝原因'});
 							return false;
