@@ -128,7 +128,7 @@ class Goods extends Base
 				'sn' => input('sn', ''),
 				'unit' => input('unit', '件'),
 				'status' => input('status/d', 1),
-				'location' => input('loation'),
+				'location' => input('location', 1),
 				'description' => input('description', ''),
 				'imgs' => input('imgs/a')
 			];

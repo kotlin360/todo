@@ -80,7 +80,7 @@
 							<div class="queueList">
 								<div id="dndArea" class="placeholder">
 									<div id="filePicker"></div>
-									<p>单次最多可选10张，单张限制2兆</p>
+									<p>最多可选10张，单张限制2兆（尺寸推荐750*318）</p>
 								</div>
 							</div>
 							<div class="statusBar" style="display:none;">
@@ -214,13 +214,11 @@
 					layer.load();
 				},
 				success: function (result) {
-					layer.closeAll();
 					if (result.code == 1) {
-						layer.msg(okMsg, {icon: 1, time: 1000, offset: 't'}, function () {
-							window.location.href = "{:url('goods/index')}";
-						});
+						parent.message.show({msg: okMsg});
+						window.location.href = "{:url('goods/index')}";
 					} else {
-						layer.msg(result.msg, {icon: 2});
+						parent.message.show({skin: 'red', msg: result.msg});
 					}
 				}
 			});

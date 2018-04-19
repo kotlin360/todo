@@ -37,16 +37,26 @@ class Goods extends Model
 		}
 	}
 
+	/**
+	 * 首页根据位置获取不同的商品信息
+	 * @param $location
+	 * @return array
+	 */
 	public function getGoods($location)
 	{
 		$where = "location={$location} AND status=1";
 		try {
-			$goods = $this->where($where)->field('id,title,is_score')->select();
+			$goods = $this->where($where)->field('id,title,is_pay_score,spec_sn')->select();
 			$goods->each(function ($g) {
 				// 获取图片
-				$img = Db::name('goods_images')->where("goods_id={$g['id']}")->order('id')->value('img');
+				$img = Db::name('goods_images')->where("goods_id={$g['id']}")->order('id')->value('img_m');
 				$g['img'] = '/uploads/' . $img;
 				// 获取价格或者积分
+				if ($g['is_pay_score'] == 1) {
+					// 此商品存在积分兑换的可能，优先显示积分兑换
+				} else {
+					// 此商品纯粹价格购买
+				}
 			});
 			return ['code' => 1, 'data' => $goods];
 		} catch (\Exception $e) {

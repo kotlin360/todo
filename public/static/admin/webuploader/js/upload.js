@@ -146,8 +146,8 @@
 			// 禁掉全局的拖拽功能。这样不会出现图片拖进页面的时候，把图片打开。
 			disableGlobalDnd: true,
 			fileNumLimit: 10,
-			fileSizeLimit: 200 * 1024 * 1024, // 200 M
-			fileSingleSizeLimit: 10 * 1024 * 1024    // 10 M
+			fileSizeLimit: 20 * 1024 * 1024, // 20 M
+			fileSingleSizeLimit: 2 * 1024 * 1024    // 2 M
 		});
 
 		// 拖拽时不接受 js, txt 文件。
@@ -220,6 +220,7 @@
 		// 当有文件添加进来时执行，负责view的创建
 		function addFile(file) {
 			var existImg = file.img;
+			file.name = file.name.replace(/[&=,\|\\\*^%$#@\-]/g, 1);//文件名中的&替换为1
 			var $li = $('<li id="' + file.id + '">' +
 				'<p class="title">' + file.name + '</p>' +
 				'<p class="imgWrap"></p>' +

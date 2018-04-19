@@ -2012,7 +2012,6 @@
 			},
 
 			loadFromBlob: function (blob) {
-				console.log(blob)
 				var me = this, ruid = blob.getRuid();
 
 				this.connectRuntime(ruid, function () {

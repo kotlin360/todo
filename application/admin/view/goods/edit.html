@@ -231,13 +231,11 @@
 					layer.load();
 				},
 				success: function (result) {
-					layer.closeAll();
 					if (result.code == 1) {
-						layer.msg(okMsg, {icon: 1, time: 1000, offset: 't'}, function () {
-							window.location.href = "{:url('goods/index')}";
-						});
+						parent.message.show({msg: okMsg});
+						window.location.href = "{:url('goods/index')}";
 					} else {
-						layer.msg(result.msg, {icon: 2});
+						parent.message.show({skin: 'red', msg: result.msg});
 					}
 				}
 			});

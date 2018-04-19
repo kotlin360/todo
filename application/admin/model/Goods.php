@@ -83,11 +83,16 @@ class Goods extends Model
 			foreach ($imgs_string_array as $v) {
 				parse_str($v, $img_info);
 				$img_info['goods_id'] = $goods_id;
+				// 同时写入m开头的缩略图
+				$filename = $img_info['img'];
+				$location = strlen($filename) - strrpos($filename, '/') - 1;
+				$img_info['img_m'] = substr($filename, 0, -$location) . 'm_' . substr($filename, -$location);
 				$imgData[] = $img_info;
 			}
 			Db::name('goods_images')->insertAll($imgData);
 			//4、最后处理规格问题
 			$k = 0;
+			$hasScoreStyle = ['is_pay_score' => 0, 'spec_sn' => ''];
 			foreach ($value_dcr as $key => $value) {
 				$products = [
 					'goods_id' => $goods_id,
@@ -104,6 +109,11 @@ class Goods extends Model
 					'gift' => $extend['gift'][$k],
 					'is_online' => $extend['is_online'][$k]
 				];
+				// 如果此规格是积分兑换或者组合支付的，回写商品表中的is_score和spec_sn字段
+//				if (in_array($extend['style'][$k], [1, 3]) && $hasScoreStyle['is_pay_score'] === 0) {
+//					$hasScoreStyle = ['is_pay_score' => 1, 'spec_sn' => $extend['spec_sn'][$k]];
+//					Db::name($this->name)->where("id={$goods_id}")->update($hasScoreStyle);
+//				}
 				Db::name('goods_products')->insert($products);
 				$k++;
 			}
@@ -187,12 +197,17 @@ class Goods extends Model
 			foreach ($imgs_string_array as $v) {
 				parse_str($v, $img_info);
 				$img_info['goods_id'] = $goods_id;
+				// 同时写入m开头的缩略图
+				$filename = $img_info['img'];
+				$location = strlen($filename) - strrpos($filename, '/') - 1;
+				$img_info['img_m'] = substr($filename, 0, -$location) . 'm_' . substr($filename, -$location);
 				$imgData[] = $img_info;
 			}
 			Db::name('goods_images')->where("goods_id={$goods_id}")->delete();
 			Db::name('goods_images')->insertAll($imgData);
 			//4、最后处理规格问题
 			$k = 0;
+			$hasScoreStyle = ['is_pay_score' => 0, 'spec_sn' => ''];
 			Db::name('goods_products')->where("goods_id={$goods_id}")->delete();
 			foreach ($value_dcr as $key => $value) {
 				$products = [
@@ -210,6 +225,11 @@ class Goods extends Model
 					'gift' => $extend['gift'][$k],
 					'is_online' => $extend['is_online'][$k]
 				];
+				// 如果此规格是积分兑换或者组合支付的，回写商品表中的is_score和spec_sn字段
+				if (in_array($extend['style'][$k], [1, 3]) && $hasScoreStyle['is_pay_score'] === 0) {
+					$hasScoreStyle = ['is_pay_score' => 1, 'spec_sn' => $extend['spec_sn'][$k]];
+					Db::name($this->name)->where("id={$goods_id}")->update($hasScoreStyle);
+				}
 				Db::name('goods_products')->insert($products);
 				$k++;
 			}

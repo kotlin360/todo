@@ -21,7 +21,8 @@ class Goods
 		return json($goodsModel->search($key));
 	}
 
-	/**首页获取商品
+	/**
+	 * 首页获取商品
 	 * @param GoodsModel $goodsModel
 	 * @param int        $location 1首页展示 2精选 3热门
 	 * @return \think\response\Json

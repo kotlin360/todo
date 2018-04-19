@@ -3,6 +3,7 @@ namespace app\admin\controller;
 
 use think\Controller;
 use think\facade\Config;
+use think\Image;
 
 /**
  * @project  系统错误异常控制器和文件上传等功能
@@ -31,10 +32,13 @@ class System extends Controller
 		$ext_allow = 'gif,jpg,jpeg,bmp,png';
 		$subpath = date('Ym'); // 子目录格式
 		$info = $file->validate(['size' => $size_allow, 'ext' => $ext_allow])->rule('uniqid')
-			->move('./uploads' . '/' . $subpath);
+			->move('./uploads/' . $subpath);
 		if ($info) {
-			// 成功上传后 获取上传信息
-			$json = ['code' => 1, 'filename' => $subpath . '/' . $info->getSaveName()];
+			// 成功上传后,缩放图片340*228,获取上传信息
+			$image = $subpath . '/' . $info->getSaveName();
+			$thumbImage = './uploads/' . $subpath . '/m_' . $info->getSaveName();
+			Image::open('./uploads/' . $image)->thumb(340, 228, Image::THUMB_CENTER)->save($thumbImage);
+			$json = ['code' => 1, 'filename' => $image];
 		} else {
 			// 上传失败获取错误信息
 			$json = ['code' => 0, 'msg' => $file->getError()];
