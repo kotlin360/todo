@@ -20,14 +20,11 @@ class Param
 		$config = Cache::get('system_params', null);
 		if (!$config) {
 			// 如果不存在查询全部的配置数据，并放入缓存
-			$cursor = Db::name('config')->cursor();
+			$cursor = Db::name('config')->field('key,value')->cursor();
 			$config = [];
 			foreach ($cursor as $v) {
 				$config[$v['key']] = $v['value'];
 			}
-			$this['appid'] = $config['config_wechat_appid'];
-			$this['secret'] = $config['config_wechat_appsecret'];
-			$this['request_url'] = $config['config_wechat_url'];
 			// 写入缓存
 			Cache::set('system_params', $config);
 		}

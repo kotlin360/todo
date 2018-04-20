@@ -27,8 +27,20 @@ class Goods
 	 * @param int        $location 1首页展示 2精选 3热门
 	 * @return \think\response\Json
 	 */
-	public function get_goods(GoodsModel $goodsModel, $location = 1)
+	public function get_goods(GoodsModel $goodsModel, $location = 0)
 	{
 		return json($goodsModel->getGoods($location));
+	}
+
+	/**
+	 * 根据商品id和型号id获取商品的详情
+	 * @param GoodsModel $goodsModel
+	 * @return \think\response\Json
+	 */
+	public function detail(GoodsModel $goodsModel)
+	{
+		$id = input('id/d');
+		$pid = input('pid/d');
+		return json($goodsModel->detail($id, $pid));
 	}
 }

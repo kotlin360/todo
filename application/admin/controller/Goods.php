@@ -49,7 +49,7 @@ class Goods extends Base
 		if ($this->request->isAjax()) {
 			$spec_key = input('spec_key', null);
 			// 基本信息部分
-			$data = [
+			$base = [
 				'title' => input('title', ''),
 				'cate_id' => input('cate_id/d', 0),
 				'sn' => input('sn', ''),
@@ -91,10 +91,10 @@ class Goods extends Base
 					'is_online' => input('is_online/a')
 				];
 			}
-			if (!$goodsValidate->check($data)) {
+			if (!$goodsValidate->check($base)) {
 				return json(['code' => 0, 'msg' => $goodsValidate->getError()]);
 			}
-			$result = $goodsModel->createGoods($data, $extend);
+			$result = $goodsModel->createGoods($base, $extend);
 			return json($result);
 		} else {
 			$cate = $categoryModel->getAllCate(); // 商品类别

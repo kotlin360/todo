@@ -16,10 +16,9 @@ class Message extends Model
 	/**
 	 * 阿里大于发送短信
 	 * @param $phone
-	 * @param $type 1 注册 2找回密码
 	 * @return mixed|\SimpleXMLElement
 	 */
-	public function send($phone, $type)
+	public function send($phone)
 	{
 		// 生成验证码,这里此验证码要写入数据库，便于以后注册的时候验证
 		$verify_code = mt_rand(1000, 9999);
@@ -30,14 +29,14 @@ class Message extends Model
 			'access_secret' => $param['config_dy_accesskeysecret'],
 			'sign_name' => $param['config_dy_signname'],
 		];
-		$code = $type === 1 ? $param['config_dy_regist_code'] : $param['config_dy_passwd_code'];
+		$code = $param['config_dy_regist_code'];
 		// 调用阿里云服务，发送短信
 		$aliSms = new AliSms();
 		$response = $aliSms->sendSms($phone, $code, ['code' => $verify_code], $config);
 		if ($response->Code === 'OK') {
 			return ['code' => 1];
 		} else {
-			return ['code' => 0, 'msg' => $response->Message];
+			return ['code' => 0, 'msg' => '短信发送失败：' . $response->Message];
 		}
 	}
 

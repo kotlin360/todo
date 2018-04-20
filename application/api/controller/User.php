@@ -11,6 +11,18 @@ use think\Request;
  */
 class User extends Base
 {
+
+	/**
+	 * 完善用户信息，此时获取到的$this['auth']中的手机号码是临时假的
+	 * @param UserModel $userModel
+	 * @param Request   $request
+	 * @return \think\response\Json
+	 */
+	public function update_userinfo(UserModel $userModel, Request $request)
+	{
+		return json($userModel->updateUserInfo($request, $this['auth']));
+	}
+
 	/**
 	 * 用户首页,获取用户基本信息
 	 * @param UserModel $userModel
