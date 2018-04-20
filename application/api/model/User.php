@@ -11,7 +11,6 @@ use think\Model;
 use think\Request;
 use think\facade\Config;
 use app\api\facade\Message as MessageFacade;
-use app\api\validate\Userinfo as UserinfoValidate;
 
 /**
  * @project  用户接口模型
@@ -25,11 +24,10 @@ class User extends Model
 	/**
 	 * 完善用户的手机号码等信息
 	 * @param Request          $request
-	 * @param UserinfoValidate $userinfoValidate
 	 * @param                  $user
 	 * @return array
 	 */
-	public function updateUserInfo(Request $request, UserinfoValidate $userinfoValidate, $user)
+	public function updateUserInfo(Request $request, $user)
 	{
 		$messageCode = $request->post('messageCode', '');// 用户填写的短信验证码
 		$updateData = [
@@ -42,7 +40,8 @@ class User extends Model
 			'last_time' => $_SERVER['REQUEST_TIME'],
 			'last_ip' => $request->ip()
 		];
-		if (!$userinfoValidate->check(['username' => $updateData['username'], $messageCode => $messageCode])) {
+		$userinfoValidate = new \app\api\validate\Userinfo();
+		if (!$userinfoValidate->check(['username' => $updateData['username'], 'messageCode' => $messageCode])) {
 			return ['code' => 0, 'msg' => $userinfoValidate->getError()];
 		}
 		// 需要首先验证短信验证码是否正确

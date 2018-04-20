@@ -43,4 +43,14 @@ class Goods
 		$pid = input('pid/d');
 		return json($goodsModel->detail($id, $pid));
 	}
+
+	/**
+	 * 商品分类界面，并获取第一个分类的商品信息
+	 * @param GoodsModel $goodsModel
+	 * @return \think\response\Json
+	 */
+	public function get_category(GoodsModel $goodsModel)
+	{
+		return json($goodsModel->getCategory());
+	}
 }
