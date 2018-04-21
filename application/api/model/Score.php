@@ -95,6 +95,10 @@ class Score extends Model
 			$total = $this->total($uid);
 			$lists = Db::name('score_log')->where("uid={$uid}")->field('value,note,create_time')->limit($start, $size)->order('id DESC')->select();
 			$list = Collection::make($lists)->each(function ($list) {
+				// 如果积分为正数，增加'+'
+				if ($list['value'] > 0) {
+					$list['value'] = '+' . $list['value'];
+				}
 				$list['create_time'] = date('Y-m-d H:i:s', $list['create_time']);
 				return $list;
 			});

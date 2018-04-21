@@ -40,7 +40,7 @@ class Goods
 	public function detail(GoodsModel $goodsModel)
 	{
 		$id = input('id/d');
-		$pid = input('pid/d');
+		$pid = input('pid/d', null);
 		return json($goodsModel->detail($id, $pid));
 	}
 

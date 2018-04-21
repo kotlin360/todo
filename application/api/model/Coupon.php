@@ -3,9 +3,7 @@ namespace app\api\model;
 
 use think\Collection;
 use think\Db;
-use think\db\exception\DataNotFoundException;
-use think\db\exception\ModelNotFoundException;
-use think\exception\DbException;
+use think\exception\PDOException;
 use think\facade\Config;
 use think\Model;
 
@@ -53,6 +51,78 @@ class Coupon extends Model
 			return ['code' => 1, 'data' => $couponLists];
 		} catch (\Exception $e) {
 			return ['code' => 0, 'msg' => '优惠券获取失败：' . $e->getMessage()];
+		}
+	}
+
+	/**
+	 * 获取系统中当前用户没有领取过的有效优惠券
+	 * @param $uid
+	 * @return array
+	 */
+	public function getAllCoupon($uid)
+	{
+
+		$now = $_SERVER['REQUEST_TIME'];
+		try {
+			$existIdString = '';
+			$existIdArr = [];
+			$hasReceiveId = Db::name('coupon_log')->where("uid={$uid}")->field('coupon_id')->select();
+			if (is_array($hasReceiveId) && !empty($hasReceiveId)) {
+				foreach ($hasReceiveId as $id) {
+					$existIdArr[] = $id['coupon_id'];
+				}
+				$existIdString = implode(',', array_unique($existIdArr));
+			}
+			if ($existIdString != '') {
+				$where = "status=1 AND id NOT IN ({$existIdString}) AND start<={$now} AND end>{$now}";
+			} else {
+				$where = "status=1 AND start<={$now} AND end>{$now}";
+			}
+			$lists = Db::name('coupon')->where($where)->field('id,value,money,start,end')->select();
+			$couponList = Collection::make($lists)->each(function ($list) {
+				$list['start'] = date('Y-m-d', $list['start']);
+				$list['end'] = date('Y-m-d', $list['end']);
+				return $list;
+			});
+			return ['code' => 1, 'data' => $couponList];
+		} catch (\Exception $e) {
+			return ['code' => 0, 'msg' => '优惠券获取失败：' . $e->getMessage()];
+		}
+	}
+
+	/**
+	 * 领取优惠券
+	 * @param array $user 当前用户
+	 * @param int   $id   需要领取的优惠券id
+	 * @return array
+	 */
+	public function receive($user, $id)
+	{
+		try {
+			$coupon = Db::name('coupon')->where("id={$id} AND status=1")->field(true)->find();
+			if ($coupon === null || empty($coupon)) {
+				return ['code' => 0, 'msg' => '领取失败：优惠券不存在'];
+			}
+			// 检查是否领取过
+			$couponLogId = Db::name('coupon_log')->where("coupon_id={$id}")->value('id');
+			if ($couponLogId) {
+				return ['code' => 0, 'msg' => '领取失败：已经领取过'];
+			}
+			$data = [
+				'coupon_id' => $coupon['id'],
+				'uid' => $user['uid'],
+				'name' => $coupon['name'],
+				'value' => $coupon['value'],
+				'money' => $coupon['money'],
+				'status' => 0,
+				'start' => $coupon['start'],
+				'end' => $coupon['end'],
+				'create_time' => $_SERVER['REQUEST_TIME']
+			];
+			Db::name('coupon_log')->insert($data);
+			return ['code' => 1];
+		} catch (\Exception $e) {
+			return ['code' => 0, 'msg' => '领取失败：' . $e->getMessage()];
 		}
 	}
 }

@@ -30,6 +30,8 @@ class Goods extends Base
 			$json = $goodsModel->getDataByWhere($map, $cur_page, $page_size);
 			return json($json);
 		} else {
+			// 删除规格表中的垃圾数据
+			$goodsModel->deleteProducts();
 			$page_size = Config::get('page_size');
 			return $this->assign('page_size', $page_size)->fetch();
 		}
@@ -73,7 +75,8 @@ class Goods extends Base
 					'score' => input('score'),
 					'freight' => input('freight', 0),
 					'gift' => input('gift', 0),
-					'is_online' => input('is_online/d', 1)
+					'is_online' => input('is_online/d', 1),
+					'create_time' => $_SERVER['REQUEST_TIME']
 				];
 			} else {
 				// 存在多个规格
@@ -88,7 +91,8 @@ class Goods extends Base
 					'score' => input('score/a'),
 					'freight' => input('freight/a'),
 					'gift' => input('gift/a'),
-					'is_online' => input('is_online/a')
+					'is_online' => input('is_online/a'),
+					'create_time' => $_SERVER['REQUEST_TIME']
 				];
 			}
 			if (!$goodsValidate->check($base)) {

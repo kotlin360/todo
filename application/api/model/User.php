@@ -84,6 +84,7 @@ class User extends Model
 				//  用户修改了头像
 				$user['avatar'] = Container::get('request')->domain() . $user['avatar'];
 			}
+			$user['gender'] = $user['gender'] == 1 ? '男' : '女';
 			// 获取有效尚未使用优惠券的数量
 			$now = $_SERVER['REQUEST_TIME'];
 			$where = "uid={$uid} AND status=0 AND start <= {$now} AND end >= {$now}";

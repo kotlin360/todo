@@ -83,6 +83,7 @@
 		<th width="130"><i class="must">*</i>购买方式</th>
 		<th width="100"><i class="must">*</i>购买现金</th>
 		<th width="100"><i class="must">*</i>购买积分</th>
+		<th width="100"><i class="must">*</i>运费</th>
 		<th width="100"><i class="must">*</i>赠送积分</th>
 	</tr>
 	</thead>
@@ -112,6 +113,9 @@
 		</td>
 		<td>
 			<input type="text" name="score" value="{$extend.score}" lay-verify="required|number0" autocomplete="off" class="layui-input scoreInput">
+		</td>
+		<td>
+			<input type="text" name="freight" value="{$extend.freight}" lay-verify="required|number0" autocomplete="off" class="layui-input scoreInput">
 		</td>
 		<td>
 			<input type="text" name="gift" value="{$extend.gift}" lay-verify="required|number0" autocomplete="off" class="layui-input">

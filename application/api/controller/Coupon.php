@@ -21,4 +21,25 @@ class Coupon extends Base
 	{
 		return json($couponModel->getCoupon($this['auth']['uid'], $type, $page));
 	}
+
+	/**
+	 * 获取系统中有效的优惠券,排除当前用户已经领取的优惠券
+	 * @param CouponModel $couponModel
+	 * @return \think\response\Json
+	 */
+	public function get_all_coupon(CouponModel $couponModel)
+	{
+		return json($couponModel->getAllCoupon($this['auth']['uid']));
+	}
+
+	/**
+	 * 领取优惠券
+	 * @param CouponModel $couponModel
+	 * @return \think\response\Json
+	 */
+	public function receive(CouponModel $couponModel)
+	{
+		$id = input('id/d', 0);
+		return json($couponModel->receive($this['auth'], $id));
+	}
 }

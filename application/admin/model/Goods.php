@@ -347,4 +347,16 @@ class Goods extends Model
 			return ['code' => 404, 'msg' => '商品获取失败：' . $e->getMessage()];
 		}
 	}
+
+	/**
+	 * 删除规格表中的垃圾数据
+	 * @throws \think\Exception
+	 * @throws \think\exception\PDOException
+	 */
+	public function deleteProducts()
+	{
+		$time = $_SERVER['REQUEST_TIME'] - 604800; // 超过7天了
+		$where = "is_delete=1 AND create_time < {$time}";
+		Db::name('goods_products')->where($where)->delete();
+	}
 }

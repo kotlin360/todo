@@ -23,7 +23,7 @@ class Goods extends Controller
 	{
 		$specs = Db::name('goods')->where("id={$id}")->value('specs');
 		if ($specs == null) {
-			// 不存在存在规格
+			// 不存在规格
 			$extend = Db::name('goods_products')->where("goods_id={$id}")->field(true)->find();
 		} else {
 			// 存在规格

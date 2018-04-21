@@ -59,6 +59,50 @@ class Goods extends Model
 	}
 
 	/**
+	 * 根据商品id和规格id返回商品详情
+	 * @param $id
+	 * @param $pid
+	 * @return array
+	 */
+	public function detail($id, $pid)
+	{
+		try {
+			// 商品基本信息
+			$goods = Db::name('goods')->where("id={$id}")->field(true)->find();
+			// 商品图册
+			$album = Db::name('goods_images')->where("goods_id={$id}")->order('id')->field('img')->select();
+			$goods['album'] = Collection::make($album)->each(function ($img) {
+				return Request::domain() . '/uploads/' . $img['img'];
+			})->toArray();
+			// 获取商品规格
+			if ($goods['specs'] === null) {
+				// 没有规格，获得商品的扩展属性
+				$goods['extend'] = Db::name('goods_products')->where("id={$pid} AND is_online=1")
+					->field('id as pid,stock,style,cash,score,freight')->find();
+				if (!$goods['extend']) {
+					return ['code' => 0, 'msg' => '您访问的商品已经下架'];
+				}
+			} else {
+				$goods['specs'] = unserialize($goods['specs']);
+				p($goods);
+				die;
+				// 存在多规格
+				$extends = Db::name('goods_products')->where("goods_id={$id} AND is_online=1")
+					->field('pid,stock,style,cash,score,freight')->select();
+				if (!$extend) {
+					return ['code' => 0, 'msg' => '您访问的商品已经下架'];
+				}
+				Collection::make($extends)->each(function ($extend) {
+					$skumap[$extend['specs_key']] = $extend;
+				});
+			}
+			return ['code' => 1, 'data' => $goods];
+		} catch (\Exception $e) {
+			return ['code' => 0, 'msg' => '商品详情获取失败：' . $e->getMessage()];
+		}
+	}
+
+	/**
 	 * 获取商品分类和第一个分类下的商品明细
 	 */
 	public function getCategory()
