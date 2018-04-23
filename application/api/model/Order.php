@@ -5,6 +5,7 @@ use think\Model;
 use think\Db;
 use app\common\facade\Param as ParamFacade;
 use app\api\facade\Score as ScoreFacade;
+use app\api\facade\Money as MoneyFacade;
 
 /**
  * @project  订单接口模型
@@ -14,14 +15,24 @@ use app\api\facade\Score as ScoreFacade;
 class Order extends Model
 {
 
+	/**
+	 * 用户结算界面数据
+	 * @param $uid
+	 * @return array
+	 */
 	public function getOrderInfo($uid)
 	{
-		// 获取用户积分和现金余额
-		ScoreFacade::total();
-		// 获取积分兑换率
-		$param = ParamFacade::getSystemParam();
-		return ['code' => 1, 'cash2score_rate' => $param['config_cash2score_rate']];
-
+		try {
+			// 获取积分兑换率
+			$param = ParamFacade::getSystemParam();
+			// 获取用户积分和现金余额
+			$scoreTotal = ScoreFacade::total($uid)['total'];
+			$moneyTotal = MoneyFacade::total($uid)['total'];
+			// 获取用户的优惠券
+			return ['code' => 1, 'cash2score_rate' => $param['config_cash2score_rate']];
+		} catch (\Exception $e) {
+			return ['code' => 0, 'msg' => '结算异常：' . $e->getMessage()];
+		}
 	}
 
 	public function buildOrder()

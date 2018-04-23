@@ -55,7 +55,7 @@ class Goods extends Model
 			})->toArray();
 			// 获取首页顶部的轮播图片
 			$ads = AdFacade::getAd(1);
-			return ['code' => 1, 'data' => $goodsList, 'ads' => $ads];
+			return ['code' => 1, 'data' => ['goodsList' => $goodsList, 'ads' => $ads]];
 		} catch (\Exception $e) {
 			return ['code' => 0, 'msg' => '获取商品失败：' . $e->getMessage()];
 		}

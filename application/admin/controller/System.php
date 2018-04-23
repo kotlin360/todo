@@ -37,7 +37,7 @@ class System extends Controller
 			// 成功上传后,缩放图片340*228,获取上传信息
 			$image = $subpath . '/' . $info->getSaveName();
 			$thumbImage = './uploads/' . $subpath . '/m_' . $info->getSaveName();
-			Image::open('./uploads/' . $image)->thumb(340, 228, Image::THUMB_CENTER)->save($thumbImage);
+			Image::open('./uploads/' . $image)->thumb(160, 114, Image::THUMB_CENTER)->save($thumbImage);
 			$json = ['code' => 1, 'filename' => $image];
 		} else {
 			// 上传失败获取错误信息

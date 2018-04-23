@@ -1,8 +1,10 @@
 <?php
 namespace app\admin\model;
 
+use think\Collection;
 use think\Db;
 use think\facade\Config;
+use think\facade\Request;
 use think\Model;
 
 /**
@@ -23,7 +25,12 @@ class Ad extends Model
 	 */
 	public function getAd($type)
 	{
-		return $this->where("location={$type} AND status=1")->order('sort')->field('name,img')->select();
+		$ads = $this->where("location={$type} AND status=1")->order('sort')->field('name,img')->select();
+		Collection::make($ads)->each(function ($ad) {
+			$ad['img'] = Request::domain() . '/uploads/' . $ad['img'];
+			return $ad;
+		});
+		return $ads;
 	}
 
 	/**
