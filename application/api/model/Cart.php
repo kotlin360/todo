@@ -3,8 +3,9 @@ namespace app\api\model;
 
 use think\Collection;
 use think\Db;
-use think\Exception;
-use think\exception\PDOException;
+use think\db\exception\DataNotFoundException;
+use think\db\exception\ModelNotFoundException;
+use think\exception\DbException;
 use think\facade\Config;
 use think\facade\Request;
 use think\Model;
@@ -30,10 +31,10 @@ class Cart extends Model
 				->join('goods g', 'c.goods_id=g.id', 'LEFT')
 				->join('goods_products p', 'c.spec_id=p.id', 'LEFT')
 				->where("c.uid={$uid}")
-				->field('c.id as cart_id,c.num,c.spec_value_string,g.id as goods_id,g.status,g.title,p.id as pid,p.is_online')->select();
+				->field('c.id as cart_id,c.num,c.spec_value_string,g.id as goods_id,g.status,g.title,p.id as pid,p.style,p.score,p.cash,p.is_online,p.is_delete')->select();
 			$cartList = Collection::make($carts)->each(function ($cart) {
 				$img = Db::name('goods_images')->where("goods_id={$cart['goods_id']}")->field('img')->order('id')->find();
-				if (in_array(0, $cart, true) || $cart['pid'] === null) {
+				if (in_array(0, $cart, true) || $cart['pid'] === null || $cart['is_delete'] == 1) {
 					$cart['is_valid'] = 0;
 				} else {
 					$cart['is_valid'] = 1;
@@ -49,9 +50,38 @@ class Cart extends Model
 		}
 	}
 
-	public function addCart()
+	/**
+	 * 加入购物车，写入购物车表
+	 * @param $data
+	 * @return array
+	 */
+	public function addCart($data)
 	{
-
+		$where = "id={$data['spec_id']} AND is_online=1 AND is_delete=0";
+		$map = "uid={$data['uid']} AND goods_id = {$data['goods_id']} AND spec_id={$data['spec_id']}";
+		try {
+			// 首先判断该规格是否正常
+			$spec = Db::name('goods_products')->where($where)->field('spec_sn,stock,spec_value_string')->find();
+			if ($spec === null) {
+				return ['code' => 0, 'msg' => '加入购物车失败，商品已经下架'];
+			}
+			$data['spec_value_string'] = $spec['spec_value_string'];
+			// 其次判断在购物车是否已经存在，如果存在了就直接更新数量
+			$cart = Db::name('cart')->where($map)->field('id,num')->find();
+			if ($cart) {
+				// 更新数量，判断库存是否超了
+				if ($cart['num'] >= $spec['stock']) {
+					return ['code' => 0, 'msg' => '购物车中已存在且达到库存量'];
+				}
+				Db::name('cart')->where($map)->setInc('num');;
+			} else {
+				// 写入购物车
+				Db::name('cart')->insert($data);
+			}
+			return ['code' => 1];
+		} catch (\Exception $e) {
+			return ['code' => 0, 'msg' => '加入购物车失败：' . $e->getMessage()];
+		}
 	}
 
 	/**
@@ -69,4 +99,38 @@ class Cart extends Model
 			return ['code' => 0, 'msg' => '删除失败：' . $e->getMessage()];
 		}
 	}
+
+	/**
+	 * 购物车增加或者减少数量
+	 * @param $uid
+	 * @param $id
+	 * @param $type $type 1减少 2增加
+	 * @return array
+	 */
+	public function editNum($uid, $id, $type)
+	{
+		try {
+			$cart = $this->where("id={$id}")->field(true)->find();
+			switch ($type) {
+				case 1:
+					if (--$cart['num'] <= 0) {
+						return ['code' => 0, 'msg' => '操作失败'];
+					}
+					$this->where("id={$id}")->setDec('num');
+					break;
+				case 2:
+					$stock = Db::name('goods_products')->where("id={$cart['spec_id']}")->value('stock');
+					if (++$cart['num'] > $stock) {
+						return ['code' => 0, 'msg' => '购买数量已达到库存量'];
+					}
+					break;
+				default:
+					return ['code' => 0, 'msg' => '操作失败'];
+			}
+			return ['code' => 1];
+		} catch (\Exception $e) {
+			return ['code' => 0, 'msg' => '操作失败:' . $e->getMessage()];
+		}
+	}
+
 }

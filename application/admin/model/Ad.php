@@ -23,12 +23,7 @@ class Ad extends Model
 	 */
 	public function getAd($type)
 	{
-		try {
-			$ads = $this->where("location={$type} AND status=1")->order('sort')->field('name,img')->select();
-			return ['code' => 1, 'data' => $ads];
-		} catch (\Exception $e) {
-			return ['code' => 0, 'msg' => '广告获取失败：' . $e->getMessage()];
-		}
+		return $this->where("location={$type} AND status=1")->order('sort')->field('name,img')->select();
 	}
 
 	/**

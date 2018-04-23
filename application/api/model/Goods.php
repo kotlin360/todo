@@ -1,6 +1,7 @@
 <?php
 namespace app\api\model;
 
+use app\api\facade\Ad as AdFacade;
 use think\Collection;
 use think\Db;
 use think\facade\Request;
@@ -52,7 +53,9 @@ class Goods extends Model
 			$goodsList = Collection::make($goods)->each(function ($g) use ($self) {
 				return $self->getGoodsSomeproperty($g);
 			})->toArray();
-			return ['code' => 1, 'data' => $goodsList];
+			// 获取首页顶部的轮播图片
+			$ads = AdFacade::getAd(1);
+			return ['code' => 1, 'data' => $goodsList, 'ads' => $ads];
 		} catch (\Exception $e) {
 			return ['code' => 0, 'msg' => '获取商品失败：' . $e->getMessage()];
 		}
@@ -116,7 +119,8 @@ class Goods extends Model
 			foreach ($cursor as $g) {
 				$categorys[0]['goods'][] = $this->getGoodsSomeproperty($g);
 			}
-			return ['code' => 1, 'data' => $categorys];
+			$ads = AdFacade::getAd(2);
+			return ['code' => 1, 'data' => $categorys, 'ads' => $ads];
 		} catch (\Exception $e) {
 			return ['code' => 0, 'msg' => '分类获取失败：' . $e->getMessage()];
 		}
@@ -138,11 +142,11 @@ class Goods extends Model
 		// 获取价格或者积分
 		if ($g['is_pay_score'] == 1) {
 			// 此商品存在积分兑换的可能，优先显示积分兑换
-			$spec = Db::name('goods_products')->where("id='{$g['spec_id']}' AND is_online=1")
+			$spec = Db::name('goods_products')->where("id='{$g['spec_id']}' AND is_online=1 AND is_delete=0")
 				->field('id as pid,style,cash,score')->find();
 		} else {
 			// 此商品纯粹价格购买
-			$spec = Db::name('goods_products')->where("goods_id={$g['id']} AND is_online=1")
+			$spec = Db::name('goods_products')->where("goods_id={$g['id']} AND is_online=1 AND is_delete=0")
 				->order('cash')
 				->field('id as pid,style,cash,score')->find();
 		}

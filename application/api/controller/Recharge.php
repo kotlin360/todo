@@ -18,7 +18,7 @@ class Recharge extends Controller
 	 */
 	public function get_recharge_list(RechargeModel $rechargeModel)
 	{
-		return json($rechargeModel->getRechargeList2());
+		return json($rechargeModel->getRechargeList());
 	}
 
 	public function do_recharge()

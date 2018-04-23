@@ -34,6 +34,7 @@
 		<td>{$v}</td>
 		{/volist}
 		<td>
+			<input type="hidden" value="{$row.pid}" name="pid[]">
 			<input type="hidden" value="{$row.spec_value}" name="spec_value[]">
 			<input type="text" name="stock[]" value="{$row.stock}" lay-verify="required|number0" autocomplete="off" class="layui-input">
 		</td>
@@ -93,6 +94,7 @@
 			<input type="text" name="spec_sn" value="{$extend.spec_sn|default=''}" layui-disabled disabled lay-verify="required" autocomplete="off" class="layui-input">
 		</td>
 		<td>
+			<input type="hidden" value="{$extend.id|default=''}" name="pid">
 			<input type="text" name="stock" value="{$extend.stock|default=''}" lay-verify="required|number0" autocomplete="off" class="layui-input">
 		</td>
 		<td>

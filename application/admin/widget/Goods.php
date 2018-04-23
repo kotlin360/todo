@@ -24,7 +24,7 @@ class Goods extends Controller
 		$specs = Db::name('goods')->where("id={$id}")->value('specs');
 		if ($specs == null) {
 			// 不存在规格
-			$extend = Db::name('goods_products')->where("goods_id={$id}")->field(true)->find();
+			$extend = Db::name('goods_products')->where("goods_id={$id} AND is_delete=0")->field(true)->find();
 		} else {
 			// 存在规格
 			$specs = unserialize($specs);
@@ -34,7 +34,7 @@ class Goods extends Controller
 				$spec_key[] = $v['name'];
 			}
 			$spec_ids = rtrim($spec_ids, ',');
-			$cursor = Db::name('goods_products')->where("goods_id={$id}")->field('spec_sn,spec_value,stock,warning_line,style,cash,score,freight,gift,is_online')->cursor();
+			$cursor = Db::name('goods_products')->where("goods_id={$id} AND is_delete=0")->field('id as pid,spec_sn,spec_value,stock,warning_line,style,cash,score,freight,gift,is_online')->cursor();
 			// 3:银色,8:6G
 			foreach ($cursor as $k => $v) {
 				$spec_value = '';

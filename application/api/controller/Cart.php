@@ -27,8 +27,14 @@ class Cart extends Base
 	 */
 	public function add_cart(CartModel $cartModel)
 	{
-		$data = [];
-		return json($cartModel->addCart($this['auth']['uid']), $data);
+		$data = [
+			'uid' => $this['auth']['uid'],
+			'goods_id' => input('id/d'),
+			'spec_id' => input('pid/d'),
+			'num' => 1,
+			'create_time' => $_SERVER['REQUEST_TIME']
+		];
+		return json($cartModel->addCart($data));
 	}
 
 	/**
@@ -40,5 +46,17 @@ class Cart extends Base
 	{
 		$id = input('id/d', 0);
 		return json($cartModel->delCart($this['auth']['uid'], $id));
+	}
+
+	/**
+	 * 增加或者减少数量
+	 * @param CartModel $cartModel
+	 * @return \think\response\Json
+	 */
+	public function edit_num(CartModel $cartModel)
+	{
+		$id = input('id/d');
+		$type = input('type/d', 1);
+		return json($cartModel->editNum($this['auth']['uid'], $id, $type));
 	}
 }

@@ -140,6 +140,7 @@ class Goods extends Base
 			if ($spec_key === null) {
 				// 没有规格
 				$extend = [
+					'id' => input('pid/d'),
 					'spec_sn' => input('spec_sn'),
 					'spec_key' => null,
 					'spec_value' => null,
@@ -150,11 +151,13 @@ class Goods extends Base
 					'score' => input('score'),
 					'freight' => input('freight', 0),
 					'gift' => input('gift', 0),
-					'is_online' => input('is_online/d', 1)
+					'is_online' => input('is_online/d', 1),
+					'create_time' => $_SERVER['REQUEST_TIME']
 				];
 			} else {
 				// 存在多个规格
 				$extend = [
+					'id' => input('pid/a'),
 					'spec_sn' => input('spec_sn/a'),
 					'spec_key' => $spec_key,
 					'spec_value' => input('spec_value/a', null),

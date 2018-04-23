@@ -215,38 +215,53 @@ class Goods extends Model
 			}
 			Db::name('goods_images')->where("goods_id={$goods_id}")->delete();
 			Db::name('goods_images')->insertAll($imgData);
-			//4、最后处理规格问题
-			$k = 0;
+			//4、最后处理规格问题，所有的商品设置为删除状态
+			Db::name('goods_products')->where("goods_id={$goods_id} AND is_delete!=1")->update(['is_delete' => 1]);
 			$hasScoreStyle = ['is_pay_score' => 0, 'spec_id' => ''];
-			Db::name('goods_products')->where("goods_id={$goods_id}")->delete();
-			foreach ($value_dcr as $key => $value) {
-				$products = [
-					'goods_id' => $goods_id,
-					'spec_sn' => $extend['spec_sn'][$k],
-					'spec_value' => serialize($value['tem']),
-					'spec_value_string' => $value['value_string'],
-					'spec_key' => $key,
-					'stock' => $extend['stock'][$k],
-					'warning_line' => $extend['warning_line'][$k],
-					'style' => $extend['style'][$k],
-					'cash' => $extend['cash'][$k],
-					'score' => $extend['score'][$k],
-					'freight' => $extend['freight'][$k],
-					'gift' => $extend['gift'][$k],
-					'is_online' => $extend['is_online'][$k]
-				];
-				$spec_id = Db::name('goods_products')->insert($products, false, true);
-				// 如果此规格是积分兑换或者组合支付的并且是线上产品，回写商品表中的is_score和spec_sn字段
-				if (in_array($extend['style'][$k], [1, 3]) && $hasScoreStyle['is_pay_score'] === 0 AND $extend['is_online'][$k] == 1) {
-					$hasScoreStyle = ['is_pay_score' => 1, 'spec_id' => $spec_id];
-					Db::name($this->name)->where("id={$goods_id}")->update($hasScoreStyle);
+			if ($base['specs']) {
+				// 存在多规格
+				$k = 0;
+				// 获取此商品之前存在的所有规格id
+				$specIdArray = Db::name('goods_products')->where("goods_id={$goods_id} AND is_delete=0")->field('id')->select();
+				$specIdArray = array_column($specIdArray, 'id');
+				foreach ($value_dcr as $key => $value) {
+					$products = [
+						'goods_id' => $goods_id,
+						'spec_sn' => $extend['spec_sn'][$k],
+						'spec_value' => serialize($value['tem']),
+						'spec_value_string' => $value['value_string'],
+						'spec_key' => $key,
+						'stock' => $extend['stock'][$k],
+						'warning_line' => $extend['warning_line'][$k],
+						'style' => $extend['style'][$k],
+						'cash' => $extend['cash'][$k],
+						'score' => $extend['score'][$k],
+						'freight' => $extend['freight'][$k],
+						'gift' => $extend['gift'][$k],
+						'is_online' => $extend['is_online'][$k],
+						'is_delete' => 0,
+						'create_time' => $_SERVER['REQUEST_TIME']
+					];
+					$spec_id = $extend['id'][$k];
+					if ($spec_id && in_array($extend['id'][$k], $specIdArray)) {
+						// 更新
+						Db::name('goods_products')->where("id={$spec_id}")->update($products);
+					} else {
+						// 插入
+						$spec_id = Db::name('goods_products')->insert($products, false, true);
+					}
+					// 如果此规格是积分兑换或者组合支付的并且是线上产品，回写商品表中的is_score和spec_sn字段
+					if (in_array($extend['style'][$k], [1, 3]) && $hasScoreStyle['is_pay_score'] === 0 AND $extend['is_online'][$k] == 1) {
+						$hasScoreStyle = ['is_pay_score' => 1, 'spec_id' => $spec_id];
+						Db::name($this->name)->where("id={$goods_id}")->update($hasScoreStyle);
+					}
+					$k++;
 				}
-				$k++;
-			}
-			if ($k == 0) {
+			} else {
 				// 没有规格
 				$extend['goods_id'] = $goods_id;
-				$spec_id = Db::name('goods_products')->insert($extend, false, true);
+				$extend['is_delete'] = 0;
+				$spec_id = Db::name('goods_products')->insert($extend, true, true);
 				// 对于没有规格的商品，判断支付方式回写goods表中的is_score和spec_sn字段
 				if (in_array($extend['style'], [1, 3])) {
 					$hasScoreStyle = ['is_pay_score' => 1, 'spec_id' => $spec_id];

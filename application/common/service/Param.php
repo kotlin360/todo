@@ -1,6 +1,7 @@
 <?php
 namespace app\common\service;
 
+use think\Collection;
 use think\Db;
 use think\facade\Cache;
 
@@ -20,13 +21,13 @@ class Param
 		$config = Cache::get('system_params', null);
 		if (!$config) {
 			// 如果不存在查询全部的配置数据，并放入缓存
-			$cursor = Db::name('config')->field('key,value')->cursor();
-			$config = [];
-			foreach ($cursor as $v) {
+			$configs = Db::name('config')->field('key,value')->select();
+			$configList = array_reduce($configs, function ($config, $v) {
 				$config[$v['key']] = $v['value'];
-			}
+				return $config;
+			}, []);
 			// 写入缓存
-			Cache::set('system_params', $config);
+			Cache::set('system_params', $configList);
 		}
 		return $config;
 	}
