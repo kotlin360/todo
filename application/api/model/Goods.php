@@ -120,7 +120,7 @@ class Goods extends Model
 				$categorys[0]['goods'][] = $this->getGoodsSomeproperty($g);
 			}
 			$ads = AdFacade::getAd(2);
-			return ['code' => 1, 'data' => $categorys, 'ads' => $ads];
+			return ['code' => 1, 'data' => ['categorys' => $categorys, 'ads' => $ads]];
 		} catch (\Exception $e) {
 			return ['code' => 0, 'msg' => '分类获取失败：' . $e->getMessage()];
 		}
