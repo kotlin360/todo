@@ -5,6 +5,14 @@
 			<div class="layui-input-inline">
 				<input type="text" name="keyword" autocomplete="off" placeholder="输入商品标题关键字，如果为空查询全部" class="layui-input layui-btn-sm">
 			</div>
+			<div class="layui-input-inline">
+				<select name="location">
+					<option value="" selected>全部</option>
+					<option value="1">首页</option>
+					<option value="2">精选</option>
+					<option value="3">热门</option>
+				</select>
+			</div>
 			<button type="submit" lay-submit lay-filter="searchForm" class="layui-btn layui-btn-warm"><i class="fa fa-search"></i> 搜索</button>
 			<a class="layui-btn" href="{:url('goods/add')}"><i class="fa fa-plus"></i> 新增商品</a>
 		</div>
@@ -63,10 +71,24 @@
 			page: true,
 			cols: [[
 				{field: 'id', title: 'id', align: 'center', width: 80},
-				{field: 'title', title: '商品名称', align: 'center', width: 220},
-				{field: 'sn', title: '商品编号', align: 'center', width: 170},
+				{field: 'title', title: '商品名称', align: 'center', width: 250},
+				//{field: 'sn', title: '商品编号', align: 'center', width: 150},
 				{field: 'cate_name', title: '所属分类', align: 'center', width: 120},
 				{field: 'unit', title: '单位', align: 'center', width: 60},
+				{
+					field: 'location', title: '显示位置', align: 'center', width: 120, templet: function (v) {
+						switch (parseInt(v.location)) {
+							case 1:
+								return '首页';
+							case 2:
+								return '精选';
+							case 3:
+								return '热门';
+							default:
+								return '全部';
+						}
+					}
+				},
 				{
 					field: 'status', title: '状态', align: 'center', width: 70, templet: function (v) {
 						if (v.status == 1) {
@@ -124,7 +146,14 @@
 		//监听搜索提交
 		form.on('submit(searchForm)', function (data) {
 			var keyword = encodeURI($('input[name=keyword]').val());
-			datatable.reload({where: {keyword: keyword, page: 1}});
+			var location = $('select[name=location]').val();
+			datatable.reload({
+				where: {
+					keyword: keyword,
+					location: location,
+					page: 1
+				}
+			});
 			return false;
 		});
 	});

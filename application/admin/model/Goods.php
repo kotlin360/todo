@@ -346,7 +346,7 @@ class Goods extends Model
 	public function getDataByWhere($map, $cur_page, $limits)
 	{
 		try {
-			$count = $this->where($map)->count();
+			$count = $this->alias('g')->where($map)->count();
 			$list = $this->alias('g')
 				->join('goods_category c', 'g.cate_id = c.id')
 				->where($map)->page($cur_page, $limits)

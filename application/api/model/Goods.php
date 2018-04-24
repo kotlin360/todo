@@ -4,6 +4,7 @@ namespace app\api\model;
 use app\api\facade\Ad as AdFacade;
 use think\Collection;
 use think\Db;
+use think\facade\Config;
 use think\facade\Request;
 use think\Model;
 
@@ -39,23 +40,31 @@ class Goods extends Model
 	/**
 	 * 首页根据位置获取不同的商品信息  购买方式 1积分2现金 3组合
 	 * @param $location
+	 * @param $page
+	 * @param $style 1 获取商品和图片  2获取纯商品
 	 * @return array
 	 */
-	public function getGoods($location)
+	public function getGoods($location, $page, $style)
 	{
 		$self = $this;
 		$where = 'status=1';
+		$pageSize = Config::get('weixinSize');
+		$start = ($page - 1) * $pageSize;
 		if ($location != 0) {
 			$where = "location={$location} AND status=1";
 		}
 		try {
-			$goods = $this->where($where)->field('id,title,is_pay_score,spec_id')->select();
+			$goods = $this->where($where)->limit($start, $pageSize)
+				->field('id,title,is_pay_score,spec_id')->select();
 			$goodsList = Collection::make($goods)->each(function ($g) use ($self) {
 				return $self->getGoodsSomeproperty($g);
 			})->toArray();
-			// 获取首页顶部的轮播图片
-			$ads = AdFacade::getAd(1);
-			return ['code' => 1, 'data' => ['goodsList' => $goodsList, 'ads' => $ads]];
+			if ($style == 1) {
+				// 获取首页顶部的轮播图片
+				$ads = AdFacade::getAd(1);
+				return ['code' => 1, 'pageSize' => $pageSize, 'data' => ['goodsList' => $goodsList, 'ads' => $ads]];
+			}
+			return ['code' => 1, 'pageSize' => $pageSize, 'data' => ['goodsList' => $goodsList]];
 		} catch (\Exception $e) {
 			return ['code' => 0, 'msg' => '获取商品失败：' . $e->getMessage()];
 		}
@@ -87,8 +96,6 @@ class Goods extends Model
 				}
 			} else {
 				$goods['specs'] = unserialize($goods['specs']);
-				p($goods);
-				die;
 				// 存在多规格
 				$extends = Db::name('goods_products')->where("goods_id={$id} AND is_online=1")
 					->field('pid,stock,style,cash,score,freight')->select();

@@ -188,7 +188,8 @@
 						$placeHolder.addClass('element-invisible');
 						$statusBar.show();
 					}
-					obj.id = files[i].fid + '_old';
+					//obj.id = files[i].fid + '_old';
+					obj.id = files[i].fid.substr(0, 6) + new Date().getTime() + Math.floor(10000 * Math.random());
 					obj.name = files[i].name;
 					obj.type = files[i].type;
 					obj.size = files[i].size;

@@ -25,8 +25,12 @@ class Goods extends Base
 		if ($this->request->isAjax()) {
 			$cur_page = input('page', 1, 'intval');
 			$keyword = input('keyword', '', 'urldecode');
+			$location = input('location/d', 0);
 			$page_size = input('limit', Config::get('page_size'), 'intval');
-			$map = $keyword ? "g.title like '%{$keyword}%'" : '';
+			$map = $keyword ? " g.title like '%{$keyword}%' " : ' 1=1 ';
+			if ($location) {
+				$map .= " AND g.location={$location}";
+			}
 			$json = $goodsModel->getDataByWhere($map, $cur_page, $page_size);
 			return json($json);
 		} else {

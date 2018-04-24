@@ -302,9 +302,9 @@
 										地址：{{ d.order.address }}
 									</td>
 									<td>
-										支付方式：{{ d.order.pay_style }}<br>
 										支付积分：{{ d.order.pay_score }}<br>
-										支付现金：{{ d.order.pay_cash }}
+										余额支付：{{ d.order.pay_money }}<br>
+										微信现金：{{ d.order.pay_weixin }}
 									</td>
 									<td id="invoiceTd">
 										<span class="label">是否开发票：</span>{{ d.order.is_invoice == 1 ? '开发票':'不开发票' }}<br>

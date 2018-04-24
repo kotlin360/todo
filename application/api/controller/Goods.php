@@ -29,7 +29,9 @@ class Goods
 	 */
 	public function get_goods(GoodsModel $goodsModel, $location = 0)
 	{
-		return json($goodsModel->getGoods($location));
+		$page = input('page/d', 1);
+		$style = input('style/d', 1);
+		return json($goodsModel->getGoods($location, $page, $style));
 	}
 
 	/**

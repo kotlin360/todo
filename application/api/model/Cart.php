@@ -26,7 +26,6 @@ class Cart extends Model
 	public function getCartList($uid)
 	{
 		try {
-			$imgTable = Config::get('database.prefix') . 'goods_images';
 			$carts = Db::name($this->name)->alias('c')
 				->join('goods g', 'c.goods_id=g.id', 'LEFT')
 				->join('goods_products p', 'c.spec_id=p.id', 'LEFT')
@@ -34,7 +33,9 @@ class Cart extends Model
 				->field('c.id as cart_id,c.num,c.spec_value_string,g.id as goods_id,g.status,g.title,p.id as pid,p.style,p.score,p.cash,p.is_online,p.is_delete')->select();
 			$cartList = Collection::make($carts)->each(function ($cart) {
 				$img = Db::name('goods_images')->where("goods_id={$cart['goods_id']}")->field('img')->order('id')->find();
-				if (in_array(0, $cart, true) || $cart['pid'] === null || $cart['is_delete'] == 1) {
+				$is_delete = $cart['is_delete'];
+				unset($cart['is_delete']);
+				if (in_array(0, $cart, true) || $cart['pid'] === null || $is_delete == 1) {
 					$cart['is_valid'] = 0;
 				} else {
 					$cart['is_valid'] = 1;

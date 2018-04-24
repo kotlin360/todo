@@ -92,7 +92,8 @@ class Score extends Model
 		$size = Config::get('weixinSize');
 		$start = ($page - 1) * $size;
 		try {
-			$total = $this->total($uid);
+			$total = $this->total($uid)['total']; // 总积分
+
 			$lists = Db::name('score_log')->where("uid={$uid}")->field('value,note,create_time')->limit($start, $size)->order('id DESC')->select();
 			$list = Collection::make($lists)->each(function ($list) {
 				// 如果积分为正数，增加'+'
@@ -102,7 +103,7 @@ class Score extends Model
 				$list['create_time'] = date('Y-m-d H:i:s', $list['create_time']);
 				return $list;
 			});
-			return ['code' => 1, 'data' => ['total' => $total, 'list' => $list]];
+			return ['code' => 1, 'pageSize' => $size, 'data' => ['total' => $total, 'list' => $list]];
 		} catch (\Exception $e) {
 			return ['code' => 0, 'msg' => '获取用户积分明细失败：' . $e->getMessage()];
 		}

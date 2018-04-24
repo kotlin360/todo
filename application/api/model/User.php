@@ -4,6 +4,9 @@ namespace app\api\model;
 use app\common\facade\Log;
 use app\common\facade\Param as ParamFacade;
 use GuzzleHttp\Exception\GuzzleException;
+use GuzzleHttp\Exception\RequestException;
+use Psr\Http\Message\ResponseInterface;
+use GuzzleHttp\Psr7;
 use think\Container;
 use think\Db;
 use think\facade\Env;
@@ -125,7 +128,8 @@ class User extends Model
 //			'grant_type' => 'authorization_code'
 //		];
 		try {
-			$client = new \GuzzleHttp\Client();
+			$cert = Env::get('config_path') . 'cacert.pem';
+			$client = new \GuzzleHttp\Client(['verify' => $cert]);
 			// 发送请求获取session_key和openid
 			$response = $client->request('get', $params['config_wechat_url'], ['query' => $weixinParam]);
 			$body = json_decode($response->getBody());
@@ -174,6 +178,8 @@ class User extends Model
 				$token = authcode($user['id'] . '|' . $user['username'] . '|' . $openid, 'ENCODE');
 				return ['code' => 2, 'token' => $token];
 			}
+		} catch (RequestException $e) {
+			return ['code' => 0, 'msg' => '网络连接失败，请稍后再试'];
 		} catch (GuzzleException $e) {
 			return ['code' => 0, 'msg' => '登录失败：' . $e->getMessage()];
 		} catch (\Exception $e) {

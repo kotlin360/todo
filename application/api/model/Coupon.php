@@ -125,4 +125,25 @@ class Coupon extends Model
 			return ['code' => 0, 'msg' => '领取失败：' . $e->getMessage()];
 		}
 	}
+
+	/**
+	 * 根据优惠券id和用户uid获取有效的优惠券，用于用户支付的时候判断
+	 * @param $id
+	 * @param $uid
+	 * @return array|null|\PDOStatement|string|Model
+	 */
+	public function getValidCouponById($id, $uid)
+	{
+		$now = $_SERVER['REQUEST_TIME'];
+		try {
+			$coupon = Db::name($this->name)->where("id={$id} AND uid={$uid} AND status=0")
+				->field('value,money,start,end')->find();
+			if (!$coupon || ($coupon['start'] > $now) || ($coupon['end'] < $now)) {
+				return null;
+			}
+			return $coupon;
+		} catch (\Exception $e) {
+			return null;
+		}
+	}
 }
