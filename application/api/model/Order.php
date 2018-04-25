@@ -7,6 +7,9 @@ use app\api\facade\Score as ScoreFacade;
 use app\common\facade\Param as ParamFacade;
 use think\Collection;
 use think\Db;
+use think\db\exception\DataNotFoundException;
+use think\db\exception\ModelNotFoundException;
+use think\exception\DbException;
 use think\facade\Config;
 use think\facade\Request;
 use think\Model;
@@ -78,8 +81,6 @@ class Order extends Model
 			$param = ParamFacade::getSystemParam();
 
 			// 获取用户积分和现金余额
-			$freight = 0;  // 默认运费
-			$realCartIdString = '';
 			$scoreTotal = ScoreFacade::total($uid)['total'];
 			$moneyTotal = MoneyFacade::total($uid)['total'];
 
@@ -91,7 +92,7 @@ class Order extends Model
 				->field('c.id as cart_id,c.num,c.spec_value_string,g.id as goods_id,g.status,g.title,p.id as pid,p.style,p.score,p.cash,p.stock,p.freight,p.is_online,p.is_delete')->select();
 
 			// 对取出的订单商品进行过滤和修正
-			$cartList = Collection::make($carts)->filter(function (&$cart) use (&$freight, &$realCartIdString) {
+			$cartList = Collection::make($carts)->filter(function (&$cart) {
 				$is_delete = $cart['is_delete'];
 				unset($cart['is_delete']);
 				// 过滤掉不存在的规格或者已经下线的商品
@@ -102,9 +103,15 @@ class Order extends Model
 				$img = Db::name('goods_images')->where("goods_id={$cart['goods_id']}")->field('img')->order('id')->find();
 				$cart['img'] = Request::domain() . '/uploads/' . $img['img'];
 				// 获取最高运费
-				$freight = $cart['freight'] > $freight ? $cart['freight'] : $freight;
+				$this['freight'] = $cart['freight'] > $this['freight'] ? $cart['freight'] : $this['freight'];
 				// 获取真正的cart id 用逗号拼接
-				$realCartIdString .= $cart['cart_id'] . ',';
+				$this['realCartIdString'] .= $cart['cart_id'] . ',';
+				// 计算商品支付的现金、积分最高额度
+				if (in_array($cart['style'], [1, 3])) {
+					$this['maxScore'] += $cart['score'];
+				} else {
+					$this['maxMoney'] += $cart['money'];
+				}
 				unset($cart['is_online']);
 				unset($cart['status']);
 				unset($cart['freight']);
@@ -113,14 +120,16 @@ class Order extends Model
 			})->toArray();
 
 			// 保存用户选择的购物车商品id到数据库
-			$cartIdString = substr($realCartIdString, 0, -1);
+			$cartIdString = substr($this['realCartIdString'], 0, -1);
 			Db::name('user')->where("id={$uid}")->update(['cart' => $cartIdString]);
 
 			// 返回数据
 			return ['code' => 1, 'data' => [
-				'freight' => $freight,
+				'freight' => $this['freight'],
 				'scoreTotal' => $scoreTotal,
 				'moneyTotal' => $moneyTotal,
+				'maxScore' => $this['maxScore'],
+				'maxMoney' => $this['maxMoney'] + $this['freight'],
 				'cash2score_rate' => $param['config_cash2score_rate'],
 				'cartList' => $cartList
 			]];
@@ -267,11 +276,79 @@ class Order extends Model
 		}
 	}
 
-	public function pay()
+	/**
+	 * 获取支付信息页面
+	 * @param $orderNo
+	 * @return array
+	 */
+	public function getPayInfo($uid, $orderNo)
 	{
-		// 写用户优惠券日志表
-		// 写用户积分日志表
-		// 写用户钱包余额表
+		try {
+			$bill = Db::name('order')->where("order_no={$orderNo} AND uid={$uid}")
+				->field('id,pay_style,pay_score,pay_money,pay_weixin,pay_coupon_value,freight')->find();
+			return ['code' => 1, 'data' => $bill];
+		} catch (\Exception $e) {
+			return ['code' => 0, 'msg' => '获取支付信息失败：请稍后再试'];
+		}
+	}
+
+	/**
+	 * 支付动作
+	 * @param $uid
+	 * @param $id
+	 * @return array
+	 */
+	public function pay($uid, $id)
+	{
+		Db::startTrans();
+		try {
+			// 获取当前订单支付信息
+			$bill = Db::name('order')->where("id={id}")
+				->field('pay_style,pay_score,pay_money,pay_weixin,coupon_id,pay_coupon_value,freight')->find();
+
+			$couponId = $bill['coupon_id']; // 支付积分
+			$payScore = -$bill['pay_score']; // 支付积分
+			$payMoney = -$bill['pay_money']; // 支付余额
+			$payWeixin = $bill['pay_weixin']; // 微信支付
+
+			// 写用户优惠券日志表
+			if ($couponId) {
+				$couponData = ['status' => 1, 'update_time' => $_SERVER['REQUEST_TIME']];
+				Db::name('coupon_log')->where("id={$couponId}")->update($couponData);
+			}
+
+			// 扣除用户积分、钱包余额相应额度,需要判断，因为有可能客户直接微信支付了
+			if ($payScore != 0 || $payMoney != 0) {
+				Db::name('user')->where("id={$uid}")->dec('score', $payScore)->dec('money', $payMoney)->update();
+			}
+
+			// 写用户积分日志表
+			if ($payScore != 0) {
+				$scoreData = ['uid' => $uid, 'value' => $payScore, 'note' => '购买商品支付', 'create_time' => $_SERVER['REQUEST_TIME']];
+				Db::name('score')->insert($scoreData);
+			}
+
+			// 写用户钱包余额表
+			if ($payMoney != 0) {
+				$scoreData = ['uid' => $uid, 'value' => $payMoney, 'note' => '购买商品支付', 'create_time' => $_SERVER['REQUEST_TIME']];
+				Db::name('score')->insert($scoreData);
+			}
+
+			if ($payWeixin != 0) {
+				// 此处需要调用微信支付
+
+			}
+
+			// 支付成功后，需要写订单日志表
+			$orderData = ['uid' => $uid, 'order_id' => 1, 'note' => '支付成功，等待审核', 'create_time' => $_SERVER['REQUEST_TIME']];
+			Db::name('order_log')->insert($orderData);
+
+			Db::commit();
+			return ['code' => 1, 'data' => $bill];
+		} catch (\Exception $e) {
+			Db::rollback();
+			return ['code' => 0, 'msg' => '支付失败：' . $e->getMessage()];
+		}
 	}
 
 	/**

@@ -79,4 +79,15 @@ class Order extends Base
 		];
 		return json($orderModel->buildOrder($this['auth']['uid'], $orderData));
 	}
+
+	/**
+	 * 获取支付信息
+	 * @param OrderModel $orderModel
+	 * @return \think\response\Json
+	 */
+	public function get_pay_info(OrderModel $orderModel)
+	{
+		$orderNo = input('orderNo');
+		return json($orderModel->getPayInfo($orderNo));
+	}
 }
