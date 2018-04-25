@@ -89,7 +89,7 @@ class Money extends Model
 		$size = Config::get('weixinSize');
 		$start = ($page - 1) * $size;
 		try {
-			$total = $this->total($uid);
+			$total = $this->total($uid)['total'];
 			$lists = Db::name('money_log')->where("uid={$uid}")->field('value,note,create_time')->limit($start, $size)->order('id DESC')->select();
 			$list = Collection::make($lists)->each(function ($list) {
 				$list['create_time'] = date('Y-m-d H:i:s', $list['create_time']);

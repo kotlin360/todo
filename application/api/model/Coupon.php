@@ -48,7 +48,7 @@ class Coupon extends Model
 				$list['end'] = date('Y-m-d', $list['end']);
 				return $list;
 			});
-			return ['code' => 1, 'data' => $couponLists];
+			return ['code' => 1, 'data' => $couponLists, 'pageSize' => $limit];
 		} catch (\Exception $e) {
 			return ['code' => 0, 'msg' => '优惠券获取失败：' . $e->getMessage()];
 		}
@@ -128,15 +128,15 @@ class Coupon extends Model
 
 	/**
 	 * 根据优惠券id和用户uid获取有效的优惠券，用于用户支付的时候判断
-	 * @param $id
 	 * @param $uid
+	 * @param $id
 	 * @return array|null|\PDOStatement|string|Model
 	 */
-	public function getValidCouponById($id, $uid)
+	public function getValidCouponById($uid, $id)
 	{
 		$now = $_SERVER['REQUEST_TIME'];
 		try {
-			$coupon = Db::name($this->name)->where("id={$id} AND uid={$uid} AND status=0")
+			$coupon = Db::name('coupon_log')->where("coupon_id={$id} AND uid={$uid} AND status=0")
 				->field('value,money,start,end')->find();
 			if (!$coupon || ($coupon['start'] > $now) || ($coupon['end'] < $now)) {
 				return null;

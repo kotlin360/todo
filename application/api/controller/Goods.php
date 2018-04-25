@@ -30,6 +30,7 @@ class Goods
 	public function get_goods(GoodsModel $goodsModel, $location = 0)
 	{
 		$page = input('page/d', 1);
+		// 如果style没有收到值或者收到1的情况下获取顶部的轮播图，其他情况不获取轮播图
 		$style = input('style/d', 1);
 		return json($goodsModel->getGoods($location, $page, $style));
 	}
@@ -41,18 +42,19 @@ class Goods
 	 */
 	public function detail(GoodsModel $goodsModel)
 	{
-		$id = input('id/d');
+		$id = input('id/d', 0);
 		$pid = input('pid/d', null);
 		return json($goodsModel->detail($id, $pid));
 	}
 
 	/**
-	 * 商品分类界面，并获取第一个分类的商品信息
+	 * 商品分类界面，如果没有收到id默认取第一个分类的商品信息
 	 * @param GoodsModel $goodsModel
 	 * @return \think\response\Json
 	 */
 	public function get_category(GoodsModel $goodsModel)
 	{
-		return json($goodsModel->getCategory());
+		$cid = input('id/d', 0);
+		return json($goodsModel->getCategory($cid));
 	}
 }

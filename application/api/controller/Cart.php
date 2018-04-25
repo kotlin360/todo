@@ -44,7 +44,7 @@ class Cart extends Base
 	 */
 	public function del_cart(CartModel $cartModel)
 	{
-		$id = input('id/d', 0);
+		$id = input('cart_id/d', 0);
 		return json($cartModel->delCart($this['auth']['uid'], $id));
 	}
 

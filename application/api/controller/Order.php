@@ -11,13 +11,26 @@ use app\api\model\Order as OrderModel;
 class Order extends Base
 {
 	/**
+	 * 获取个人订单
+	 * @param OrderModel $orderModel
+	 * @return \think\response\Json
+	 */
+	public function get_order_list(OrderModel $orderModel)
+	{
+		// 默认不传全部 1待付款 10待发货 15待收货 25待退款 50已经取消
+		$type = input('type/d', 0);
+		$page = input('page/d', 1);
+		return json($orderModel->getOrderList($this['auth']['uid'], $type, $page));
+	}
+
+	/**
 	 * 生成订单之前，获取订单信息
 	 * @param OrderModel $orderModel
 	 * @return \think\response\Json
 	 */
 	public function get_order_info(OrderModel $orderModel)
 	{
-		$cartIdString = input('ids');
+		$cartIdString = input('cartIdList');
 		return json($orderModel->getOrderInfo($this['auth']['uid'], $cartIdString));
 	}
 
@@ -36,7 +49,8 @@ class Order extends Base
 			// 用户勾选的付款类型:积分支付和余额支付
 			'use_score' => input('use_score/d', 0),
 			'use_money' => input('use_money/d', 0),
-			'coupon_id' => input('coupon_id/d'), // 支付使用的优惠券id
+			'coupon_id' => input('coupon_id/d', 0), // 支付使用的优惠券id
+			'pay_coupon_value' => 0, // 支付使用的优惠券额度
 			'pay_score' => 0,// 用户选择支付的积分初始化
 			'pay_money' => 0,// 用户选择支付的余额初始化
 			'pay_weixin' => 0,// 微信支付额度初始化
@@ -44,7 +58,7 @@ class Order extends Base
 			// 1订单生成，等待付款；5已经付款，等待审核；10审核成功，等待发货；15发货成功，等待收货；20已收货，订单完成；
 			// 25客户退货，等待审核；30退货审核拒绝；35退货审核通过，等待收货；40退货完成
 			'status' => 1,
-			'freight' => input('freight/d'), // 运费
+			'freight' => 0, // 运费
 
 			// 收件人信息
 			'user_remark' => input('user_remark'), // 用户订单备注
@@ -54,7 +68,7 @@ class Order extends Base
 
 			// 发票信息
 			'is_invoice' => input('is_invoice/d', 0),// 是否开具发票
-			'invoice_cate' => input('invoice_cate/d'),// 发票类型1个人  2单位
+			'invoice_cate' => input('invoice_cate/d', 1),// 发票类型1个人  2单位
 			'invoice_title' => input('invoice_title'), // 发票抬头
 			'invoice_tax_no' => input('invoice_title'), // 税号
 			'invoice_address' => input('invoice_title'), // 发票单位地址

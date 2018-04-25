@@ -113,16 +113,18 @@ class Goods extends Model
 	}
 
 	/**
-	 * 获取商品分类和第一个分类下的商品明细
+	 * 获取商品分类和商品明细
+	 * @param $id
+	 * @return array
 	 */
-	public function getCategory()
+	public function getCategory($id)
 	{
 		try {
 			$categorys = Db::name('goods_category')->where('status=1')->order('sort')
 				->field('id,name')->select();
-			// 首先获取第一个分类下的所有商品
-			$firstCateId = $categorys[0]['id'];
-			$cursor = Db::name('goods')->where("cate_id={$firstCateId} AND status=1")->field('id,title,is_pay_score,spec_id')->cursor();
+			// 获取第一个分类下的所有商品
+			$cateId = $id === 0 ? $categorys[0]['id'] : $id;
+			$cursor = Db::name('goods')->where("cate_id={$cateId} AND status=1")->field('id,title,is_pay_score,spec_id')->cursor();
 			foreach ($cursor as $g) {
 				$categorys[0]['goods'][] = $this->getGoodsSomeproperty($g);
 			}
