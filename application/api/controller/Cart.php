@@ -31,7 +31,7 @@ class Cart extends Base
 			'uid' => $this['auth']['uid'],
 			'goods_id' => input('id/d'),
 			'spec_id' => input('pid/d'),
-			'num' => 1,
+			'num' => input('num/d'),
 			'create_time' => $_SERVER['REQUEST_TIME']
 		];
 		return json($cartModel->addCart($data));

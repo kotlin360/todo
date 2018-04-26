@@ -101,6 +101,7 @@ class Goods extends Model
 			foreach ($value_dcr as $key => $value) {
 				$products = [
 					'goods_id' => $goods_id,
+					'img' => $imgData[0]['img_m'],
 					'spec_sn' => $extend['spec_sn'][$k],
 					'spec_value' => serialize($value['tem']),
 					'spec_value_string' => $value['value_string'],
@@ -197,11 +198,13 @@ class Goods extends Model
 					$value_dcr[$key_code] = ['tem' => $tem, 'value_string' => $value_string];
 				}
 			}
+
 			//2、把商品基本信息更新到商品表中
 			$base['specs'] = !empty($specs_goods) ? serialize($specs_goods) : null;
 			$imgs_string_array = $base['imgs'];
 			unset($base['imgs']);
 			Db::name($this->name)->where("id={$goods_id}")->update($base);
+
 			//3、写商品的相册
 			$imgData = [];
 			foreach ($imgs_string_array as $v) {
@@ -215,18 +218,24 @@ class Goods extends Model
 			}
 			Db::name('goods_images')->where("goods_id={$goods_id}")->delete();
 			Db::name('goods_images')->insertAll($imgData);
-			//4、最后处理规格问题，所有的商品设置为删除状态
+
+			//4、最后处理规格问题, 获取此商品之前存在的所有规格id
+			$specIdArray = Db::name('goods_products')
+				->where("goods_id={$goods_id} AND is_delete=0")
+				->field('id')
+				->select();
+			$specIdArray = array_column($specIdArray, 'id');
+
+			// 所有的商品设置为删除状态
 			Db::name('goods_products')->where("goods_id={$goods_id} AND is_delete!=1")->update(['is_delete' => 1]);
 			$hasScoreStyle = ['is_pay_score' => 0, 'spec_id' => ''];
 			if ($base['specs']) {
 				// 存在多规格
 				$k = 0;
-				// 获取此商品之前存在的所有规格id
-				$specIdArray = Db::name('goods_products')->where("goods_id={$goods_id} AND is_delete=0")->field('id')->select();
-				$specIdArray = array_column($specIdArray, 'id');
 				foreach ($value_dcr as $key => $value) {
 					$products = [
 						'goods_id' => $goods_id,
+						'img' => $imgData[0]['img_m'],
 						'spec_sn' => $extend['spec_sn'][$k],
 						'spec_value' => serialize($value['tem']),
 						'spec_value_string' => $value['value_string'],
@@ -243,6 +252,8 @@ class Goods extends Model
 						'create_time' => $_SERVER['REQUEST_TIME']
 					];
 					$spec_id = $extend['id'][$k];
+					p($spec_id);
+					die;
 					if ($spec_id && in_array($extend['id'][$k], $specIdArray)) {
 						// 更新
 						Db::name('goods_products')->where("id={$spec_id}")->update($products);
@@ -260,6 +271,7 @@ class Goods extends Model
 			} else {
 				// 没有规格
 				$extend['goods_id'] = $goods_id;
+				$extend['img'] = $imgData[0]['img_m'];
 				$extend['is_delete'] = 0;
 				$spec_id = Db::name('goods_products')->insert($extend, true, true);
 				// 对于没有规格的商品，判断支付方式回写goods表中的is_score和spec_sn字段

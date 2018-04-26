@@ -103,11 +103,13 @@ class Coupon extends Model
 			if ($coupon === null || empty($coupon)) {
 				return ['code' => 0, 'msg' => '领取失败：优惠券不存在'];
 			}
+
 			// 检查是否领取过
 			$couponLogId = Db::name('coupon_log')->where("coupon_id={$id}")->value('id');
 			if ($couponLogId) {
 				return ['code' => 0, 'msg' => '领取失败：已经领取过'];
 			}
+
 			$data = [
 				'coupon_id' => $coupon['id'],
 				'uid' => $user['uid'],

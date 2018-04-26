@@ -43,10 +43,13 @@ class User extends Model
 			'last_time' => $_SERVER['REQUEST_TIME'],
 			'last_ip' => $request->ip()
 		];
+
+		// 验证
 		$userinfoValidate = new \app\api\validate\Userinfo();
 		if (!$userinfoValidate->check(['username' => $updateData['username'], 'messageCode' => $messageCode])) {
 			return ['code' => 0, 'msg' => $userinfoValidate->getError()];
 		}
+
 		// 需要首先验证短信验证码是否正确
 //		$realcode = MessageFacade::getCode($updateData['username']);
 //		if (!$realcode) {
@@ -55,6 +58,7 @@ class User extends Model
 //		if ($realcode !== $messageCode) {
 //			return ['code' => 0, 'msg' => '填写的验证码不正确'];
 //		}
+
 		try {
 			// 更新用户完善信息
 			$this->where("id={$user['uid']}")->update($updateData);
@@ -67,7 +71,6 @@ class User extends Model
 				$token = authcode($realUser['id'] . '|' . $realUser['username'] . '|' . $realUser['open_id'], 'ENCODE');
 				return ['code' => 1, 'token' => $token];
 			}
-			throw  new \Exception('请稍后再试');
 		} catch (\Exception $e) {
 			return ['code' => 0, 'msg' => '操作失败：' . $e->getMessage()];
 		}
@@ -84,10 +87,11 @@ class User extends Model
 			$user = $this->where("id={$uid}")
 				->field('id,username,nickname,score,money,avatar,tel,nickname,gender,birthday,station_name,manufactor,duty')->find();
 			if (strpos($user['avatar'], 'https') === false) {
-				//  用户修改了头像
+				// 用户修改了头像
 				$user['avatar'] = Container::get('request')->domain() . $user['avatar'];
 			}
 			$user['gender'] = $user['gender'] == 1 ? '男' : '女';
+
 			// 获取有效尚未使用优惠券的数量
 			$now = $_SERVER['REQUEST_TIME'];
 			$where = "uid={$uid} AND status=0 AND start <= {$now} AND end >= {$now}";
@@ -113,6 +117,7 @@ class User extends Model
 		// 包括敏感数据在内的完整用户信息的加密数据
 		$encryptedData = $request->post('encryptedData');
 		$params = ParamFacade::getSystemParam();
+
 		// 下面是正式的数据
 		$weixinParam = [
 			'appid' => $params['config_wechat_appid'],
@@ -120,6 +125,7 @@ class User extends Model
 			'js_code' => $js_code,
 			'grant_type' => 'authorization_code'
 		];
+
 		// 下面是本人自己的测试数据
 //		$weixinParam = [
 //			'appid' => 'wxe0437523294fb4e7',
@@ -127,6 +133,7 @@ class User extends Model
 //			'js_code' => $js_code,
 //			'grant_type' => 'authorization_code'
 //		];
+
 		try {
 			$cert = Env::get('config_path') . 'cacert.pem';
 			$client = new \GuzzleHttp\Client(['verify' => $cert]);
@@ -207,6 +214,20 @@ class User extends Model
 		} catch (\Exception $e) {
 			return ['code' => 0, 'msg' => $file->getError()];
 		}
+	}
+
+	/**
+	 * 根据用户id获取用户的昵称和电话
+	 * @param $uid
+	 * @return array|null|\PDOStatement|string|Model
+	 * @throws \think\db\exception\DataNotFoundException
+	 * @throws \think\db\exception\ModelNotFoundException
+	 * @throws \think\exception\DbException
+	 */
+	public function getUserNameAndPhone($uid)
+	{
+		$user = Db::name('user')->where("id={$uid}")->field('nickname,tel')->find();
+		return $user;
 	}
 
 }

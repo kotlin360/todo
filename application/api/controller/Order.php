@@ -24,6 +24,22 @@ class Order extends Base
 	}
 
 	/**
+	 * 积分兑换生成订单之前，获取订单信息
+	 * @param OrderModel $orderModel
+	 * @return \think\response\Json
+	 */
+	public function get_score_order_info(OrderModel $orderModel)
+	{
+		$data = [
+			'uid' => $this['auth']['uid'],
+			'id' => input('id/d'),
+			'pid' => input('pid/d'),
+			'num' => input('num/d')
+		];
+		return json($orderModel->getScoreOrderInfo($data));
+	}
+
+	/**
 	 * 生成订单之前，获取订单信息
 	 * @param OrderModel $orderModel
 	 * @return \think\response\Json
@@ -32,6 +48,50 @@ class Order extends Base
 	{
 		$cartIdString = input('cartIdList');
 		return json($orderModel->getOrderInfo($this['auth']['uid'], $cartIdString));
+	}
+
+	/**
+	 * 积分兑换功能，生成订单并扣除积分功能
+	 * @param OrderModel $orderModel
+	 * @return \think\response\Json
+	 */
+	public function build_score_order(OrderModel $orderModel)
+	{
+		$orderNo = $orderModel->build_order_no();
+
+		// 提交的商品信息
+		$goods = [
+			'uid' => $this['auth']['uid'],
+			'id' => input('id/d'),
+			'pid' => input('pid/d'),
+			'num' => input('num/d')
+		];
+
+		// 订单数据
+		$orderData = [
+			'order_no' => $orderNo, // 订单号
+			'uid' => $this['auth']['uid'],
+			'status' => 1,
+			'freight' => 0, // 运费
+
+			// 收件人信息
+			'user_remark' => input('user_remark'), // 用户订单备注
+			'accept_name' => input('accept_name'), // 收件人姓名
+			'accept_phone' => input('accept_phone'), // 收件人联系电话
+			'accept_address' => input('accept_address'), // 收件人地址
+
+			// 发票信息
+			'is_invoice' => input('is_invoice/d', 0),// 是否开具发票
+			'invoice_cate' => input('invoice_cate/d', 1),// 发票类型1个人  2单位
+			'invoice_title' => input('invoice_title'), // 发票抬头
+			'invoice_tax_no' => input('invoice_title'), // 税号
+			'invoice_address' => input('invoice_title'), // 发票单位地址
+			'invoice_phone' => input('invoice_title'), // 发票电话
+			'invoice_bank' => input('invoice_title'), // 发票开户行
+			'invoice_bank_card' => input('invoice_title'), // 发票银行账户
+			'create_time' => $_SERVER['REQUEST_TIME']
+		];
+		return json($orderModel->buildScoreOrder($goods, $orderData));
 	}
 
 	/**
@@ -85,9 +145,20 @@ class Order extends Base
 	 * @param OrderModel $orderModel
 	 * @return \think\response\Json
 	 */
+	public function get_score_pay_info(OrderModel $orderModel)
+	{
+		$orderNo = input('orderNo');
+		return json($orderModel->getScorePayInfo($this['auth']['uid'], $orderNo));
+	}
+
+	/**
+	 * 获取支付信息
+	 * @param OrderModel $orderModel
+	 * @return \think\response\Json
+	 */
 	public function get_pay_info(OrderModel $orderModel)
 	{
 		$orderNo = input('orderNo');
-		return json($orderModel->getPayInfo($orderNo));
+		return json($orderModel->getPayInfo($this['auth']['uid'], $orderNo));
 	}
 }

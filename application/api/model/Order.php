@@ -4,12 +4,10 @@ namespace app\api\model;
 use app\api\facade\Coupon as CouponFacade;
 use app\api\facade\Money as MoneyFacade;
 use app\api\facade\Score as ScoreFacade;
+use app\api\facade\User as UserFacade;
 use app\common\facade\Param as ParamFacade;
 use think\Collection;
 use think\Db;
-use think\db\exception\DataNotFoundException;
-use think\db\exception\ModelNotFoundException;
-use think\exception\DbException;
 use think\facade\Config;
 use think\facade\Request;
 use think\Model;
@@ -21,7 +19,6 @@ use think\Model;
  */
 class Order extends Model
 {
-
 	/**
 	 * 获取当前用户的订单
 	 * @param int $uid
@@ -69,7 +66,49 @@ class Order extends Model
 	}
 
 	/**
-	 * 用户结算界面数据
+	 * 积分兑换结算界面数据
+	 * @param $data
+	 * @return array
+	 */
+	public function getScoreOrderInfo($data)
+	{
+		try {
+			// 获取用户昵称和电话
+			$user = UserFacade::getUserNameAndPhone($data['uid']);
+			// 获取积分兑换率
+			$param = ParamFacade::getSystemParam();
+			// 用户总积分
+			$scoreTotal = ScoreFacade::total($data['uid'])['total'];
+
+			// 获取商品信息
+			$goodsInfo = Db::name('goods')->alias('g')
+				->join('goods_products p', "g.id=p.goods_id AND p.id={$data['pid']}", 'LEFT')->where("g.id={$data['id']}")
+				->field('g.title,p.img,p.spec_value_string,p.stock,p.score,p.freight,p.style,p.gift,p.is_online,p.is_delete')->find();
+
+			// 判断当前商品是否有效
+			if (!$goodsInfo || $goodsInfo['stock'] == 0) {
+				return ['code' => 0, 'msg' => '兑换失败，暂无库存'];
+			}
+			if ($goodsInfo['style'] != 1) {
+				return ['code' => 0, 'msg' => '兑换失败，该商品不支持积分兑换'];
+			}
+			if ($goodsInfo['is_online'] == 0 || $goodsInfo['is_delete'] == 1) {
+				return ['code' => 0, 'msg' => '兑换失败，商品已经下架'];
+			}
+
+			$goodsInfo['img2'] = Request::domain() . '/uploads/' . $goodsInfo['img'];
+			return ['code' => 1, 'data' => [
+				'user' => $user,
+				'goods' => $goodsInfo,
+				'scoreTotal' => $scoreTotal
+			]];
+		} catch (\Exception $e) {
+			return ['code' => 0, 'msg' => '兑换失败：' . $e->getMessage()];
+		}
+	}
+
+	/**
+	 * 用户结算界面数据(非纯积分商品)
 	 * @param $uid
 	 * @param $cartIdString
 	 * @return array
@@ -77,12 +116,17 @@ class Order extends Model
 	public function getOrderInfo($uid, $cartIdString)
 	{
 		try {
+			$this['freight'] = 0; // 最高运费初始化
+			$this['realCartIdString'] = ''; // 过滤后的购物车主键字符串
+			$this['maxScore'] = 0; // 支付积分极限
+			$this['maxMoney'] = 0; // 支付最高现金极限
+
 			// 获取积分兑换率
 			$param = ParamFacade::getSystemParam();
 
 			// 获取用户积分和现金余额
-			$scoreTotal = ScoreFacade::total($uid)['total'];
-			$moneyTotal = MoneyFacade::total($uid)['total'];
+			$scoreTotal = ScoreFacade::total($uid)['total'] + 0;
+			$moneyTotal = MoneyFacade::total($uid)['total'] + 0;
 
 			// 根据前端提交的购物车id获取购物车信息
 			$carts = Db::name('cart')->alias('c')
@@ -107,11 +151,11 @@ class Order extends Model
 				// 获取真正的cart id 用逗号拼接
 				$this['realCartIdString'] .= $cart['cart_id'] . ',';
 				// 计算商品支付的现金、积分最高额度
-				if (in_array($cart['style'], [1, 3])) {
-					$this['maxScore'] += $cart['score'];
-				} else {
-					$this['maxMoney'] += $cart['money'];
+				if ($cart['style'] != 2) {
+					$this['maxScore'] += $cart['score'] * $cart['num'];
 				}
+				$this['maxMoney'] += $cart['cash'] * $cart['num'];
+
 				unset($cart['is_online']);
 				unset($cart['status']);
 				unset($cart['freight']);
@@ -125,12 +169,12 @@ class Order extends Model
 
 			// 返回数据
 			return ['code' => 1, 'data' => [
-				'freight' => $this['freight'],
-				'scoreTotal' => $scoreTotal,
-				'moneyTotal' => $moneyTotal,
-				'maxScore' => $this['maxScore'],
-				'maxMoney' => $this['maxMoney'] + $this['freight'],
-				'cash2score_rate' => $param['config_cash2score_rate'],
+				'freight' => $this['freight'] + 0,
+				'scoreTotal' => $scoreTotal + 0,
+				'moneyTotal' => $moneyTotal + 0,
+				'maxScore' => $this['maxScore'] + 0,
+				'maxMoney' => $this['maxMoney'] + $this['freight'] + 0,
+				'cash2score_rate' => $param['config_cash2score_rate'] + 0,
 				'cartList' => $cartList
 			]];
 		} catch (\Exception $e) {
@@ -139,7 +183,63 @@ class Order extends Model
 	}
 
 	/**
-	 * 生成订单
+	 * 纯积分兑换商品生成订单
+	 * @param $goods
+	 * @param $data
+	 * @return array
+	 */
+	public function buildScoreOrder($goods, $data)
+	{
+		$result = $this->getScoreOrderInfo($goods);
+		if ($result['code'] == 1) {
+
+			// 判断当前用户积分额度与当前商品的总积分
+			$payScore = ($result['data']['goods']['score'] + 0) * ($goods['num'] + 0);
+			if ($payScore > $result['data']['scoreTotal']) {
+				return ['code' => 0, 'msg' => '兑换失败：当前总积分不足'];
+			}
+
+			Db::startTrans();
+			try {
+				// 创建写入订单表
+				$orderId = Db::name('goods')->insert($data, false, true);
+
+				// 写入订单商品详情表
+				$orderGoodsData = [
+					'order_id' => $orderId,
+					'img' => $result['data']['goods']['img'],
+					'goods_id' => $goods['id'],
+					'goods_num' => $goods['num'],
+					'spec_id' => $goods['pid'],
+					'spec_value_string' => $result['data']['goods']['spec_value_string'],
+					'style' => $result['data']['goods']['style'],
+					'score' => $result['data']['goods']['score'],
+					'freight' => $result['data']['goods']['freight'],
+					'gift' => $result['data']['goods']['gift']
+				];
+				Db::name('order_goods')->insert($orderGoodsData);
+
+				// 扣除库存
+				Db::name('goods_products')->where("id={$goods['pid']}")->dec('stock', $goods['num'])->update();
+
+				// 写订单日志表
+				$orderLogData = ['order_id' => $orderId, 'uid' => $data['uid'], 'note' => '积分兑换商品，等待付款', 'create_time' => $_SERVER['REQUEST_TIME']];
+				Db::name('order_log')->insert($orderLogData);
+
+				// 提交事务，相应数据
+				Db::commit();
+				return ['code' => 1, 'orderNo' => $data['order_no']];
+			} catch (\Exception $e) {
+				Db::rollback();
+				return ['code' => 0, 'msg' => '兑换失败：' . $e->getMessage()];
+			}
+		} else {
+			return ['code' => 0, 'msg' => '订单创建失败，请稍后再试'];
+		}
+	}
+
+	/**
+	 * 生成订单(非纯积分商品)
 	 * @param $uid
 	 * @param $orderData
 	 * @return array
@@ -164,8 +264,8 @@ class Order extends Model
 		$freight = 0;     // 默认运费
 		$scoreLimit = 0;  // 积分最高使用极限
 		$cashToTal = 0;   // 购买的商品全部折算为现金
-		$scoreTotal = ScoreFacade::total($uid)['total']; // 当前账户积分
-		$moneyTotal = MoneyFacade::total($uid)['total']; // 当前用户钱包余额
+		$scoreTotal = ScoreFacade::total($uid)['total'] + 0; // 当前账户积分
+		$moneyTotal = MoneyFacade::total($uid)['total'] + 0; // 当前用户钱包余额
 
 		Db::startTrans();
 		try {
@@ -250,6 +350,7 @@ class Order extends Model
 					'img' => $img,
 					'goods_id' => $v['goods_id'],
 					'goods_num' => $v['num'],
+					'spec_id' => $v['pid'],
 					'spec_value_string' => $v['spec_value_string'],
 					'style' => $v['style'],
 					'cash' => $v['cash'],
@@ -257,8 +358,11 @@ class Order extends Model
 					'freight' => $v['freight'],
 					'gift' => $v['gift']
 				];
+				// 扣除库存
+				Db::name('goods_products')->where("id={$v['pid']}")->dec('stock', $v['num'])->update();
 				return $list;
 			})->toArray();
+
 			Db::name('order_goods')->insertAll($orderGoodsList);
 
 			// 订单提交成功后删除购物车中的商品
@@ -277,7 +381,25 @@ class Order extends Model
 	}
 
 	/**
+	 * 积分支付信息页面，主要是考虑运费问题，运费需要余额或者微信支付
+	 * @param $uid
+	 * @param $orderNo
+	 * @return array
+	 */
+	public function getScorePayInfo($uid, $orderNo)
+	{
+		try {
+			$bill = Db::name('order')->where("order_no={$orderNo} AND uid={$uid}")
+				->field('id,pay_style,pay_score,freight')->find();
+			return ['code' => 1, 'data' => $bill];
+		} catch (\Exception $e) {
+			return ['code' => 0, 'msg' => '获取支付信息失败：请稍后再试'];
+		}
+	}
+
+	/**
 	 * 获取支付信息页面
+	 * @param $uid
 	 * @param $orderNo
 	 * @return array
 	 */
@@ -298,7 +420,7 @@ class Order extends Model
 	 * @param $id
 	 * @return array
 	 */
-	public function pay($uid, $id)
+	public function payHandle($uid, $id)
 	{
 		Db::startTrans();
 		try {
