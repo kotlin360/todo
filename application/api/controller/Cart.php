@@ -55,7 +55,7 @@ class Cart extends Base
 	 */
 	public function edit_num(CartModel $cartModel)
 	{
-		$id = input('id/d');
+		$id = input('cart_id/d');
 		$type = input('type/d', 1);
 		return json($cartModel->editNum($this['auth']['uid'], $id, $type));
 	}

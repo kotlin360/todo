@@ -115,6 +115,9 @@ class Order extends Model
 	 */
 	public function getOrderInfo($uid, $cartIdString)
 	{
+		if ($cartIdString == null) {
+			return ['code' => 0, 'msg' => '请选择需要结算的商品'];
+		}
 		try {
 			$this['freight'] = 0; // 最高运费初始化
 			$this['realCartIdString'] = ''; // 过滤后的购物车主键字符串
@@ -240,32 +243,32 @@ class Order extends Model
 
 	/**
 	 * 生成订单(非纯积分商品)
-	 * @param $uid
 	 * @param $orderData
 	 * @return array
 	 */
-	public function buildOrder($uid, $orderData)
+	public function buildOrder($orderData)
 	{
-		$cartIdString = Db::name('user')->where("id={$uid}")->value('cart');
-		$realCartIdString = ''; // 过滤之后真正写入订单表中的购物车id
+		$cartIdString = Db::name('user')->where("id={$orderData['uid']}")->value('cart');
+
+		$this['realCartIdString'] = ''; // 过滤之后真正写入订单表中的购物车id
 		// 获取积分兑换率
 		$param = ParamFacade::getSystemParam();
 
 		// 获取用户提交的优惠券信息
 		$coupon = null; // 用户提交的优惠券信息
 		if ($orderData['coupon_id'] !== 0) {
-			$coupon = CouponFacade::getValidCouponById($uid, $orderData['coupon_id']);
+			$coupon = CouponFacade::getValidCouponById($orderData['uid'], $orderData['coupon_id']);
 			if ($coupon == null) {
 				return ['code' => 0, 'msg' => '订单创建失败：优惠券失效'];
 			}
 		}
 
 		// 获取用户积分和现金余额
-		$freight = 0;     // 默认运费
-		$scoreLimit = 0;  // 积分最高使用极限
-		$cashToTal = 0;   // 购买的商品全部折算为现金
-		$scoreTotal = ScoreFacade::total($uid)['total'] + 0; // 当前账户积分
-		$moneyTotal = MoneyFacade::total($uid)['total'] + 0; // 当前用户钱包余额
+		$this['freight'] = 0;     // 默认运费
+		$this['scoreLimit'] = 0;  // 积分最高使用极限
+		$this['cashLimit'] = 0;   // 购买的商品全部折算为现金
+		$scoreTotal = ScoreFacade::total($orderData['uid'])['total'] + 0; // 当前账户积分
+		$moneyTotal = MoneyFacade::total($orderData['uid'])['total'] + 0; // 当前用户钱包余额
 
 		Db::startTrans();
 		try {
@@ -273,63 +276,73 @@ class Order extends Model
 			$carts = Db::name('cart')->alias('c')
 				->join('goods g', 'c.goods_id=g.id', 'LEFT')
 				->join('goods_products p', 'c.spec_id=p.id', 'LEFT')
-				->where("c.id in({$cartIdString}) AND c.uid={$uid}")
-				->field('c.id as cart_id,c.num,c.spec_value_string,g.id as goods_id,g.status,g.title,p.id as pid,p.style,p.score,p.cash,p.stock,p.gift,p.freight,p.is_online,p.is_delete')
+				->where("c.id in({$cartIdString}) AND c.uid={$orderData['uid']}")
+				->field('c.id as cart_id,c.spec_id,c.num,c.spec_value_string,g.id as goods_id,g.status,g.title,p.id as pid,p.style,p.score,p.cash,p.stock,p.gift,p.freight,p.is_online,p.is_delete')
 				->select();
 
 			// 对取出的订单商品进行过滤和修正,过滤掉不存在的规格或者已经下线的商品
-			$goodsList = Collection::make($carts)->filter(function (&$cart) use (&$freight, &$scoreLimit, &$cashToTal, &$orderGoodsList, &$realCartIdString) {
-				$is_delete = $cart['is_delete'];
-				unset($cart['is_delete']);
-				if (in_array(0, $cart, true) || $cart['pid'] === null || $is_delete == 1) {
+			$goodsList = Collection::make($carts)->filter(function (&$cart) {
+				if ($cart['pid'] === null || $cart['stock'] == 0 || $cart['is_delete'] == 1) {
 					return false;
 				}
 				// 获取最高运费
-				$freight = $cart['freight'] > $freight ? $cart['freight'] : $freight;
+				$this['freight'] = $cart['freight'] > $this['freight'] ? $cart['freight'] : $this['freight'];
+
 				// 计算最高可使用积分
-				if (in_array($cart['style'], [1, 3])) {
-					$scoreLimit += $cart['score'];
+				if ($cart['style'] == 3) {
+					$this['scoreLimit'] += $cart['score'] * $cart['num'];
 				}
-				$cashToTal += $cart['cash'];
+				$this['cashLimit'] += $cart['cash'] * $cart['num'];
 				// 获取真正的cart id 用逗号拼接
-				$realCartIdString .= $cart['cart_id'] . ',';
+				$this['realCartIdString'] .= $cart['cart_id'] . ',';
 				return true;
 			});
 
+			// 总金额加上运费
+			$this['cashLimit'] += $this['freight'];
+
+			// 去掉规格id最后的逗号
+			$this['realCartIdString'] = substr($this['realCartIdString'], 0, -1);
+
 			// 如果使用积分，判断积分是否超过了额度
 			if ($orderData['use_score'] == 1) {
-				if ($scoreTotal >= $scoreLimit) {
-					$orderData['pay_score'] = $scoreLimit;
+				$payTypeArray[] = '积分';
+				if ($scoreTotal >= $this['scoreLimit']) {
+					$orderData['pay_score'] = $this['scoreLimit'];
 				} else {
 					$orderData['pay_score'] = $scoreTotal;
 				}
 			}
-
 			// $diff = 总共支付的额度-积分支付的额度 就是需要支付的现金（余额+微信）
-			$diff = $cashToTal - $orderData['pay_score'] * $param['config_cash2score_rate'];
+			$diff = (int)$this['cashLimit'] - ($orderData['pay_score'] / $param['config_cash2score_rate']);
+
 			if ($diff > 0) {
 				// 积分不够的情况下
 				// 首先$diff和优惠券的面值（如果有）比较，如果$diff满足面值要求，则$diff扣除优惠券优惠
 				if ($coupon !== null) {
 					// 如果优惠券存在有效
 					if ($diff >= $coupon['money']) {
-						$orderData['pay_coupon_value'] = $coupon['money'];
+						$orderData['pay_coupon_value'] = $coupon['value'];
 						$diff -= $coupon['value'];
 					} else {
 						return ['code' => 0, 'msg' => '支付现金额度低于优惠券面值'];
 					}
 				}
 				if ($orderData['use_money'] == 1) {
+					$payTypeArray[] = '钱包余额';
 					// 使用钱包余额
 					if ($moneyTotal >= $diff) {
 						// 余额充足的情况
 						$orderData['pay_money'] = $diff;
+						$orderData['pay_weixin'] = 0;
 					} else {
 						// 余额也不够，剩下的就是微信支付
+						$payTypeArray[] = '微信支付';
 						$orderData['pay_money'] = $moneyTotal;
 						$orderData['pay_weixin'] = $diff - $moneyTotal;
 					}
 				} else {
+					$payTypeArray[] = '微信支付';
 					// 没有使用钱包余额
 					$orderData['pay_money'] = 0;
 					$orderData['pay_weixin'] = $diff;
@@ -339,6 +352,8 @@ class Order extends Model
 			// 写入订单表，生成订单
 			unset($orderData['use_score']);
 			unset($orderData['use_money']);
+			$orderData['freight'] = $this['freight']; // 写入最高运费
+			$orderData['pay_style'] = implode('+', $payTypeArray);
 			$this['orderId'] = Db::name('order')->insert($orderData, false, true);
 
 			// 写order_goods订单商品详情表
@@ -362,14 +377,13 @@ class Order extends Model
 				Db::name('goods_products')->where("id={$v['pid']}")->dec('stock', $v['num'])->update();
 				return $list;
 			})->toArray();
-
 			Db::name('order_goods')->insertAll($orderGoodsList);
 
 			// 订单提交成功后删除购物车中的商品
-			Db::name('cart')->where("id in({$realCartIdString}) AND uid={$uid}")->delete();
+			// Db::name('cart')->where("id in({$this['realCartIdString']}) AND uid={$orderData['uid']}")->delete();
 
 			// 写订单日志表
-			$orderLogData = ['order_id' => $this['orderId'], 'uid' => $uid, 'note' => '提交订单，等待付款', 'create_time' => $_SERVER['REQUEST_TIME']];
+			$orderLogData = ['order_id' => $this['orderId'], 'uid' => $orderData['uid'], 'note' => '提交订单，等待付款', 'create_time' => $_SERVER['REQUEST_TIME']];
 			Db::name('order_log')->insert($orderLogData);
 
 			Db::commit(); // 提交事物
@@ -377,23 +391,6 @@ class Order extends Model
 		} catch (\Exception $e) {
 			Db::rollback();
 			return ['code' => 0, 'msg' => '订单创建失败：' . $e->getMessage()];
-		}
-	}
-
-	/**
-	 * 积分支付信息页面，主要是考虑运费问题，运费需要余额或者微信支付
-	 * @param $uid
-	 * @param $orderNo
-	 * @return array
-	 */
-	public function getScorePayInfo($uid, $orderNo)
-	{
-		try {
-			$bill = Db::name('order')->where("order_no={$orderNo} AND uid={$uid}")
-				->field('id,pay_style,pay_score,freight')->find();
-			return ['code' => 1, 'data' => $bill];
-		} catch (\Exception $e) {
-			return ['code' => 0, 'msg' => '获取支付信息失败：请稍后再试'];
 		}
 	}
 
@@ -460,7 +457,6 @@ class Order extends Model
 				// 此处需要调用微信支付
 
 			}
-
 			// 支付成功后，需要写订单日志表
 			$orderData = ['uid' => $uid, 'order_id' => 1, 'note' => '支付成功，等待审核', 'create_time' => $_SERVER['REQUEST_TIME']];
 			Db::name('order_log')->insert($orderData);
@@ -498,6 +494,36 @@ class Order extends Model
 		} catch (\Exception $e) {
 			Db::rollback();
 			return build_order_no();
+		}
+	}
+
+	/**
+	 * 订单处理用户的收货地址和发票信息
+	 * @param $orderData
+	 * @param $addressInfo
+	 * @param $invoiceInfo
+	 */
+	public function orderAddressAndInvoiceHandle(&$orderData, $addressInfo, $invoiceInfo)
+	{
+		if (!empty($addressInfo)) {
+			$orderData['accept_name'] = $addressInfo['userName'];
+			$orderData['accept_phone'] = $addressInfo['telNumber'];
+			$orderData['accept_address'] = $addressInfo['provinceName'] . $addressInfo['cityName'] . $addressInfo['countyName'] . $addressInfo['detailInfo'];
+		}
+
+		// 处理发票信息
+		if (empty($invoiceInfo)) {
+			$orderData['is_invoice'] = 0; // 不开发票
+		} else {
+			$orderData['is_invoice'] = 1;
+			// 前台type0标识单位，发票类型1个人  2单位
+			$orderData['invoice_cate'] = $invoiceInfo['type'] === 0 ? 2 : 1;
+			$orderData['invoice_title'] = $invoiceInfo['title']; // 发票抬头
+			$orderData['invoice_tax_no'] = $invoiceInfo['taxNumber']; // 税号
+			$orderData['invoice_address'] = $invoiceInfo['companyAddress']; // 发票单位地址
+			$orderData['invoice_phone'] = $invoiceInfo['telephone']; // 发票电话
+			$orderData['invoice_bank'] = $invoiceInfo['bankName']; // 发票开户行
+			$orderData['invoice_bank_card'] = $invoiceInfo['bankAccount']; // 发票银行账户
 		}
 	}
 

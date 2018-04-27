@@ -81,11 +81,13 @@ class Goods extends Model
 		try {
 			// 商品基本信息
 			$goods = Db::name('goods')->where("id={$id}")->field(true)->find();
+
 			// 商品图册
 			$album = Db::name('goods_images')->where("goods_id={$id}")->order('id')->field('img')->select();
 			$goods['album'] = Collection::make($album)->each(function ($img) {
 				return Request::domain() . '/uploads/' . $img['img'];
 			})->toArray();
+
 			// 获取商品规格
 			if ($goods['specs'] === null) {
 				// 没有规格，获得商品的扩展属性
@@ -106,6 +108,7 @@ class Goods extends Model
 					$skumap[$extend['specs_key']] = $extend;
 				});
 			}
+
 			return ['code' => 1, 'data' => $goods];
 		} catch (\Exception $e) {
 			return ['code' => 0, 'msg' => '商品详情获取失败：' . $e->getMessage()];

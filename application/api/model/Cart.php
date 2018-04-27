@@ -111,7 +111,7 @@ class Cart extends Model
 	public function editNum($uid, $id, $type)
 	{
 		try {
-			$cart = $this->where("id={$id}")->field(true)->find();
+			$cart = Db::name('cart')->where("id={$id}")->field(true)->find();
 			switch ($type) {
 				case 1:
 					if (--$cart['num'] <= 0) {
@@ -124,6 +124,7 @@ class Cart extends Model
 					if (++$cart['num'] > $stock) {
 						return ['code' => 0, 'msg' => '购买数量已达到库存量'];
 					}
+					$this->where("id={$id}")->setInc('num');
 					break;
 				default:
 					return ['code' => 0, 'msg' => '操作失败'];

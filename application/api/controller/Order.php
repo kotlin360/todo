@@ -40,13 +40,13 @@ class Order extends Base
 	}
 
 	/**
-	 * 生成订单之前，获取订单信息
+	 * 生成订单之前，获取订单信息【对应前台“去结算”按钮接口】
 	 * @param OrderModel $orderModel
 	 * @return \think\response\Json
 	 */
 	public function get_order_info(OrderModel $orderModel)
 	{
-		$cartIdString = input('cartIdList');
+		$cartIdString = input('cartIdList', null);
 		return json($orderModel->getOrderInfo($this['auth']['uid'], $cartIdString));
 	}
 
@@ -57,9 +57,7 @@ class Order extends Base
 	 */
 	public function build_score_order(OrderModel $orderModel)
 	{
-		$orderNo = $orderModel->build_order_no();
-
-		// 提交的商品信息
+		// 前台提交的商品信息
 		$goods = [
 			'uid' => $this['auth']['uid'],
 			'id' => input('id/d'),
@@ -67,88 +65,54 @@ class Order extends Base
 			'num' => input('num/d')
 		];
 
-		// 订单数据
+		// 订单信息数据
 		$orderData = [
-			'order_no' => $orderNo, // 订单号
+			'order_no' => $orderModel->build_order_no(), // 订单号
 			'uid' => $this['auth']['uid'],
 			'status' => 1,
 			'freight' => 0, // 运费
-
-			// 收件人信息
 			'user_remark' => input('user_remark'), // 用户订单备注
-			'accept_name' => input('accept_name'), // 收件人姓名
-			'accept_phone' => input('accept_phone'), // 收件人联系电话
-			'accept_address' => input('accept_address'), // 收件人地址
-
-			// 发票信息
-			'is_invoice' => input('is_invoice/d', 0),// 是否开具发票
-			'invoice_cate' => input('invoice_cate/d', 1),// 发票类型1个人  2单位
-			'invoice_title' => input('invoice_title'), // 发票抬头
-			'invoice_tax_no' => input('invoice_title'), // 税号
-			'invoice_address' => input('invoice_title'), // 发票单位地址
-			'invoice_phone' => input('invoice_title'), // 发票电话
-			'invoice_bank' => input('invoice_title'), // 发票开户行
-			'invoice_bank_card' => input('invoice_title'), // 发票银行账户
 			'create_time' => $_SERVER['REQUEST_TIME']
 		];
+
+		// 处理收货地址和发票信息
+		$addressInfo = input('addressInfo/a', null);
+		$invoiceInfo = input('invoiceInfoList/a', null);
+		$orderModel->orderAddressAndInvoiceHandle($orderData, $addressInfo, $invoiceInfo);
+
 		return json($orderModel->buildScoreOrder($goods, $orderData));
 	}
 
 	/**
-	 * 生成订单
+	 * 生成订单（非纯积分兑换商品订单）
 	 * @param OrderModel $orderModel
 	 * @return \think\response\Json
 	 */
 	public function build_order(OrderModel $orderModel)
 	{
-		$orderNo = $orderModel->build_order_no();
+		// 订单信息数据
 		$orderData = [
-			'order_no' => $orderNo, // 订单号
+			'order_no' => $orderModel->build_order_no(), // 订单号
 			'uid' => $this['auth']['uid'],
-
 			// 用户勾选的付款类型:积分支付和余额支付
 			'use_score' => input('use_score/d', 0),
 			'use_money' => input('use_money/d', 0),
 			'coupon_id' => input('coupon_id/d', 0), // 支付使用的优惠券id
 			'pay_coupon_value' => 0, // 支付使用的优惠券额度
-			'pay_score' => 0,// 用户选择支付的积分初始化
-			'pay_money' => 0,// 用户选择支付的余额初始化
-			'pay_weixin' => 0,// 微信支付额度初始化
-
-			// 1订单生成，等待付款；5已经付款，等待审核；10审核成功，等待发货；15发货成功，等待收货；20已收货，订单完成；
-			// 25客户退货，等待审核；30退货审核拒绝；35退货审核通过，等待收货；40退货完成
-			'status' => 1,
-			'freight' => 0, // 运费
-
-			// 收件人信息
+			'pay_score' => 0, // 用户选择支付的积分初始化
+			'pay_money' => 0, // 用户选择支付的余额初始化
+			'pay_weixin' => 0, // 微信支付额度初始化
+			'status' => 1, // 1订单生成，等待付款
 			'user_remark' => input('user_remark'), // 用户订单备注
-			'accept_name' => input('accept_name'), // 收件人姓名
-			'accept_phone' => input('accept_phone'), // 收件人联系电话
-			'accept_address' => input('accept_address'), // 收件人地址
-
-			// 发票信息
-			'is_invoice' => input('is_invoice/d', 0),// 是否开具发票
-			'invoice_cate' => input('invoice_cate/d', 1),// 发票类型1个人  2单位
-			'invoice_title' => input('invoice_title'), // 发票抬头
-			'invoice_tax_no' => input('invoice_title'), // 税号
-			'invoice_address' => input('invoice_title'), // 发票单位地址
-			'invoice_phone' => input('invoice_title'), // 发票电话
-			'invoice_bank' => input('invoice_title'), // 发票开户行
-			'invoice_bank_card' => input('invoice_title'), // 发票银行账户
 			'create_time' => $_SERVER['REQUEST_TIME']
 		];
-		return json($orderModel->buildOrder($this['auth']['uid'], $orderData));
-	}
 
-	/**
-	 * 获取支付信息
-	 * @param OrderModel $orderModel
-	 * @return \think\response\Json
-	 */
-	public function get_score_pay_info(OrderModel $orderModel)
-	{
-		$orderNo = input('orderNo');
-		return json($orderModel->getScorePayInfo($this['auth']['uid'], $orderNo));
+		// 处理收货地址和发票信息
+		$addressInfo = input('addressInfo/a', null);
+		$invoiceInfo = input('invoiceInfoList/a', null);
+		$orderModel->orderAddressAndInvoiceHandle($orderData, $addressInfo, $invoiceInfo);
+
+		return json($orderModel->buildOrder($orderData));
 	}
 
 	/**

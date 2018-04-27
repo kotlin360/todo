@@ -138,7 +138,7 @@ class Coupon extends Model
 	{
 		$now = $_SERVER['REQUEST_TIME'];
 		try {
-			$coupon = Db::name('coupon_log')->where("coupon_id={$id} AND uid={$uid} AND status=0")
+			$coupon = Db::name('coupon_log')->where("id={$id} AND uid={$uid} AND status=0")
 				->field('value,money,start,end')->find();
 			if (!$coupon || ($coupon['start'] > $now) || ($coupon['end'] < $now)) {
 				return null;
