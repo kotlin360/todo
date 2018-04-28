@@ -46,6 +46,8 @@
 
 </script>
 <script type="text/javascript">
+	var checkUrl = "{:url('order/check_verify')}"; // 付款成功后审核的url
+	var returnUrl = "{:url('order/return_verify')}"; // 退款审核url
 	layui.config({
 		base: '/static/admin/js/'
 	}).use(['table', 'form', 'layer', 'jquery', 'utils'], function () {
@@ -69,6 +71,26 @@
 				{title: '操作', align: 'left', toolbar: '#toobar', width: 200}
 			]]
 		});
+
+		/**
+		 * 异步提交审核信息
+		 * @param url
+		 * @param id
+		 * @param type
+		 * @param remark
+		 */
+		function ajaxCheck(url, id, type, remark) {
+			$.post(url, {id: id, type: type, remark: remark}, function (data) {
+				layer.closeAll();
+				if (data.code === 1) {
+					parent.message.show({msg: '审核成功'});
+					datatable.reload();
+				} else {
+					parent.message.show({skin: 'red', msg: data.msg});
+				}
+			});
+		}
+
 		table.on('tool(datatable)', function (obj) {
 			var data = obj.data;
 			var layEvent = obj.event;
@@ -88,7 +110,7 @@
 					shadeClose: true,
 					btn: ['审核通过', '审核拒绝'],
 					yes: function () {
-						ajaxCheck(data.id, 1, '');
+						ajaxCheck(returnUrl + '?t=' + new Date().getTime(), data.id, 1, '');
 					},
 					btn2: function () {
 						var remark = $.trim($('textarea[name=remark]').val());
@@ -125,6 +147,20 @@
 		});
 	});
 </script>
+<script type="text/html" id="checkHtml">
+	<div class="layui-row">
+		<div class="layui-col-md12" style="padding:20px">
+			<form class="layui-form layui-form-pane" lay-filter="rejectForm">
+				<div class="layui-form-item layui-form-text">
+					<label class="layui-form-label">拒绝原因</label>
+					<div class="layui-input-block">
+						<textarea name="check_remark" placeholder="如果通过，不用填写；审核拒绝必须填写理由，不能超过200个字符" class="layui-textarea" style="resize:none"></textarea>
+					</div>
+				</div>
+			</form>
+		</div>
+	</div>
+</script>
 <script type="text/html" id="returnHtml">
 	<div class="layui-row">
 		<div class="layui-col-md12" style="padding:20px">
@@ -133,7 +169,7 @@
 				<div class="layui-form-item layui-form-text">
 					<label class="layui-form-label">拒绝原因</label>
 					<div class="layui-input-block">
-						<textarea name="remark" placeholder="如果通过，不用填写；审核拒绝必须填写理由，不能超过200个字符" class="layui-textarea" style="resize:none"></textarea>
+						<textarea name="return_remark" placeholder="如果通过，不用填写；审核拒绝必须填写理由，不能超过200个字符" class="layui-textarea" style="resize:none"></textarea>
 					</div>
 				</div>
 			</form>
