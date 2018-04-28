@@ -36,6 +36,17 @@ class Goods
 	}
 
 	/**
+	 * 获取纯积分商品，用于积分商城
+	 * @param GoodsModel $goodsModel
+	 * @return \think\response\Json
+	 */
+	public function get_score_goods_list(GoodsModel $goodsModel)
+	{
+		$page = input('page/d', 1);
+		return json($goodsModel->getScoreGoodsList($page));
+	}
+
+	/**
 	 * 根据商品id和型号id获取商品的详情
 	 * @param GoodsModel $goodsModel
 	 * @return \think\response\Json
@@ -55,6 +66,7 @@ class Goods
 	public function get_category(GoodsModel $goodsModel)
 	{
 		$cid = input('id/d', 0);
-		return json($goodsModel->getCategory($cid));
+		$page = input('page/d', 1);
+		return json($goodsModel->getCategory($cid, $page));
 	}
 }

@@ -24,7 +24,7 @@ class Order extends Base
 	}
 
 	/**
-	 * 积分兑换生成订单之前，获取订单信息
+	 * 积分兑换生成订单之前，获取订单信息【对应前台“确认兑换”按钮】
 	 * @param OrderModel $orderModel
 	 * @return \think\response\Json
 	 */
@@ -32,9 +32,8 @@ class Order extends Base
 	{
 		$data = [
 			'uid' => $this['auth']['uid'],
-			'id' => input('id/d'),
-			'pid' => input('pid/d'),
-			'num' => input('num/d')
+			'id' => input('id/d'), // 商品id
+			'pid' => input('pid/d'), // 商品规格id
 		];
 		return json($orderModel->getScoreOrderInfo($data));
 	}
@@ -132,5 +131,27 @@ class Order extends Base
 	public function pay_handle()
 	{
 
+	}
+
+	/**
+	 * 确认收货
+	 * @param OrderModel $orderModel
+	 * @return \think\response\Json
+	 */
+	public function confirm_receipt(OrderModel $orderModel)
+	{
+		$id = input('id/d', 0);
+		return json($orderModel->comfirmReceipt($this['auth']['uid'], $id));
+	}
+
+	/**
+	 * 退货申请
+	 * @param OrderModel $orderModel
+	 * @return \think\response\Json
+	 */
+	public function return_goods(OrderModel $orderModel)
+	{
+		$id = input('id/d', 0);
+		return json($orderModel->returnGoods($this['auth']['uid'], $id));
 	}
 }

@@ -50,12 +50,16 @@ class Order extends Model
 
 			// 根据上面的订单id获取下面的商品信息，并处理好两者的关系（将商品压入到相应的订单中）
 			$this['orderIds'] = substr($this['orderIds'], 0, -1);
+			if (!$this['orderIds']) {
+				return ['code' => 1, 'data' => [], 'pageSize' => $limit];
+			}
 			$orderGoods = Db::name('order_goods')->where("order_id in ({$this['orderIds']})")
-				->field('order_id,order_title,img,goods_num,spec_value_string,style,cash,score')->select();
+				->field('order_id,goods_title,img,goods_num,spec_value_string,style,cash,score')->select();
 			Collection::make($orderGoods)->each(function ($v) use (&$orderList) {
 				$order_id = $v['order_id'];
 				unset($v['order_id']);
-				$orderList[$order_id]['goods'][] = $v;
+				$v['img'] = Request::domain() . '/uploads/' . $v['img'];
+				$orderList[$order_id]['goods'] = $v;
 			});
 
 			return ['code' => 1, 'data' => array_values($orderList), 'pageSize' => $limit];
@@ -84,6 +88,8 @@ class Order extends Model
 				->join('goods_products p', "g.id=p.goods_id AND p.id={$data['pid']}", 'LEFT')->where("g.id={$data['id']}")
 				->field('g.title,p.img,p.spec_value_string,p.stock,p.score,p.freight,p.style,p.gift,p.is_online,p.is_delete')->find();
 
+			// 处理无规格的情况
+			$goodsInfo['spec_value_string'] = $goodsInfo['spec_value_string'] == null ? '无规格' : $goodsInfo['spec_value_string'];
 			// 判断当前商品是否有效
 			if (!$goodsInfo || $goodsInfo['stock'] == 0) {
 				return ['code' => 0, 'msg' => '兑换失败，暂无库存'];
@@ -495,6 +501,62 @@ class Order extends Model
 		} catch (\Exception $e) {
 			Db::rollback();
 			return build_order_no();
+		}
+	}
+
+	/**
+	 * 确认收货
+	 * @param $uid
+	 * @param $id
+	 * @return array
+	 */
+	public function comfirmReceipt($uid, $id)
+	{
+		Db::startTrans();
+		try {
+			// 更新订单状态
+			$result = Db::name('order')->where("id={$id} AND status in(10,15)")->update(['status' => 20]);
+			if (!$result) {
+				return ['code' => 0, 'msg' => '确认失败：订单未查询到'];
+			}
+
+			// 写入订单日志
+			$orderLog = ['uid' => $uid, 'order_id' => $id, 'note' => '已收货，订单完成', 'create_time' => $_SERVER['REQUEST_TIME']];
+			Db::name('order_log')->insert($orderData);
+
+			Db::commit();
+			return ['code' => 1];
+		} catch (\Exception $e) {
+			Db::rollback();
+			return ['code' => 0, 'msg' => '收货失败：' . $e->getMessage()];
+		}
+	}
+
+	/**
+	 * 退货申请
+	 * @param $uid
+	 * @param $id
+	 * @return array
+	 */
+	public function returnGoods($uid, $id)
+	{
+		Db::startTrans();
+		try {
+			// 更新订单状态
+			$result = Db::name('order')->where("id={$id} AND status in(15,10,15,20)")->update(['status' => 25]);
+			if (!$result) {
+				return ['code' => 0, 'msg' => '退货申请失败：订单未查询到'];
+			}
+
+			// 写入订单日志
+			$orderLog = ['uid' => $uid, 'order_id' => $id, 'note' => '客户申请退货，等待审核', 'create_time' => $_SERVER['REQUEST_TIME']];
+			Db::name('order_log')->insert($orderData);
+
+			Db::commit();
+			return ['code' => 1];
+		} catch (\Exception $e) {
+			Db::rollback();
+			return ['code' => 0, 'msg' => '退货申请失败：' . $e->getMessage()];
 		}
 	}
 

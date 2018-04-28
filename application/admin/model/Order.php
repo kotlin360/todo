@@ -25,7 +25,7 @@ class Order extends Model
 		$prefix = Config::get('database.prefix');
 		try {
 			// 订单信息
-			$orderSQL = "SELECT o.*,u.username,u.tel FROM {$prefix}order o LEFT JOIN {$prefix}user u ON o.uid = u.id WHERE o.id=:id LIMIT 1";
+			$orderSQL = "SELECT o.*,u.username,u.nickname,u.tel FROM {$prefix}order o LEFT JOIN {$prefix}user u ON o.uid = u.id WHERE o.id=:id LIMIT 1";
 			$order = Db::query($orderSQL, ['id' => $id]);
 			// 订单商品
 			$goodsSQL = "SELECT og.*,g.title FROM {$prefix}order_goods og " .
@@ -51,13 +51,17 @@ class Order extends Model
 	public function getDataByWhere($map, $cur_page, $limits)
 	{
 		try {
-			$count = $this->where($map)->count();
-			$list = $this->where($map)->page($cur_page, $limits)->field(true)->order('id desc')->select();
+			$count = Db::name('order')->where($map)->count();
+			$list = Db::name('order')->where($map)->page($cur_page, $limits)->field(true)->order('id desc')->select();
+			$orderList = array_map(function ($item) {
+				$item['statusFlag'] = $item['status'];
+				return $item;
+			}, $list);
 			$json = [
 				'code' => 0,
 				'msg' => '',
 				'count' => $count,
-				'data' => $list
+				'data' => $orderList
 			];
 			return $json;
 		} catch (\Exception $e) {
@@ -87,17 +91,6 @@ class Order extends Model
 	public function getStatusAttr($value)
 	{
 		$status = Config::get('order_status');
-		return $status[$value];
-	}
-
-	/**
-	 * 支付类型状态获取器
-	 * @param $value
-	 * @return mixed
-	 */
-	public function getPayStyleAttr($value)
-	{
-		$status = [1 => '积分', 2 => '现金', 3 => '组合'];
 		return $status[$value];
 	}
 

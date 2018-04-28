@@ -41,13 +41,12 @@ class Goods extends Model
 	 * 首页根据位置获取不同的商品信息  购买方式 1积分2现金 3组合
 	 * @param $location
 	 * @param $page
-	 * @param $style 1 获取商品和图片  2获取纯商品
+	 * @param $style 1 获取商品和顶部的轮播广告  2获取纯商品
 	 * @return array
 	 */
 	public function getGoods($location, $page, $style)
 	{
-		$self = $this;
-		$where = 'status=1';
+		$where = 'status=1 AND p.stock >0 AND p.is_delete=0';
 		$pageSize = Config::get('weixinSize');
 		$start = ($page - 1) * $pageSize;
 		if ($location != 0) {
@@ -56,8 +55,8 @@ class Goods extends Model
 		try {
 			$goods = $this->where($where)->limit($start, $pageSize)
 				->field('id,title,is_pay_score,spec_id')->select();
-			$goodsList = Collection::make($goods)->each(function ($g) use ($self) {
-				return $self->getGoodsSomeproperty($g);
+			$goodsList = Collection::make($goods)->each(function ($g) {
+				return $this->getGoodsSomeproperty($g);
 			})->toArray();
 			if ($style == 1) {
 				// 获取首页顶部的轮播图片
@@ -67,6 +66,33 @@ class Goods extends Model
 			return ['code' => 1, 'pageSize' => $pageSize, 'data' => ['goodsList' => $goodsList]];
 		} catch (\Exception $e) {
 			return ['code' => 0, 'msg' => '获取商品失败：' . $e->getMessage()];
+		}
+	}
+
+	/**
+	 * 获取纯积分商品
+	 * @param $page
+	 * @return array
+	 */
+	public function getScoreGoodsList($page)
+	{
+		$where = 'p.style = 1 AND p.is_online=1 AND p.stock >0 AND p.is_delete=0';
+		$pageSize = Config::get('weixinSize');
+		$start = ($page - 1) * $pageSize;
+		try {
+			$goods_ids = Db::name('goods_products')->alias('p')
+				->join('goods g', 'g.id=p.goods_id', 'LEFT')
+				->where($where)->limit($start, $pageSize)
+				->field('g.id,g.title,p.id as pid,p.style,p.score')->select();
+			$goodsList = Collection::make($goods_ids)->each(function ($g) {
+				// 获取图片
+				$img = Db::name('goods_images')->where("goods_id={$g['id']}")->order('id')->value('img_m');
+				$g['img'] = Request::domain() . '/uploads/' . $img;
+				return $g;
+			})->toArray();
+			return ['code' => 1, 'pageSize' => $pageSize, 'data' => ['goodsList' => $goodsList]];
+		} catch (\Exception $e) {
+			return ['code' => 0, 'msg' => '获取积分商品失败：' . $e->getMessage()];
 		}
 	}
 
@@ -117,22 +143,44 @@ class Goods extends Model
 
 	/**
 	 * 获取商品分类和商品明细
-	 * @param $id
+	 * @param $cid
+	 * @param $page
 	 * @return array
 	 */
-	public function getCategory($id)
+	public function getCategory($cid, $page)
 	{
+		$size = Config::get('weixinSize');
+		$start = ($page - 1) * $size;
+		$goodsList = [];
 		try {
 			$categorys = Db::name('goods_category')->where('status=1')->order('sort')
 				->field('id,name')->select();
-			// 获取第一个分类下的所有商品
-			$cateId = $id === 0 ? $categorys[0]['id'] : $id;
-			$cursor = Db::name('goods')->where("cate_id={$cateId} AND status=1")->field('id,title,is_pay_score,spec_id')->cursor();
-			foreach ($cursor as $g) {
-				$categorys[0]['goods'][] = $this->getGoodsSomeproperty($g);
+
+			// 给每个分类增加空的商品信息，前台判断长度用
+			$categoryList = array_reduce($categorys, function ($result, $item) {
+				$item['goods'] = [];
+				$result[$item['id']] = $item;
+				return $result;
+			}, []);
+
+			// 获取第一个分类数组
+			reset($categoryList);
+			$first = current($categoryList);
+			reset($categoryList);
+
+			// 获取指定分类下的商品
+			$cateId = $cid === 0 ? $first['id'] : $cid;
+
+			$goods = Db::name('goods')->where("cate_id={$cateId} AND status=1")
+				->field('id,title,is_pay_score,spec_id')->limit($start, $size)->select();
+			foreach ($goods as $g) {
+				$goodsList[] = $this->getGoodsSomeproperty($g);
 			}
+
+			$categoryList[$cateId]['goods'] = $goodsList;
+
 			$ads = AdFacade::getAd(2);
-			return ['code' => 1, 'data' => ['categorys' => $categorys, 'ads' => $ads]];
+			return ['code' => 1, 'data' => ['categorys' => $categoryList, 'ads' => $ads], 'pageSize' => $size];
 		} catch (\Exception $e) {
 			return ['code' => 0, 'msg' => '分类获取失败：' . $e->getMessage()];
 		}
