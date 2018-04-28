@@ -51,15 +51,14 @@ class Order extends Model
 			// 根据上面的订单id获取下面的商品信息，并处理好两者的关系（将商品压入到相应的订单中）
 			$this['orderIds'] = substr($this['orderIds'], 0, -1);
 			$orderGoods = Db::name('order_goods')->where("order_id in ({$this['orderIds']})")
-				->field('order_id,img,goods_num,spec_value_string,style,cash,score')->select();
-
+				->field('order_id,order_title,img,goods_num,spec_value_string,style,cash,score')->select();
 			Collection::make($orderGoods)->each(function ($v) use (&$orderList) {
 				$order_id = $v['order_id'];
 				unset($v['order_id']);
 				$orderList[$order_id]['goods'][] = $v;
 			});
 
-			return ['code' => 1, 'data' => $orderList, 'pageSize' => $limit];
+			return ['code' => 1, 'data' => array_values($orderList), 'pageSize' => $limit];
 		} catch (\Exception $e) {
 			return ['code' => 0, 'msg' => '获取订单失败：' . $e->getMessage()];
 		}
@@ -212,6 +211,7 @@ class Order extends Model
 					'order_id' => $orderId,
 					'img' => $result['data']['goods']['img'],
 					'goods_id' => $goods['id'],
+					'goods_title' => $goods['title'],
 					'goods_num' => $goods['num'],
 					'spec_id' => $goods['pid'],
 					'spec_value_string' => $result['data']['goods']['spec_value_string'],
@@ -364,6 +364,7 @@ class Order extends Model
 					'order_id' => $this['orderId'],
 					'img' => $img,
 					'goods_id' => $v['goods_id'],
+					'goods_title' => $v['title'],
 					'goods_num' => $v['num'],
 					'spec_id' => $v['pid'],
 					'spec_value_string' => $v['spec_value_string'],
@@ -426,8 +427,8 @@ class Order extends Model
 				->field('pay_style,pay_score,pay_money,pay_weixin,coupon_id,pay_coupon_value,freight')->find();
 
 			$couponId = $bill['coupon_id']; // 支付积分
-			$payScore = -$bill['pay_score']; // 支付积分
-			$payMoney = -$bill['pay_money']; // 支付余额
+			$payScore = $bill['pay_score']; // 支付积分
+			$payMoney = $bill['pay_money']; // 支付余额
 			$payWeixin = $bill['pay_weixin']; // 微信支付
 
 			// 写用户优惠券日志表
@@ -505,11 +506,10 @@ class Order extends Model
 	 */
 	public function orderAddressAndInvoiceHandle(&$orderData, $addressInfo, $invoiceInfo)
 	{
-		if (!empty($addressInfo)) {
-			$orderData['accept_name'] = $addressInfo['userName'];
-			$orderData['accept_phone'] = $addressInfo['telNumber'];
-			$orderData['accept_address'] = $addressInfo['provinceName'] . $addressInfo['cityName'] . $addressInfo['countyName'] . $addressInfo['detailInfo'];
-		}
+		// 处理收货地址
+		$orderData['accept_name'] = $addressInfo['userName'];
+		$orderData['accept_phone'] = $addressInfo['telNumber'];
+		$orderData['accept_address'] = $addressInfo['provinceName'] . $addressInfo['cityName'] . $addressInfo['countyName'] . $addressInfo['detailInfo'];
 
 		// 处理发票信息
 		if (empty($invoiceInfo)) {

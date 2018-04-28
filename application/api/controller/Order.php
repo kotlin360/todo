@@ -67,10 +67,10 @@ class Order extends Base
 
 		// 订单信息数据
 		$orderData = [
+			'status' => 1, // 订单状态
+			'freight' => 0, // 运费
 			'order_no' => $orderModel->build_order_no(), // 订单号
 			'uid' => $this['auth']['uid'],
-			'status' => 1,
-			'freight' => 0, // 运费
 			'user_remark' => input('user_remark'), // 用户订单备注
 			'create_time' => $_SERVER['REQUEST_TIME']
 		];
@@ -110,6 +110,9 @@ class Order extends Base
 		// 处理收货地址和发票信息
 		$addressInfo = input('addressInfo/a', null);
 		$invoiceInfo = input('invoiceInfoList/a', null);
+		if (!$addressInfo) {
+			return json(['code' => 0, 'msg' => '请填写收货地址']);
+		}
 		$orderModel->orderAddressAndInvoiceHandle($orderData, $addressInfo, $invoiceInfo);
 
 		return json($orderModel->buildOrder($orderData));
@@ -124,5 +127,10 @@ class Order extends Base
 	{
 		$orderNo = input('orderNo');
 		return json($orderModel->getPayInfo($this['auth']['uid'], $orderNo));
+	}
+
+	public function pay_handle()
+	{
+
 	}
 }
