@@ -51,4 +51,33 @@ class Order extends Controller
 		$goodsinfo = $orderModel->getGoodsInfo($id);
 		return json($goodsinfo);
 	}
+
+	/**
+	 * 发货
+	 * @param OrderModel $orderModel
+	 * @return \think\response\Json
+	 */
+	public function send_goods(OrderModel $orderModel)
+	{
+		$id = input('id/d', 0);
+		// 快递单号
+		$courierNumber = input('courierNumber', 0);
+		$goodsinfo = $orderModel->sendGoods($id, $courierNumber);
+		return json($goodsinfo);
+	}
+
+	/**
+	 * 退货退款后台审核
+	 * @param OrderModel $orderModel
+	 * @return \think\response\Json
+	 */
+	public function return_verify(OrderModel $orderModel)
+	{
+		$id = input('id/d', 0);
+		// status 30拒绝 35通过
+		$status = input('status/d', 30);
+		$return_remark = input('returnRemark', '');
+		$goodsinfo = $orderModel->returnVerify($id, $status, $return_remark);
+		return json($goodsinfo);
+	}
 }

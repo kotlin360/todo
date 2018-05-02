@@ -17,7 +17,7 @@
 			<div class="layui-input-inline">
 				<input type="text" name="phone" autocomplete="off" placeholder="收件电话" class="layui-input layui-btn-sm">
 			</div>
-			<div class="layui-input-inline">
+			<div class="layui-input-inline" style="width:200px">
 				<select name="status">
 					<option value="">==订单状态==</option>
 					{volist name="status" id="v"}
@@ -34,20 +34,45 @@
 <script type="text/html" id="toobar">
 
 	<a class="layui-btn layui-btn-xs" lay-event="detail"><i class="fa fa-eye"></i> 订单详情</a>
-	{{#  if(d.statusFlag == 5){ }}
-	<a class="layui-btn layui-btn-xs layui-btn-warm" lay-event="check"><i class="fa fa-hand-o-right"></i> 订单审核</a>
-	{{#  } }}
-	{{#  if(d.statusFlag == 10){ }}
+	{{#  if(d.status == 5){ }}
 	<a class="layui-btn layui-btn-xs layui-btn-warm" lay-event="send"><i class="fa fa-truck"></i> 订单发货</a>
 	{{#  } }}
-	{{#  if(d.statusFlag == 25){ }}
+	{{#  if(d.status == 25){ }}
 	<a class="layui-btn layui-btn-xs layui-btn-danger" lay-event="return"><i class="fa fa-reply-all"></i> 退货审核</a>
 	{{#  } }}
 
 </script>
 <script type="text/javascript">
-	var checkUrl = "{:url('order/check_verify')}"; // 付款成功后审核的url
+	var sendUrl = "{:url('order/send_goods')}"; // 发货url
 	var returnUrl = "{:url('order/return_verify')}"; // 退款审核url
+
+	// 获取订单状态
+	function getOrderStatus(status) {
+		switch (parseInt(status)) {
+			case 1:
+				return '订单生成，等待付款';
+			case 5:
+			case 10:
+				return '已经付款，等待发货';
+			case 15:
+				return '发货成功，等待收货';
+			case 20:
+				return '已收货，订单完成';
+			case 25:
+				return '客户退货，等待审核';
+			case 30:
+				return '退货审核拒绝';
+			case 35:
+				return '退货审核通过，等待收货';
+			case 40:
+				return '退货完成';
+			case 50:
+				return '已经取消';
+			default:
+				return '错误状态';
+		}
+	}
+
 	layui.config({
 		base: '/static/admin/js/'
 	}).use(['table', 'form', 'layer', 'jquery', 'utils'], function () {
@@ -62,28 +87,30 @@
 			page: true,
 			cols: [[
 				{field: 'id', title: '序号', align: 'center', width: 80},
-				{field: 'order_no', title: '订单号', align: 'center', width: 160},
+				{field: 'order_no', title: '订单号', align: 'center', width: 150},
 				{field: 'accept_name', title: '收件人', align: 'center', width: 80},
-				{field: 'accept_phone', title: '收件人电话', align: 'center', width: 120},
-				{field: 'pay_status', title: '支付状态', align: 'center', width: 120},
-				{field: 'status', title: '订单状态', align: 'center', width: 160},
+				{field: 'accept_phone', title: '收件人电话', align: 'center', width: 130},
+				{field: 'pay_status', title: '支付状态', align: 'center', width: 90},
+				{
+					field: 'status', title: '订单状态', align: 'center', width: 200, templet: function (v) {
+						return getOrderStatus(v.status);
+					}
+				},
 				{field: 'create_time', title: '订单日期', align: 'center', width: 180},
 				{title: '操作', align: 'left', toolbar: '#toobar', width: 200}
 			]]
 		});
 
 		/**
-		 * 异步提交审核信息
+		 * 异步提交发货或者退货审核信息
 		 * @param url
-		 * @param id
-		 * @param type
-		 * @param remark
+		 * @param data
 		 */
-		function ajaxCheck(url, id, type, remark) {
-			$.post(url, {id: id, type: type, remark: remark}, function (data) {
+		function ajaxPost(url, data) {
+			$.post(url, data, function (data) {
 				layer.closeAll();
 				if (data.code === 1) {
-					parent.message.show({msg: '审核成功'});
+					parent.message.show({msg: data.msg});
 					datatable.reload();
 				} else {
 					parent.message.show({skin: 'red', msg: data.msg});
@@ -96,24 +123,35 @@
 			var layEvent = obj.event;
 			if (layEvent === 'detail') {
 				window.parent.orderInfo(data.id);
-			} else if (layEvent === 'check') {
-
 			} else if (layEvent === 'send') {
 
+				// 发货，填写快递单号
+				layer.prompt({
+					formType: 2,
+					shadeClose: true,
+					value: '',
+					title: '订单号：【 ' + data.order_no + ' 】, 请输入快递单号',
+					area: ['380px', '100px']
+				}, function (value, index) {
+					// 发送异步
+					ajaxPost(sendUrl + '?t=' + new Date().getTime(), {id: data.id, courierNumber: $.trim(value)});
+					layer.close(index);
+				});
 			} else if (layEvent === 'return') {
+				var url = returnUrl + '?t=' + new Date().getTime();
 				layer.open({
 					type: 1,
 					title: '用户 【 ' + data.accept_name + ' 】 退货审核',
-					area: ['500px', '380px'],
+					area: ['580px', '320px'],
 					btnAlign: 'c',
 					content: $('#returnHtml').html(),
 					shadeClose: true,
 					btn: ['审核通过', '审核拒绝'],
 					yes: function () {
-						ajaxCheck(returnUrl + '?t=' + new Date().getTime(), data.id, 1, '');
+						ajaxPost(url, {id: data.id, status: 35});
 					},
 					btn2: function () {
-						var remark = $.trim($('textarea[name=remark]').val());
+						var remark = $.trim($('textarea[name=returnRemark]').val());
 						if (remark.length > 200) {
 							parent.message.show({skin: 'red', msg: '备注不能超过200个字符'});
 							return false;
@@ -122,7 +160,7 @@
 							parent.message.show({skin: 'red', msg: '请输入拒绝原因'});
 							return false;
 						}
-						ajaxCheck(data.id, 0, remark);
+						ajaxPost(url, {id: data.id, status: 30, returnRemark: remark});
 						return false;
 					}
 				});
@@ -163,13 +201,12 @@
 </script>
 <script type="text/html" id="returnHtml">
 	<div class="layui-row">
-		<div class="layui-col-md12" style="padding:20px">
-			<blockquote class="layui-elem-quote layui-quote-nm">友情提示：<br>必须在收到退货的货物后才可以审核，审核通过后会立即发起退款操作</blockquote>
+		<div class="layui-col-md12" style="padding:30px 20px">
 			<form class="layui-form layui-form-pane" lay-filter="rejectForm">
 				<div class="layui-form-item layui-form-text">
-					<label class="layui-form-label">拒绝原因</label>
+					<label class="layui-form-label">拒绝原因（必须在收到退货的货物后才可以审核，通过后会立即发起退款操作）</label>
 					<div class="layui-input-block">
-						<textarea name="return_remark" placeholder="如果通过，不用填写；审核拒绝必须填写理由，不能超过200个字符" class="layui-textarea" style="resize:none"></textarea>
+						<textarea name="returnRemark" placeholder="如果通过，不用填写；审核拒绝必须填写理由，不能超过200个字符" class="layui-textarea" style="resize:none"></textarea>
 					</div>
 				</div>
 			</form>

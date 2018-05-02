@@ -118,7 +118,7 @@ class Order extends Base
 	}
 
 	/**
-	 * 获取支付信息
+	 * 获取支付信息【最后结算界面或者是订单中的‘去支付’按钮】
 	 * @param OrderModel $orderModel
 	 * @return \think\response\Json
 	 */
@@ -128,7 +128,15 @@ class Order extends Base
 		return json($orderModel->getPayInfo($this['auth']['uid'], $orderNo));
 	}
 
+	/**
+	 * 支付调用接口
+	 */
 	public function pay_handle()
+	{
+
+	}
+
+	public function pay_notify()
 	{
 
 	}

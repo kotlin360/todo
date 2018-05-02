@@ -149,3 +149,7 @@
 .layui-flow-more img {
 	display: none;
 }
+
+#orderTable th {
+	font-weight: bold;
+}

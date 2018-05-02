@@ -289,9 +289,10 @@
 							<table class="layui-table" lay-skin="line">
 								<thead>
 								<tr>
-									<th width="40%">收货人信息</th>
+									<th width="35%">收货人信息</th>
 									<th width="20%">付款信息</th>
-									<th width="40%">发票信息</th>
+									<th width="30%">发票信息</th>
+									<th width="15%">用户备注</th>
 								</tr>
 								</thead>
 								<tbody>
@@ -319,6 +320,9 @@
 										<span class="label">银行账户：</span>{{ d.order.invoice_bank_card }}<br>
 										{{# } }}
 										{{# } }}
+									</td>
+									<td>
+										{{ d.order.user_remark }}
 									</td>
 								</tr>
 								</tbody>

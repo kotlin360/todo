@@ -54,7 +54,7 @@ class Order extends Model
 				return ['code' => 1, 'data' => [], 'pageSize' => $limit];
 			}
 			$orderGoods = Db::name('order_goods')->where("order_id in ({$this['orderIds']})")
-				->field('order_id,goods_title,img,goods_num,spec_value_string,style,cash,score')->select();
+				->field('order_id,goods_title,img,goods_num,spec_id as pid,spec_value_string,style,cash,score')->select();
 			Collection::make($orderGoods)->each(function ($v) use (&$orderList) {
 				$order_id = $v['order_id'];
 				unset($v['order_id']);
@@ -217,6 +217,8 @@ class Order extends Model
 					'order_id' => $orderId,
 					'img' => $result['data']['goods']['img'],
 					'goods_id' => $goods['id'],
+					// 购买商品赠送的积分
+					'score_gift_total' => $good['gift'] * $goods['num'],
 					'goods_title' => $goods['title'],
 					'goods_num' => $goods['num'],
 					'spec_id' => $goods['pid'],
@@ -257,6 +259,7 @@ class Order extends Model
 		$cartIdString = Db::name('user')->where("id={$orderData['uid']}")->value('cart');
 
 		$this['realCartIdString'] = ''; // 过滤之后真正写入订单表中的购物车id
+		$this['score_gift_total'] = ''; // 下订单成功后计算需要赠送多少积分
 		// 获取积分兑换率
 		$param = ParamFacade::getSystemParam();
 
@@ -301,6 +304,7 @@ class Order extends Model
 				$this['cashLimit'] += $cart['cash'] * $cart['num'];
 				// 获取真正的cart id 用逗号拼接
 				$this['realCartIdString'] .= $cart['cart_id'] . ',';
+				$this['score_gift_total'] += $cart['gift'] * $cart['num'];
 				return true;
 			});
 
@@ -359,6 +363,7 @@ class Order extends Model
 			unset($orderData['use_score']);
 			unset($orderData['use_money']);
 			$orderData['freight'] = $this['freight']; // 写入最高运费
+			$orderData['score_gift_total'] = $this['score_gift_total']; // 购买商品赠送的总积分
 			$orderData['pay_style'] = implode('+', $payTypeArray);
 			$this['orderId'] = Db::name('order')->insert($orderData, false, true);
 
@@ -412,6 +417,9 @@ class Order extends Model
 		try {
 			$bill = Db::name('order')->where("order_no={$orderNo} AND uid={$uid}")
 				->field('id,pay_style,pay_score,pay_money,pay_weixin,pay_coupon_value,freight')->find();
+			if (!$bill) {
+				return ['code' => 0, 'msg' => '获取支付信息失败'];
+			}
 			return ['code' => 1, 'data' => $bill];
 		} catch (\Exception $e) {
 			return ['code' => 0, 'msg' => '获取支付信息失败：请稍后再试'];
@@ -465,7 +473,7 @@ class Order extends Model
 
 			}
 			// 支付成功后，需要写订单日志表
-			$orderData = ['uid' => $uid, 'order_id' => 1, 'note' => '支付成功，等待审核', 'create_time' => $_SERVER['REQUEST_TIME']];
+			$orderData = ['uid' => $uid, 'order_id' => 1, 'note' => '支付成功，等待发货', 'create_time' => $_SERVER['REQUEST_TIME']];
 			Db::name('order_log')->insert($orderData);
 
 			Db::commit();
