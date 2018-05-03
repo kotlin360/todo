@@ -153,7 +153,7 @@ class Order extends Base
 	}
 
 	/**
-	 * 退货申请
+	 * 申请退款退货
 	 * @param OrderModel $orderModel
 	 * @return \think\response\Json
 	 */

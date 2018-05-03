@@ -459,13 +459,13 @@ class Order extends Model
 			// 写用户积分日志表
 			if ($payScore != 0) {
 				$scoreData = ['uid' => $uid, 'value' => $payScore, 'note' => '购买商品支付', 'create_time' => $_SERVER['REQUEST_TIME']];
-				Db::name('score')->insert($scoreData);
+				Db::name('score_log')->insert($scoreData);
 			}
 
 			// 写用户钱包余额表
 			if ($payMoney != 0) {
 				$scoreData = ['uid' => $uid, 'value' => $payMoney, 'note' => '购买商品支付', 'create_time' => $_SERVER['REQUEST_TIME']];
-				Db::name('score')->insert($scoreData);
+				Db::name('money_log')->insert($scoreData);
 			}
 
 			if ($payWeixin != 0) {
@@ -515,15 +515,15 @@ class Order extends Model
 	/**
 	 * 确认收货
 	 * @param $uid
-	 * @param $id
+	 * @param $orderNo
 	 * @return array
 	 */
-	public function comfirmReceipt($uid, $id)
+	public function comfirmReceipt($uid, $orderNo)
 	{
 		Db::startTrans();
 		try {
 			// 更新订单状态
-			$result = Db::name('order')->where("id={$id} AND status in(10,15)")->update(['status' => 20]);
+			$result = Db::name('order')->where("id={$orderNo} AND status in(10,15)")->update(['status' => 20]);
 			if (!$result) {
 				return ['code' => 0, 'msg' => '确认失败：订单未查询到'];
 			}

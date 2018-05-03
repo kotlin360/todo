@@ -67,6 +67,7 @@ class Coupon extends Model
 			$existIdString = '';
 			$existIdArr = [];
 			$hasReceiveId = Db::name('coupon_log')->where("uid={$uid}")->field('coupon_id')->select();
+
 			if (is_array($hasReceiveId) && !empty($hasReceiveId)) {
 				foreach ($hasReceiveId as $id) {
 					$existIdArr[] = $id['coupon_id'];

@@ -54,8 +54,10 @@ class Goods
 	public function detail(GoodsModel $goodsModel)
 	{
 		$id = input('id/d', 0);
-		$pid = input('pid/d', null);
-		return json($goodsModel->detail($id, $pid));
+		$pid = input('pid/d', 0);
+		$authUser = input('token', '');
+		$token = explode('|', authcode($authUser));
+		return json($goodsModel->detail($token, $id, $pid));
 	}
 
 	/**

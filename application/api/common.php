@@ -15,7 +15,7 @@ function authcode($string, $operation = 'DECODE', $key = '', $expiry = 0)
 		$string = str_replace('[c]', '/', $string);
 	}
 	$ckey_length = 4;
-	$key = md5($key ? $key : 'livcmsencryption ');
+	$key = md5($key ? $key : 'shenbangzhineng2018');
 	$keya = md5(substr($key, 0, 16));
 	$keyb = md5(substr($key, 16, 16));
 	$keyc = $ckey_length ? ($operation == 'DECODE' ? substr($string, 0, $ckey_length) : substr(md5(microtime()), -$ckey_length)) : '';
@@ -45,7 +45,6 @@ function authcode($string, $operation = 'DECODE', $key = '', $expiry = 0)
 	}
 	if ($operation == 'DECODE') {
 		if ((substr($result, 0, 10) == 0 || substr($result, 0, 10) - time() > 0) && substr($result, 10, 16) == substr(md5(substr($result, 26) . $keyb), 0, 16)) {
-
 			return substr($result, 26);
 		} else {
 			return '';

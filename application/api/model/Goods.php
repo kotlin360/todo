@@ -2,6 +2,7 @@
 namespace app\api\model;
 
 use app\api\facade\Ad as AdFacade;
+use app\common\service\OpensslEncryptHelper;
 use think\Collection;
 use think\Db;
 use think\facade\Config;
@@ -98,15 +99,28 @@ class Goods extends Model
 
 	/**
 	 * 根据商品id和规格id返回商品详情
+	 * @param $token 当前用户的token数组，下标0用户uid 下标2是openid
 	 * @param $id
 	 * @param $pid
 	 * @return array
 	 */
-	public function detail($id, $pid)
+	public function detail($token, $id, $pid)
 	{
 		try {
+
+			// 获取两个优惠券
+			$now = $_SERVER['REQUEST_TIME'];
+			$where = "status=1 AND start <= {$now} AND end >= {$now}";
+			$coupons = Db::name('coupon')->where($where)->limit(0, 2)->orderRand()->field('value,money')->select();
+			$couponList = Collection::make($coupons)->each(function ($coupon) {
+				return '满' . $coupon['money'] . '减' . $coupon['value'];
+			});
+
 			// 商品基本信息
-			$goods = Db::name('goods')->where("id={$id}")->field(true)->find();
+			$goods = Db::name('goods')->where("id={$id} AND status=1")->field(true)->find();
+			if (!$goods) {
+				return ['code' => 0, 'msg' => '您访问的商品已经下架'];
+			}
 
 			// 商品图册
 			$album = Db::name('goods_images')->where("goods_id={$id}")->order('id')->field('img')->select();
@@ -116,24 +130,46 @@ class Goods extends Model
 
 			// 获取商品规格
 			if ($goods['specs'] === null) {
+
 				// 没有规格，获得商品的扩展属性
-				$goods['extend'] = Db::name('goods_products')->where("id={$pid} AND is_online=1")
+				$goods['extend'] = Db::name('goods_products')->where("id={$pid} AND is_online=1 AND is_delete=0")
 					->field('id as pid,stock,style,cash,score,freight')->find();
 				if (!$goods['extend']) {
 					return ['code' => 0, 'msg' => '您访问的商品已经下架'];
 				}
+
 			} else {
-				$goods['specs'] = unserialize($goods['specs']);
+
 				// 存在多规格
-				$extends = Db::name('goods_products')->where("goods_id={$id} AND is_online=1")
-					->field('pid,stock,style,cash,score,freight')->select();
-				if (!$extend) {
+				$goods['specs'] = unserialize($goods['specs']);
+
+				// 获取商品规格
+				$extends = Db::name('goods_products')->where("goods_id={$id} AND is_online=1 AND is_delete=0")
+					->field('id as pid,spec_key,stock,style,cash,score,freight')->select();
+				if (!$extends) {
 					return ['code' => 0, 'msg' => '您访问的商品已经下架'];
 				}
-				Collection::make($extends)->each(function ($extend) {
-					$skumap[$extend['specs_key']] = $extend;
-				});
+
+				// 对商品规格进行整理
+				$currentGoods = []; // 获取当前的规格信息，用于前台展示
+				$goods['extend'] = Collection::make($extends)->each(function ($extend) use ($pid, &$currentGoods) {
+					if ($extend['pid'] == $pid) {
+						$currentGoods = $extend;
+					}
+					$skumap[$extend['spec_key']] = $extend;
+					return $skumap;
+				})->toArray();
+
+				if (!$currentGoods) {
+					return ['code' => 0, 'msg' => '您访问的商品已经下架'];
+				}
+
+				$goods['currentGoods'] = $currentGoods;
 			}
+
+			//生成分享码，由用户uid + 商品id + 用户openid加密生成
+			$goods['shareToken'] = OpensslEncryptHelper::encrypt($token[0] . '|' . $id . '|' . rand(100, 999));
+			$goods['coupon'] = $couponList;
 
 			return ['code' => 1, 'data' => $goods];
 		} catch (\Exception $e) {
