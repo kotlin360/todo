@@ -56,6 +56,9 @@ class Order extends Base
 	 */
 	public function build_score_order(OrderModel $orderModel)
 	{
+		// 获取分享token
+		$shareTokens = input('shareToken/a', null);
+
 		// 前台提交的商品信息
 		$goods = [
 			'uid' => $this['auth']['uid'],
@@ -79,7 +82,7 @@ class Order extends Base
 		$invoiceInfo = input('invoiceInfoList/a', null);
 		$orderModel->orderAddressAndInvoiceHandle($orderData, $addressInfo, $invoiceInfo);
 
-		return json($orderModel->buildScoreOrder($goods, $orderData));
+		return json($orderModel->buildScoreOrder($goods, $orderData, $shareTokens));
 	}
 
 	/**
@@ -89,6 +92,9 @@ class Order extends Base
 	 */
 	public function build_order(OrderModel $orderModel)
 	{
+		// 获取分享token
+		$shareTokens = input('shareToken/a', null);
+
 		// 订单信息数据
 		$orderData = [
 			'order_no' => $orderModel->build_order_no(), // 订单号
@@ -114,7 +120,7 @@ class Order extends Base
 		}
 		$orderModel->orderAddressAndInvoiceHandle($orderData, $addressInfo, $invoiceInfo);
 
-		return json($orderModel->buildOrder($orderData));
+		return json($orderModel->buildOrder($orderData, $shareTokens));
 	}
 
 	/**
@@ -136,9 +142,12 @@ class Order extends Base
 
 	}
 
-	public function pay_notify()
+	/**
+	 * 支付成功后通知
+	 */
+	public function pay_notify(OrderModel $orderModel)
 	{
-
+		$orderModel->payNotify();
 	}
 
 	/**

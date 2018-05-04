@@ -141,7 +141,20 @@ class Goods extends Model
 			} else {
 
 				// 存在多规格
-				$goods['specs'] = unserialize($goods['specs']);
+				$specsArray = unserialize($goods['specs']);
+				$newSpecs = [];
+				Collection::make($specsArray)->each(function ($item) use (&$newSpecs) {
+					$item['child'] = array_values($item['value']);
+					$item['child'] = array_map(function (&$v) {
+						$v['selected'] = false;
+						$v['disabled'] = false;
+						return $v;
+					}, $item['child']);
+					unset($item['value']);
+					$newSpecs[] = $item;
+				})->toArray();
+
+				$goods['specs'] = $newSpecs;
 
 				// 获取商品规格
 				$extends = Db::name('goods_products')->where("goods_id={$id} AND is_online=1 AND is_delete=0")
@@ -154,11 +167,22 @@ class Goods extends Model
 				$currentGoods = []; // 获取当前的规格信息，用于前台展示
 				$goods['extend'] = Collection::make($extends)->each(function ($extend) use ($pid, &$currentGoods) {
 					if ($extend['pid'] == $pid) {
+						$spec_key = trim($extend['spec_key'], ';');
+						$spec_array = explode(';', $spec_key);
+						$spec_result = [];
+						foreach ($spec_array as $spec) {
+							$specIdArray = explode(':', $spec);
+							$spec_result[] = $specIdArray[1];
+						}
+						$extend['spec_key'] = $spec_result;
 						$currentGoods = $extend;
 					}
-					$skumap[$extend['spec_key']] = $extend;
-					return $skumap;
+					//$skumap[$extend['spec_key']] = $extend;
+					//return $skumap;
+					return $extend;
 				})->toArray();
+
+				$goods['extend'] = array_values($goods['extend']);
 
 				if (!$currentGoods) {
 					return ['code' => 0, 'msg' => '您访问的商品已经下架'];

@@ -10,7 +10,7 @@ use think\Facade\Config;
  * @author   千叶
  * @date     2018-04-03
  */
-class User extends Controller
+class User extends Base
 {
 	/**
 	 * 前台用户列表展示

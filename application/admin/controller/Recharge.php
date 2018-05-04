@@ -11,7 +11,7 @@ use app\admin\model\Coupon as CouponModel;
  * @author   千叶
  * @date     2018-04-18
  */
-class Recharge extends Controller
+class Recharge extends Base
 {
 
 	/**

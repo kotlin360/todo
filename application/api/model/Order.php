@@ -6,6 +6,7 @@ use app\api\facade\Money as MoneyFacade;
 use app\api\facade\Score as ScoreFacade;
 use app\api\facade\User as UserFacade;
 use app\common\facade\Param as ParamFacade;
+use app\common\service\OpensslEncryptHelper;
 use think\Collection;
 use think\Db;
 use think\facade\Config;
@@ -194,9 +195,10 @@ class Order extends Model
 	 * 纯积分兑换商品生成订单
 	 * @param $goods
 	 * @param $data
+	 * @param $shareTokens
 	 * @return array
 	 */
-	public function buildScoreOrder($goods, $data)
+	public function buildScoreOrder($goods, $data, $shareTokens)
 	{
 		$result = $this->getScoreOrderInfo($goods);
 		if ($result['code'] == 1) {
@@ -213,6 +215,7 @@ class Order extends Model
 				$orderId = Db::name('goods')->insert($data, false, true);
 
 				// 写入订单商品详情表
+				$goodsIdArray[] = $goods['id'];
 				$orderGoodsData = [
 					'order_id' => $orderId,
 					'img' => $result['data']['goods']['img'],
@@ -237,9 +240,12 @@ class Order extends Model
 				$orderLogData = ['order_id' => $orderId, 'uid' => $data['uid'], 'note' => '积分兑换商品，等待付款', 'create_time' => $_SERVER['REQUEST_TIME']];
 				Db::name('order_log')->insert($orderLogData);
 
+				// 检测当前是否有分享人
+				$unUsedShareToken = $this->shareGoodsBePurchased($shareTokens, $data['uid'], $orderId, $goodsIdArray);
+
 				// 提交事务，相应数据
 				Db::commit();
-				return ['code' => 1, 'orderNo' => $data['order_no']];
+				return ['code' => 1, 'orderNo' => $data['order_no'], 'shareToken' => $unUsedShareToken];
 			} catch (\Exception $e) {
 				Db::rollback();
 				return ['code' => 0, 'msg' => '兑换失败：' . $e->getMessage()];
@@ -252,9 +258,10 @@ class Order extends Model
 	/**
 	 * 生成订单(非纯积分商品)
 	 * @param $orderData
+	 * @param $shareTokens
 	 * @return array
 	 */
-	public function buildOrder($orderData)
+	public function buildOrder($orderData, $shareTokens)
 	{
 		$cartIdString = Db::name('user')->where("id={$orderData['uid']}")->value('cart');
 
@@ -368,7 +375,10 @@ class Order extends Model
 			$this['orderId'] = Db::name('order')->insert($orderData, false, true);
 
 			// 写order_goods订单商品详情表
+			$goodsIdArray = [];
 			$orderGoodsList = $goodsList->each(function ($v) {
+				// 将购买的商品的id压入到数组中
+				$goodsIdArray[] = $v['goods_id'];
 				// 获取此商品的图片进行保存，为订单显示图片准备
 				$img = Db::name('goods_images')->where("goods_id={$v['goods_id']}")->order('id')->value('img_m');
 				$list = [
@@ -392,14 +402,17 @@ class Order extends Model
 			Db::name('order_goods')->insertAll($orderGoodsList);
 
 			// 订单提交成功后删除购物车中的商品
-			// Db::name('cart')->where("id in({$this['realCartIdString']}) AND uid={$orderData['uid']}")->delete();
+			Db::name('cart')->where("id in({$this['realCartIdString']}) AND uid={$orderData['uid']}")->delete();
 
 			// 写订单日志表
 			$orderLogData = ['order_id' => $this['orderId'], 'uid' => $orderData['uid'], 'note' => '提交订单，等待付款', 'create_time' => $_SERVER['REQUEST_TIME']];
 			Db::name('order_log')->insert($orderLogData);
 
+			// 检测当前是否有分享人
+			$unUsedShareToken = $this->shareGoodsBePurchased($shareTokens, $orderData['uid'], $this['orderId'], $goodsIdArray);
+
 			Db::commit(); // 提交事物
-			return ['code' => 1, 'orderNo' => $orderData['order_no']];
+			return ['code' => 1, 'orderNo' => $orderData['order_no'], 'shareToken' => $unUsedShareToken];
 		} catch (\Exception $e) {
 			Db::rollback();
 			return ['code' => 0, 'msg' => '订单创建失败：' . $e->getMessage()];
@@ -437,13 +450,14 @@ class Order extends Model
 		Db::startTrans();
 		try {
 			// 获取当前订单支付信息
-			$bill = Db::name('order')->where("id={id}")
-				->field('pay_style,pay_score,pay_money,pay_weixin,coupon_id,pay_coupon_value,freight')->find();
+			$bill = Db::name('order')->where("id={$id}")
+				->field('id,pay_style,pay_score,pay_money,pay_weixin,score_gift_total,coupon_id,pay_coupon_value,freight')->find();
 
-			$couponId = $bill['coupon_id']; // 支付积分
+			$couponId = $bill['coupon_id']; // 支付使用的优惠券
 			$payScore = $bill['pay_score']; // 支付积分
 			$payMoney = $bill['pay_money']; // 支付余额
 			$payWeixin = $bill['pay_weixin']; // 微信支付
+			$score_gift_total = $bill['score_gift_total']; // 用户购买商品赠送的总积分
 
 			// 写用户优惠券日志表
 			if ($couponId) {
@@ -452,20 +466,48 @@ class Order extends Model
 			}
 
 			// 扣除用户积分、钱包余额相应额度,需要判断，因为有可能客户直接微信支付了
-			if ($payScore != 0 || $payMoney != 0) {
-				Db::name('user')->where("id={$uid}")->dec('score', $payScore)->dec('money', $payMoney)->update();
+			if ($payScore != 0 || $payMoney != 0 || $score_gift_total != 0) {
+				Db::name('user')->where("id={$uid}")
+					->dec('score', $payScore)
+					->dec('money', $payMoney)
+					->inc('score', $score_gift_total)
+					->update();
 			}
 
-			// 写用户积分日志表
+			$shareScoreDatas = [];
+			// 扣除积分写用户积分日志表
 			if ($payScore != 0) {
-				$scoreData = ['uid' => $uid, 'value' => $payScore, 'note' => '购买商品支付', 'create_time' => $_SERVER['REQUEST_TIME']];
-				Db::name('score_log')->insert($scoreData);
+				$shareScoreDatas[] = ['uid' => $uid, 'value' => -$payScore, 'note' => '购买商品支付', 'create_time' => $_SERVER['REQUEST_TIME']];
+				// Db::name('score_log')->insert($scoreData);
+			}
+
+			// 赠送用户积分日志表
+			if ($score_gift_total != 0) {
+				$shareScoreDatas[] = ['uid' => $uid, 'value' => $score_gift_total, 'note' => '购买商品赠送', 'create_time' => $_SERVER['REQUEST_TIME']];
+				// Db::name('score_log')->insert($scoreData);
 			}
 
 			// 写用户钱包余额表
 			if ($payMoney != 0) {
-				$scoreData = ['uid' => $uid, 'value' => $payMoney, 'note' => '购买商品支付', 'create_time' => $_SERVER['REQUEST_TIME']];
+				$scoreData = ['uid' => $uid, 'value' => -$payMoney, 'note' => '购买商品支付', 'create_time' => $_SERVER['REQUEST_TIME']];
 				Db::name('money_log')->insert($scoreData);
+			}
+
+			// 查询是否有分享记录，如果有需要给双方增加积分
+			$shares = Db::name('share_goods_be_purchase')->where("order_id={$bill['id']}")
+				->field('uid,share_uid,gift')->select();
+			Collection::make($shares)->each(function ($share) {
+				Db::name('user')->where("id={$share['uid']}")->inc('score', $share['gift']);
+				Db::name('user')->where("id={$share['share_uid']}")->inc('score', $share['gift']);
+				// 分享码赠送写日志
+				$shareScoreDatas[] = [
+					['uid' => $share['uid'], 'value' => $share['gift'], 'note' => '购买分享人商品赠送积分', 'create_time' => $_SERVER['REQUEST_TIME']],
+					['uid' => $share['share_uid'], 'value' => $share['gift'], 'note' => '分享商品被购买赠送积分', 'create_time' => $_SERVER['REQUEST_TIME']]
+				];
+			});
+
+			if (!empty($shareScoreDatas)) {
+				Db::name('score_log')->insertAll($shareScoreDatas);
 			}
 
 			if ($payWeixin != 0) {
@@ -595,6 +637,41 @@ class Order extends Model
 			$orderData['invoice_bank'] = $invoiceInfo['bankName']; // 发票开户行
 			$orderData['invoice_bank_card'] = $invoiceInfo['bankAccount']; // 发票银行账户
 		}
+	}
+
+	/**
+	 * 当分享的商品被购买的时候
+	 * @param $shareTokens         提交的订单中的分享码
+	 * @param $uid                 当前购买人
+	 * @param $orderId             当前订单id
+	 * @param $goodsIdArray        当前购买的商品id数组
+	 */
+	public function shareGoodsBePurchased($shareTokens, $uid, $orderId, $goodsIdArray)
+	{
+		$usedShareTokens = [];  // 已经被使用的token数组
+		$params = ParamFacade::getSystemParam(); // 系统参数
+		$gift = $params['config_share_goods_after_buy_score'] ? $params['config_share_goods_after_buy_score'] : 0;
+
+		if (is_array($shareTokens) && !empty($shareTokens)) {
+			foreach ($shareTokens as $token) {
+				$tokenString = OpensslEncryptHelper::decrypt($token);
+				$tokenArray = explode('|', $tokenString);
+				if (in_array($tokenArray[1], $goodsIdArray)) {
+					$usedShareTokens[] = $token;
+					$data = [
+						'uid' => $uid,
+						'share_uid' => $tokenArray[0],
+						'order_id' => $orderId,
+						'gift' => $params['config_share_goods_after_buy_score'],
+						'create_time' => $_SERVER['REQUEST_TIME']
+					];
+					Db::name('share_goods_be_purchase')->insert($data);
+				}
+			}
+		}
+
+		// 返回尚未被使用规定token
+		return array_diff($shareTokens, $usedShareTokens);
 	}
 
 }

@@ -3,7 +3,6 @@ namespace app\admin\controller;
 
 use app\admin\model\Coupon as CouponModel;
 use app\admin\validate\Coupon as CouponValidate;
-use think\Controller;
 use think\facade\Config;
 
 /**
@@ -11,7 +10,7 @@ use think\facade\Config;
  * @author   千叶
  * @date     2018-04-08
  */
-class Coupon extends Controller
+class Coupon extends Base
 {
 	/**
 	 * 优惠券列表

@@ -10,7 +10,7 @@ use think\Facade\Config;
  * @author   千叶
  * @date     2018-04-09
  */
-class Order extends Controller
+class Order extends Base
 {
 	/**
 	 * 订单列表页面
@@ -79,5 +79,15 @@ class Order extends Controller
 		$return_remark = input('returnRemark', '');
 		$goodsinfo = $orderModel->returnVerify($id, $status, $return_remark);
 		return json($goodsinfo);
+	}
+
+	/**
+	 * 微信退款通知接口
+	 * @param OrderModel $orderModel
+	 */
+	public function refund_notify(OrderModel $orderModel)
+	{
+		$orderNo = input('orderNo');
+		$orderModel->refundNotify();
 	}
 }

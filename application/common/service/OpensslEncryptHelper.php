@@ -2,8 +2,7 @@
 namespace app\common\service;
 
 /**
- * 由于在php7.1之后mcrypt_encrypt会被废弃，因此使用openssl_encrypt方法来替换
- * @project  openssl加解密
+ * @project  openssl加解密 由于在php7.1之后mcrypt_encrypt会被废弃，因此使用openssl_encrypt方法来替换
  * @author   千叶
  * @date     2018-05-03
  */
@@ -33,7 +32,7 @@ class OpensslEncryptHelper
 	}
 
 	/**
-	 * 加密字符串，适合安全url传输
+	 * 加密字符串，适合url安全传输
 	 * @param string $data 字符串
 	 * @param string $key  加密key
 	 * @param string $iv

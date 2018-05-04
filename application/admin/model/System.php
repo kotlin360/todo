@@ -19,10 +19,10 @@ class System extends Model
 	public function statistic()
 	{
 		$warnning_line = Db::name('config')->where("`key`='config_warnning_line'")->value('value', 10);
-		// 待审核订单
-		$checkOrderCount = Db::name('order')->where('status=5')->count();
+		// 退款失败订单
+		$returnFailCount = Db::name('order')->where('status=45')->count();
 		// 待发货订单
-		$sendOrderCount = Db::name('order')->where('status=10')->count();
+		$sendOrderCount = Db::name('order')->where('status=5')->count();
 		// 已完成订单
 		$finishOrderCount = Db::name('order')->where('status=20')->count();
 		// 待处理的退货订单
@@ -36,7 +36,7 @@ class System extends Model
 		// 会员统计
 		$userCount = Db::name('user')->where('status=1')->count();
 		return [
-			'checkOrderCount' => $checkOrderCount,
+			'returnFailCount' => $returnFailCount,
 			'sendOrderCount' => $sendOrderCount,
 			'finishOrderCount' => $finishOrderCount,
 			'returnedOrderCount' => $returnedOrderCount,

@@ -9,12 +9,6 @@
 						<ul class="layui-row layui-col-space10 layui-this">
 							<li class="layui-col-xs6">
 								<a lay-href="" class="layadmin-backlog-body">
-									<h3>待审核订单</h3>
-									<p><cite>{$statistics['checkOrderCount']}</cite></p>
-								</a>
-							</li>
-							<li class="layui-col-xs6">
-								<a lay-href="" class="layadmin-backlog-body">
 									<h3>待发货订单</h3>
 									<p><cite>{$statistics['sendOrderCount']}</cite></p>
 								</a>
@@ -29,6 +23,12 @@
 								<a lay-href="" class="layadmin-backlog-body">
 									<h3>待处理的退款</h3>
 									<p><cite>{$statistics['returnedOrderCount']}</cite></p>
+								</a>
+							</li>
+							<li class="layui-col-xs6">
+								<a lay-href="" class="layadmin-backlog-body">
+									<h3>退款失败订单</h3>
+									<p><cite>{$statistics['returnFailCount']}</cite></p>
 								</a>
 							</li>
 						</ul>

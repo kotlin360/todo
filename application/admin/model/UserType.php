@@ -58,9 +58,10 @@ class UserType extends Model
 	 */
 	public function getRoleInfo($id)
 	{
+		$tablePrefix = Config::get('database.prefix');
 		// 一个管理员可能属于多个角色组
-		$sql = "SELECT ag.title FROM think_auth_group ag where id in
-	(SELECT group_id FROM think_auth_group_access  aga WHERE aga.uid = {$id}";
+		$sql = "SELECT ag.title FROM {$tablePrefix}_auth_group ag where id in
+	(SELECT `group_id` FROM {$tablePrefix}_auth_group_access  aga WHERE aga.uid = {$id}";
 		$groups = Db::query($sql);
 		p($groups);
 		die;
