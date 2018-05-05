@@ -20,7 +20,7 @@ class Index extends Base
 	 */
 	public function index(MenuModel $menuModel)
 	{
-		$menus = $menuModel->getRoleMenu(Session::get('auth.rule'));
+		$menus = $menuModel->getRoleMenu(Session::get('auth.rules'));
 		$this->assign('menus', $menus);
 		return $this->fetch();
 	}

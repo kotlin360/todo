@@ -1,6 +1,7 @@
 <?php
 namespace app\admin\model;
 
+use think\Collection;
 use think\Db;
 use think\facade\Config;
 use think\Model;
@@ -58,36 +59,49 @@ class UserType extends Model
 	 */
 	public function getRoleInfo($id)
 	{
-		$tablePrefix = Config::get('database.prefix');
-		// 一个管理员可能属于多个角色组
-		$sql = "SELECT ag.title FROM {$tablePrefix}_auth_group ag where id in
-	(SELECT `group_id` FROM {$tablePrefix}_auth_group_access  aga WHERE aga.uid = {$id}";
-		$groups = Db::query($sql);
-		p($groups);
-		die;
-//		$result = Db::name('auth_group')->where('id', $id)->find();
-//		if (empty($result['rules'])) {
-//			$where = '';
-//		} else {
-//			$where = 'id in(' . $result['rules'] . ')';
-//		}
-//		$res = Db::name('auth_rule')->field('name')->where($where)->select();
-//		foreach ($res as $key => $vo) {
-//			if ('#' != $vo['name']) {
-//				$result['name'][] = $vo['name'];
-//			}
-//		}
-//		return $result;
+		$info = ['title' => '', 'rules' => ''];
+		if ($id == 1) {
+			return ['title' => '超级管理员', 'rules' => ''];
+		}
+
+		// 获取当前用户的角色组ID，可能有多个
+		$authGroupAccess = Db::name('auth_group_access')->where("uid={$id}")->field('group_id')->select();
+		$authString = array_reduce($authGroupAccess, function ($authString, $item) {
+			$authString .= $item['group_id'] . ',';
+			return $authString;
+		}, '');
+		$authString = substr($authString, 0, -1);
+
+		// 根据角色组ID获取角色信息，比方角色名称、角色菜单ID等
+		$rules = Db::name('auth_group')->where("id in({$authString}) AND status=1")->select();
+		$info['title'] = join('，', array_column($rules, 'title'));
+		$info['rules'] = join(',', array_column($rules, 'rules'));
+
+		$rulesArray = explode(',', $info['rules']);
+		$info['rules'] = join(',', array_unique($rulesArray));
+		return $info;
+
 	}
 
 	/**
-	 * 插入角色信息
+	 * 插入角色信息，这里收到的$data['rules']全部都是第三级别的
 	 * @param $data
 	 * @return array
 	 */
 	public function insertRole($data)
 	{
 		try {
+			// 获取全部的第二级别
+			$seconds = Db::name('auth_rule')->where("id in({$data['rules']}) AND level=3")->field("pid")->select();
+			$secondRules = array_unique(array_column($seconds, 'pid'));
+			$secondString = join(',', $secondRules);
+
+			// 获取全部的第一级别
+			$first = Db::name('auth_rule')->where("id in({$secondString}) AND level=2")->field("pid")->select();
+			$firstRules = array_unique(array_column($first, 'pid'));
+			$firstString = join(',', $firstRules);
+
+			$data['rules'] .= ',' . $secondString . ',' . $firstString;
 			$result = $this->save($data);
 			if (false === $result) {
 				return ['code' => 0, 'msg' => '创建角色失败，请稍后再试'];
@@ -108,6 +122,21 @@ class UserType extends Model
 	public function editRole($id, $data)
 	{
 		try {
+			$thirdRules = $data['rules']; // 第三层权限 是数组
+			$thirdString = join(',', $thirdRules);
+			// 获取全部的第二级别
+			$seconds = Db::name('auth_rule')->where("id in({$thirdString}) AND level=3")->field("pid")->select();
+			$secondRules = array_unique(array_column($seconds, 'pid'));
+			$secondString = join(',', $secondRules);
+
+			// 获取全部的第一级别
+			$first = Db::name('auth_rule')->where("id in({$secondString}) AND level=2")->field("pid")->select();
+			$firstRules = array_unique(array_column($first, 'pid'));
+
+			$rules = array_unique(array_merge($firstRules, $secondRules, $thirdRules));
+
+			$data['rules'] = join(',', $rules);
+
 			$this->where("id={$id}")->update($data);
 			return ['code' => 1];
 		} catch (\Exception $e) {

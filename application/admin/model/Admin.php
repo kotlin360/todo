@@ -3,9 +3,13 @@ namespace app\admin\model;
 
 use app\common\facade\Log;
 use app\admin\facade\UserType as UserTypeFacade;
+use app\common\service\OpensslEncryptHelper;
 use think\Db;
+use think\db\exception\DataNotFoundException;
+use think\db\exception\ModelNotFoundException;
 use think\exception\DbException;
 use think\facade\Config;
+use think\facade\Cookie;
 use think\facade\Request;
 use think\facade\Session;
 use think\Model;
@@ -26,7 +30,7 @@ class Admin extends Model
 	{
 		try {
 			$user = Db::name('admin')->where('username', $data['username'])->field(true)->find();
-		
+
 			if ($user == null) {
 				return ['code' => 0, 'msg' => '登录失败，管理员不存在'];
 			}
@@ -40,19 +44,25 @@ class Admin extends Model
 			}
 			//获取该管理员的角色信息
 			$info = UserTypeFacade::getRoleInfo($user['id']);
-			p($info);
-			die;
-//			if ($info === false) {
-//				return ['code' => 0, 'msg' => '登录失败，该账号尚未分配角色'];
-//			}
-			// 先执行登录写SESSION，权限后期完成
+
+			if (empty($info['title'])) {
+				return ['code' => 0, 'msg' => '登录失败，该账号尚未分配角色'];
+			}
+
+			// 是否记住账号
+			if ($data['remember'] === 1) {
+				//加密登录用户名和ip地址
+				$cookieValue = OpensslEncryptHelper::encrypt($user['id'] . '|' . $user['username'] . '|' . Request::ip());
+				Cookie::set('auto', $cookieValue);
+			}
+
+			// 执行登录写SESSION
 			Session::set('auth', [
 				'uid' => $user['id'],
 				'username' => $user['username'],
 				'real_name' => $user['real_name'],
-//				'rolename' => $info['title'], //角色名
-//				'rule' => $info['rules'], //角色节点
-//				'name' => $info['name'], //角色权限
+				'rolename' => $info['title'], //角色名
+				'rules' => $info['rules'], //角色节点
 			]);
 			//更新管理员状态
 			$param = [
@@ -65,6 +75,49 @@ class Admin extends Model
 		} catch (\Exception $e) {
 			return ['code' => 0, 'msg' => '登录失败，请联系系统管理员'];
 		}
+	}
+
+	/**
+	 * cookie 自动登录
+	 * @param $cookieValue
+	 */
+	public function autoLoginUseCookie($cookieValue)
+	{
+		// cookie 自动登录
+		$cookieArray = explode('|', $cookieValue);
+		$user = [];
+		try {
+			$user = Db::name('admin')->where("id={$cookieArray[0]} AND username='{$cookieArray[1]}'")->field(true)->find();
+		} catch (\Exception $e) {
+			return;
+		}
+
+		if (!$user || 1 != $user['status']) {
+			return;
+		}
+
+		//获取该管理员的角色信息
+		$info = UserTypeFacade::getRoleInfo($user['id']);
+
+		if (empty($info['title'])) {
+			return;
+		}
+
+		// 执行登录写SESSION
+		Session::set('auth', [
+			'uid' => $user['id'],
+			'username' => $user['username'],
+			'real_name' => $user['real_name'],
+			'rolename' => $info['title'], //角色名
+			'rules' => $info['rules'], //角色节点
+		]);
+		//更新管理员状态
+		$param = [
+			'loginnum' => ++$user['loginnum'],
+			'last_login_ip' => Request::ip(),
+			'last_login_time' => $_SERVER['REQUEST_TIME']
+		];
+		$this->where('id', $user['id'])->update($param);
 	}
 
 	/**
@@ -83,6 +136,7 @@ class Admin extends Model
 			$this->where($where)->update([
 				'password' => md5(md5($data['passwd']) . config('auth_key'))
 			]);
+			Cookie::delete('saveboon');
 			return ['code' => 1];
 		} catch (\Exception $e) {
 			return ['code' => 0, 'msg' => $e->getMessage()];

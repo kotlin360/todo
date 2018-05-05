@@ -7,6 +7,7 @@ use app\admin\validate\Passwd as PasswdValidate;
 use app\common\facade\Param as ParamFacade;
 use think\captcha\Captcha;
 use think\Controller;
+use think\facade\Cookie;
 use think\facade\Session;
 
 /**
@@ -40,6 +41,7 @@ class Login extends Controller
 			'username' => input('post.username'),
 			'password' => input('post.password'),
 			'code' => input('post.code'),
+			'remember' => input('post.remember/d', 0),
 		];
 		// 校验数据合法性
 		if (!$validate->check($data)) {
@@ -108,6 +110,7 @@ class Login extends Controller
 	public function loginout()
 	{
 		Session::clear();
+		Cookie::delete('saveboon');
 		return json(['code' => 1]);
 	}
 }

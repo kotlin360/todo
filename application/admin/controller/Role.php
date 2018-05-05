@@ -73,11 +73,10 @@ class Role extends Base
 	{
 		$id = input('id', 0, 'intval');
 		if ($this->request->isAjax()) {
-			$rules = implode(',', input('rules/a'));
 			$data = [
 				'title' => input('title', ''),
 				'status' => input('status', 0, 'intval'),
-				'rules' => $rules
+				'rules' => input('rules/a')
 			];
 			// 修改验证
 			if (!$userTypeValidate->scene('edit')->check($data)) {

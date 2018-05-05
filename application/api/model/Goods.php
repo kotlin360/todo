@@ -174,8 +174,8 @@ class Goods extends Model
 							$specIdArray = explode(':', $spec);
 							$spec_result[] = $specIdArray[1];
 						}
-						$extend['spec_key'] = $spec_result;
 						$currentGoods = $extend;
+						$currentGoods['spec_key'] = $spec_result;
 					}
 					//$skumap[$extend['spec_key']] = $extend;
 					//return $skumap;

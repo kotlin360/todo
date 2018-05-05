@@ -34,7 +34,8 @@ class Category extends Base
 
 	/**
 	 * 创建商品分类
-	 * @param CategoryModel $categoryModel
+	 * @param CategoryModel    $categoryModel
+	 * @param CategoryValidate $categoryValidate
 	 * @return mixed|\think\response\Json
 	 */
 	public function add(CategoryModel $categoryModel, CategoryValidate $categoryValidate)

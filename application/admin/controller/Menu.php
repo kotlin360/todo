@@ -14,6 +14,9 @@ class Menu extends Base
 
 	/**
 	 * index 菜单列表
+	 * @param MenuModel $menuModel
+	 * @param int       $floor
+	 * @return mixed|\think\response\Json
 	 */
 	public function index(MenuModel $menuModel, $floor = 3)
 	{
@@ -52,9 +55,15 @@ class Menu extends Base
 		return $menu;
 	}
 
-	public function change_status()
+	/**
+	 * 修改菜单状态
+	 * @param MenuModel $menuModel
+	 * @return \think\response\Json
+	 */
+	public function change_status(MenuModel $menuModel)
 	{
-
+		$id = input('id/d');
+		return json($menuModel->changeStatus($id));
 	}
 
 	/**

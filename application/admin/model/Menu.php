@@ -3,6 +3,7 @@ namespace app\admin\model;
 
 use app\common\facade\Log;
 use think\Db;
+use think\facade\Cache;
 use think\Model;
 
 /**
@@ -24,12 +25,15 @@ class Menu extends Model
 	 */
 	public function getAllMenu($floor)
 	{
+
 		$where = '';
 		if ($floor == 2) {
-			$where = "level <= $floor";
+			$where = "level <= $floor AND status=1";
 		}
-		$menus = Db::name($this->name)->where($where)->order('sort')->field(true)->select();
+		$menus = Db::name($this->name)->where($where)->order('sort')
+			->field(true)->select();
 		$menuTree = $this->makeMenuTree($menus);
+
 		return $menuTree;
 	}
 
@@ -66,8 +70,8 @@ class Menu extends Model
 	{
 		//超级管理员没有节点数组
 		try {
-			$where = empty($nodeStr) ? 'status = 1 and level < 3' : 'status = 1 and id in(' . $nodeStr . ') and level < 3';
-			$result = Db::name($this->name)->where($where)->order('sort')->select();
+			$where = empty($nodeStr) ? 'status = 1' : "status = 1 AND id in({$nodeStr})";
+			$result = Db::name('auth_rule')->where($where)->order('sort')->select();
 			$menu = prepareMenu($result);
 			return $menu;
 		} catch (\Exception $e) {
@@ -89,6 +93,7 @@ class Menu extends Model
 		if ($result) {
 			$json = ['code' => 0, 'msg' => '删除失败，此菜单下有子菜单'];
 		} else {
+			Cache::clear('menuTree');
 			$this->where("id={$id}")->delete();
 			$json = ['code' => 1];
 		}
@@ -108,6 +113,7 @@ class Menu extends Model
 			$param['level'] = ++$level;
 			$param['name'] = $pid == 0 ? '#' : $param['name'];
 			$result = $this->save($param);
+			Cache::clear('menuTree');
 			if (false === $result) {
 				Log::error('添加菜单失败');
 				return ['code' => 0, 'msg' => $this->getError()];
@@ -129,6 +135,7 @@ class Menu extends Model
 	{
 		try {
 			$result = $this->save($param, ['id' => $param['id']]);
+			Cache::clear('menuTree');
 			if (false === $result) {
 				Log::error('编辑菜单失败');
 				return ['code' => 0, 'msg' => $this->getError()];
@@ -138,6 +145,29 @@ class Menu extends Model
 			}
 		} catch (\PDOException $e) {
 			return ['code' => 0, 'msg' => $e->getMessage()];
+		}
+	}
+
+	/**
+	 * 修改菜单状态
+	 * @param $id
+	 * @return array
+	 */
+	public function changeStatus($id)
+	{
+
+		try {
+			$hasSon = Db::name('auth_rule')->where("pid={$id} AND status=1")->value('id');
+			if ($hasSon) {
+				return ['code' => 0, 'msg' => '菜单状态修改失败：存在子菜单'];
+			}
+			$tableName = Config::get('database.prefix') . 'auth_rule';
+			$name = Db::name('goods_category')->where("id={$id}")->value('cate_title');
+			$sql = "UPDATE {$tableName} SET status = (case status when 0 then 1 else 0  end) WHERE id={$id}";
+			Db::execute($sql);
+			return ['code' => 1];
+		} catch (\Exception $e) {
+			return ['code' => 0, 'msg' => '菜单状态修改失败：' . $e->getMessage()];
 		}
 	}
 
@@ -175,6 +205,7 @@ class Menu extends Model
 	public function changeSort($id, $sort)
 	{
 		$result = $this->where("id={$id}")->update(['sort' => $sort]);
+		Cache::clear('menuTree');
 		if ($result !== false) {
 			return ['code' => 1];
 		} else {
