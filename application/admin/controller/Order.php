@@ -81,13 +81,4 @@ class Order extends Base
 		return json($goodsinfo);
 	}
 
-	/**
-	 * 微信退款通知接口
-	 * @param OrderModel $orderModel
-	 */
-	public function refund_notify(OrderModel $orderModel)
-	{
-		$orderNo = input('orderNo');
-		$orderModel->refundNotify();
-	}
 }

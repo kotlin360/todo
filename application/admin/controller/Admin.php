@@ -69,7 +69,8 @@ class Admin extends Base
 	 * @param UserTypeModel $userTypeModel
 	 * @return mixed|\think\response\Json
 	 */
-	public function edit(AdminModel $adminModel, AdminValidate $adminValidate, UserTypeModel $userTypeModel)
+	public function edit(AdminModel $adminModel, AdminValidate $adminValidate,
+	                     UserTypeModel $userTypeModel)
 	{
 		$id = input('param.id', 0, 'intval');
 		if ($this->request->isAjax()) {
