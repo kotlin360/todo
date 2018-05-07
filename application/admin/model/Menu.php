@@ -155,14 +155,12 @@ class Menu extends Model
 	 */
 	public function changeStatus($id)
 	{
-
 		try {
-			$hasSon = Db::name('auth_rule')->where("pid={$id} AND status=1")->value('id');
-			if ($hasSon) {
+			$hasSonMenu = Db::name('auth_rule')->where("pid={$id} AND status=1")->value('id');
+			if ($hasSonMenu) {
 				return ['code' => 0, 'msg' => '菜单状态修改失败：存在子菜单'];
 			}
-			$tableName = Config::get('database.prefix') . 'auth_rule';
-			$name = Db::name('goods_category')->where("id={$id}")->value('cate_title');
+			$tableName = \think\facade\Config::get('database.prefix') . 'auth_rule';
 			$sql = "UPDATE {$tableName} SET status = (case status when 0 then 1 else 0  end) WHERE id={$id}";
 			Db::execute($sql);
 			return ['code' => 1];

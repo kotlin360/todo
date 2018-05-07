@@ -38,7 +38,7 @@
 			{if condition="$v.status eq 1"}
 			<a class="layui-btn layui-btn-xs changeStatus" href="{:url('menu/change_status',['id'=>$v.id])}" status="{$v.status}">已开启</a>
 			{else/}
-			<a class="layui-btn layui-btn-danger layui-btn-xs changeStatus" href="{:url('menu/change_status',['id'=>$v.id])}" status="{$v.status}">>已关闭</a>
+			<a class="layui-btn layui-btn-danger layui-btn-xs changeStatus" href="{:url('menu/change_status',['id'=>$v.id])}" status="{$v.status}">已关闭</a>
 			{/if}
 		</td>
 		<td>{$v.create_time|date='Y-m-d H:i:s'}</td>
@@ -61,18 +61,14 @@
 		var form = layui.form, layer = layui.layer, $ = layui.jquery;
 		$(function () {
 			$('.changeStatus').on('click', function () {
-				var _this = $(this), url = _this.attr('href'), status = _this.attr('status'), tip = '';
-				if (parseInt(status) == 1) {
-					tip = '您确定要禁用该菜单吗？<br />提示：如果有启用的子菜单则无法禁用父菜单';
-				} else {
-					tip = '您确定要开启该菜单吗？';
-				}
-				layer.confirm(tip, {title: '修改菜单状态', icon: 0, btn: ['确定', '取消']}, function () {
-					$.post(url + '?t=' + new Date().getTime(), function (data) {
-						if (data.status == 1) {
-							alert('修改成功');
+				var _this = $(this), url = _this.attr('href');
+				layer.confirm('如果存在有效子菜单，无法禁用！', {title: '修改菜单状态', icon: 0, btn: ['确定', '取消']}, function () {
+					$.post(url + '?t=' + new Date().getTime(), function (result) {
+						if (result.code == 1) {
+							parent.message.show({msg: '菜单状态修改成功'});
+							window.location.reload(true);
 						} else {
-							alert(data.msg);
+							parent.message.show({skin: 'red', msg: result.msg});
 						}
 					}, 'json');
 				}, function () {
