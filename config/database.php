@@ -14,11 +14,11 @@ return [
 	// 服务器地址
 	'hostname' => '127.0.0.1',
 	// 数据库名
-	'database' => 'shenbang',
+	'database' => 'savaboon',
 	// 用户名
-	'username' => 'shenbang_user',
+	'username' => 'root',
 	// 密码
-	'password' => '2PwFeWG7yxZ',
+	'password' => '123456',
 	// 端口
 	'hostport' => '',
 	// 连接dsn

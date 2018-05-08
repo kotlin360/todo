@@ -376,7 +376,7 @@ class Order extends Model
 
 			// 写order_goods订单商品详情表
 			$goodsIdArray = [];
-			$orderGoodsList = $goodsList->each(function ($v) {
+			$orderGoodsList = $goodsList->each(function ($v) use (&$goodsIdArray) {
 				// 将购买的商品的id压入到数组中
 				$goodsIdArray[] = $v['goods_id'];
 				// 获取此商品的图片进行保存，为订单显示图片准备

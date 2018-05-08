@@ -23,16 +23,16 @@ class Goods extends Model
 	 */
 	public function search($key)
 	{
-		$where = "title like '{$key}' AND status=1";
+		$where = "title like '%{$key}%' AND status=1";
 		try {
-			$goods = $this->where($where)->field(true)->select();
-			$goods->each(function ($g) {
-				// 获取图片
-				$img = Db::name('goods_images')->where("goods_id={$g['id']}")->order('id')->value('img');
-				$g['img'] = $img;
-				// 获取价格
-			});
-			return ['code' => 1, 'data' => $goods];
+			$goods = Db::name('goods')->where($where)->field('id,title,is_pay_score,spec_id')->select();
+			if (!$goods) {
+				return ['code' => 0, 'msg' => '没有搜索到任何商品信息'];
+			}
+			$goodsList = Collection::make($goods)->each(function ($g) {
+				return $this->getGoodsSomeproperty($g);
+			})->toArray();
+			return ['code' => 1, 'data' => $goodsList];
 		} catch (\Exception $e) {
 			return ['code' => 0, 'msg' => '没有搜索到任何的商品'];
 		}
@@ -47,7 +47,7 @@ class Goods extends Model
 	 */
 	public function getGoods($location, $page, $style)
 	{
-		$where = 'status=1 AND p.stock >0 AND p.is_delete=0';
+		$where = 'status=1';
 		$pageSize = Config::get('weixinSize');
 		$start = ($page - 1) * $pageSize;
 		if ($location != 0) {

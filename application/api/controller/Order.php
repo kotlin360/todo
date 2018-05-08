@@ -108,13 +108,14 @@ class Order extends Base
 			'pay_money' => 0, // 用户选择支付的余额初始化
 			'pay_weixin' => 0, // 微信支付额度初始化
 			'status' => 1, // 1订单生成，等待付款
-			'user_remark' => input('user_remark'), // 用户订单备注
+			'user_remark' => input('user_remark', ''), // 用户订单备注
 			'create_time' => $_SERVER['REQUEST_TIME']
 		];
 
 		// 处理收货地址和发票信息
 		$addressInfo = input('addressInfo/a', null);
 		$invoiceInfo = input('invoiceInfoList/a', null);
+
 		if (!$addressInfo) {
 			return json(['code' => 0, 'msg' => '请填写收货地址']);
 		}

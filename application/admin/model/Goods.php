@@ -252,8 +252,7 @@ class Goods extends Model
 						'create_time' => $_SERVER['REQUEST_TIME']
 					];
 					$spec_id = $extend['id'][$k];
-					p($spec_id);
-					die;
+					
 					if ($spec_id && in_array($extend['id'][$k], $specIdArray)) {
 						// 更新
 						Db::name('goods_products')->where("id={$spec_id}")->update($products);
