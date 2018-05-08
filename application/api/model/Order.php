@@ -82,7 +82,8 @@ class Order extends Model
 			// 获取积分兑换率
 			$param = ParamFacade::getSystemParam();
 			// 用户总积分
-			$scoreTotal = ScoreFacade::total($data['uid'])['total'];
+			$scoreTotal = ScoreFacade::total($data['uid'])['total'] + 0;
+			$moneyTotal = MoneyFacade::total($data['uid'])['total'] + 0;
 
 			// 获取商品信息
 			$goodsInfo = Db::name('goods')->alias('g')
@@ -106,7 +107,8 @@ class Order extends Model
 			return ['code' => 1, 'data' => [
 				'user' => $user,
 				'goods' => $goodsInfo,
-				'scoreTotal' => $scoreTotal
+				'scoreTotal' => $scoreTotal,
+				'moneyTotal' => $moneyTotal
 			]];
 		} catch (\Exception $e) {
 			return ['code' => 0, 'msg' => '兑换失败：' . $e->getMessage()];

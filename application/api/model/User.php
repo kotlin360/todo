@@ -1,19 +1,17 @@
 <?php
 namespace app\api\model;
 
+use app\api\facade\Message as MessageFacade;
 use app\common\facade\Log;
 use app\common\facade\Param as ParamFacade;
 use GuzzleHttp\Exception\GuzzleException;
 use GuzzleHttp\Exception\RequestException;
-use Psr\Http\Message\ResponseInterface;
-use GuzzleHttp\Psr7;
 use think\Container;
 use think\Db;
+use think\facade\Config;
 use think\facade\Env;
 use think\Model;
 use think\Request;
-use think\facade\Config;
-use app\api\facade\Message as MessageFacade;
 
 /**
  * @project  用户接口模型
@@ -51,13 +49,13 @@ class User extends Model
 		}
 
 		// 需要首先验证短信验证码是否正确
-//		$realcode = MessageFacade::getCode($updateData['username']);
-//		if (!$realcode) {
-//			return ['code' => 0, 'msg' => '验证码已过期，请重新获取'];
-//		}
-//		if ($realcode !== $messageCode) {
-//			return ['code' => 0, 'msg' => '填写的验证码不正确'];
-//		}
+		$realcode = MessageFacade::getCode($updateData['username']);
+		if (!$realcode) {
+			return ['code' => 0, 'msg' => '验证码已过期，请重新获取'];
+		}
+		if ($realcode !== $messageCode) {
+			return ['code' => 0, 'msg' => '填写的验证码不正确'];
+		}
 
 		try {
 			// 更新用户完善信息
