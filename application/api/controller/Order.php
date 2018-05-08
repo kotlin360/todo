@@ -136,15 +136,19 @@ class Order extends Base
 	}
 
 	/**
-	 * 支付调用接口
+	 * 支付调用接口,有可能调用微信支付
+	 * @param OrderModel $orderModel
+	 * @return \think\response\Json
 	 */
-	public function pay_handle()
+	public function pay_handle(OrderModel $orderModel)
 	{
-
+		$orderId = input('orderId/d', 0);
+		return json($orderModel->payHandle($this['auth']['uid'], $orderId));
 	}
 
 	/**
 	 * 支付成功后通知
+	 * @param OrderModel $orderModel
 	 */
 	public function pay_notify(OrderModel $orderModel)
 	{
