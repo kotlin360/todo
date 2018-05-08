@@ -93,7 +93,7 @@
 				dataType: 'json',
 				data: data.field,
 				beforeSend: function () {
-					var loading = layer.load();
+					loading = layer.load();
 				},
 				success: function (result) {
 					layer.close('loading');

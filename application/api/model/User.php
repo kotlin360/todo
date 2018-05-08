@@ -126,14 +126,6 @@ class User extends Model
 			'grant_type' => 'authorization_code'
 		];
 
-		// 下面是本人自己的测试数据
-//		$weixinParam = [
-//			'appid' => 'wxe0437523294fb4e7',
-//			'secret' => 'ce048c9b8f071bb516398b0baf2289a9',
-//			'js_code' => $js_code,
-//			'grant_type' => 'authorization_code'
-//		];
-
 		try {
 			$cert = Env::get('config_path') . 'cacert.pem';
 			$client = new \GuzzleHttp\Client(['verify' => $cert]);

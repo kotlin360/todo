@@ -245,7 +245,7 @@
 		$('#addForm').on('click', '.addSpec', function () {
 			// 获取已经存在的规格
 			var spec_init_str = '';
-			$("input[name='spec_item[]']").each(function () {
+			$("input[name='spec_value[]']").each(function () {
 				spec_init_str += $(this).val() + ',';
 			});
 			layer.open({
