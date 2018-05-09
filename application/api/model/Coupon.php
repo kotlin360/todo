@@ -42,7 +42,7 @@ class Coupon extends Model
 		}
 		try {
 			$lists = Db::name('coupon_log')->where($where)->limit($start, $limit)
-				->field('value,money,start,end')->select();
+				->field('id,value,money,start,end')->select();
 			$couponLists = Collection::make($lists)->each(function ($list) {
 				$list['start'] = date('Y-m-d', $list['start']);
 				$list['end'] = date('Y-m-d', $list['end']);

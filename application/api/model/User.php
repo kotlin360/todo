@@ -127,6 +127,7 @@ class User extends Model
 		try {
 			$cert = Env::get('config_path') . 'cacert.pem';
 			$client = new \GuzzleHttp\Client(['verify' => $cert]);
+
 			// 发送请求获取session_key和openid
 			$response = $client->request('get', $params['config_wechat_url'], ['query' => $weixinParam]);
 			$body = json_decode($response->getBody());
@@ -135,6 +136,7 @@ class User extends Model
 			}
 			$openid = $body->openid;
 			$session_key = $body->session_key;
+
 			// 拿到open_id和部分用户信息（没有手机号码）之后需要到数据中查询存在不存在
 			$user = Db::name('user')->where("open_id='{$openid}'")->field('id,username')->find();
 			if ($user === null) {
@@ -156,6 +158,7 @@ class User extends Model
 				];
 				$this->save($userinfo);
 				$uid = $this->getLastInsID();
+
 				// 返回临时token，让用户去完善信息
 				$token_temp = authcode($uid . '|fake123|' . $openid, 'ENCODE');
 				return ['code' => 1, 'token' => $token_temp];
@@ -190,19 +193,19 @@ class User extends Model
 	 * @param $file
 	 * @return array
 	 */
-	public function avatarUpload($uid = 1, $file)
+	public function avatarUpload($uid, $file)
 	{
 		try {
 			$subpath = date('Ym'); // 子目录格式
 			$size_allow = Config::get('file_upload_size');
 			$ext_allow = 'gif,jpg,jpeg,bmp,png';
 			$info = $file->validate(['size' => $size_allow, 'ext' => $ext_allow])->rule('uniqid')
-				->move('./uploads' . '/' . date('Ym'));
+				->move('./uploads/' . $subpath);
 			// 更新用户头像信息
 			$this->where("id={$uid}")->update(['avatar' => '/uploads/' . $subpath . '/' . $info->getSaveName()]);
 			return ['code' => 1];
 		} catch (\Exception $e) {
-			return ['code' => 0, 'msg' => $file->getError()];
+			return ['code' => 0, 'msg' => '上传失败：' . $e->getMessage()];
 		}
 	}
 

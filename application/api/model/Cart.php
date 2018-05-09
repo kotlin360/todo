@@ -17,6 +17,7 @@ use think\Model;
  */
 class Cart extends Model
 {
+	protected $name = 'cart';
 
 	/**
 	 * 购物车

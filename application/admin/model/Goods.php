@@ -252,7 +252,7 @@ class Goods extends Model
 						'create_time' => $_SERVER['REQUEST_TIME']
 					];
 					$spec_id = $extend['id'][$k];
-					
+
 					if ($spec_id && in_array($extend['id'][$k], $specIdArray)) {
 						// 更新
 						Db::name('goods_products')->where("id={$spec_id}")->update($products);
@@ -338,7 +338,7 @@ class Goods extends Model
 	{
 		$msg = $status == 1 ? '下架' : '上架';
 		try {
-			$tableName = Config::get('database.prefix') . $this->name;
+			$tableName = Config::get('database.prefix') . 'goods';
 			$sql = "UPDATE {$tableName} SET status = (case status when 0 then 1 else 0  end) WHERE id={$id}";
 			Db::execute($sql);
 			return ['code' => 1];

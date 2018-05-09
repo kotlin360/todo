@@ -3,7 +3,7 @@
 	color: #fff;
 	background-color: #fff;
 	height: 1px;
-	margin: 10px 0 5px 0;
+	margin: 0 5px;
 }
 
 .hr-line-dashed2 {
@@ -121,7 +121,7 @@
 #orderTable #invoiceTd .label {
 	display: inline-block;
 	width: 90px;
-	text-align: right
+	text-align: left
 }
 
 #userTable2 tr:hover {

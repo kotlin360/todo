@@ -48,7 +48,8 @@
 				<div class="layui-inline">
 					<label class="layui-form-label">状态：</label>
 					<div class="layui-input-inline layui-input-inline100">
-						<input type="checkbox" name="status" value="1" checked lay-skin="switch" lay-text="上架|下架">
+						<input type="checkbox" value="1" checked lay-skin="switch" lay-filter="switchStatus" lay-text="上架|下架">
+						<input type="hidden" name="status" value="1" id="status">
 					</div>
 				</div>
 
@@ -188,6 +189,12 @@
 		}
 
 		window.makeSpecHtml = makeSpecHtml; // 这句非常关键，iframe子页面调用的时候就靠这句
+
+		// 监听上下线状态
+		form.on('switch(switchStatus)', function (data) {
+			var status = this.checked ? 1 : 0;
+			$('#status').val(status)
+		});
 
 		//监听商品创建提交
 		form.on('submit(addForm)', function (data) {

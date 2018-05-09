@@ -279,6 +279,9 @@ class Order extends Model
 			if ($coupon == null) {
 				return ['code' => 0, 'msg' => '订单创建失败：优惠券失效'];
 			}
+			// 把优惠券状态修改为已经使用
+			Db::name('coupon_log')->where("id={$orderData['coupon_id']} AND uid={$orderData['uid']}")
+				->update(['update_time' => $_SERVER['REQUEST_TIME'], 'status' => 1]);
 		}
 
 		// 获取用户积分和现金余额
@@ -461,11 +464,11 @@ class Order extends Model
 			$payWeixin = $bill['pay_weixin']; // 微信支付
 			$score_gift_total = $bill['score_gift_total']; // 用户购买商品赠送的总积分
 
-			// 写用户优惠券日志表
-			if ($couponId) {
-				$couponData = ['status' => 1, 'update_time' => $_SERVER['REQUEST_TIME']];
-				Db::name('coupon_log')->where("id={$couponId}")->update($couponData);
-			}
+			// 写用户优惠券日志表，此处不用，因为订单的时候优惠券必须设置为已经使用
+//			if ($couponId) {
+//				$couponData = ['status' => 1, 'update_time' => $_SERVER['REQUEST_TIME']];
+//				Db::name('coupon_log')->where("id={$couponId}")->update($couponData);
+//			}
 
 			// 扣除用户积分、钱包余额相应额度,需要判断，因为有可能客户直接微信支付了
 			if ($payScore != 0 || $payMoney != 0 || $score_gift_total != 0) {

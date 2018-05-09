@@ -17,21 +17,26 @@ class Order extends Model
 	protected $name = 'order';
 
 	/**
-	 * 根据商品ID获取商品详情
+	 * 根据订单ID获取订单详情
 	 * @param $id
 	 * @return array
 	 */
-	public function getGoodsInfo($id)
+	public function getOrderInfo($id)
 	{
 		$prefix = Config::get('database.prefix');
+
 		try {
 			// 订单信息
-			$orderSQL = "SELECT o.*,u.username,u.nickname,u.tel FROM {$prefix}order o LEFT JOIN {$prefix}user u ON o.uid = u.id WHERE o.id=:id LIMIT 1";
+			$orderSQL = "SELECT o.*,u.username,u.nickname,u.tel,c.value,c.money FROM {$prefix}order o " .
+				"LEFT JOIN {$prefix}coupon_log c ON o.coupon_id = c.id AND c.status=1 " .
+				"LEFT JOIN {$prefix}user u ON o.uid = u.id WHERE o.id=:id LIMIT 1";
 			$order = Db::query($orderSQL, ['id' => $id]);
+
 			// 订单商品
 			$goodsSQL = "SELECT og.*,g.title FROM {$prefix}order_goods og " .
 				"LEFT JOIN {$prefix}goods g ON og.goods_id=g.id WHERE og.order_id=:id";
 			$goods = Db::query($goodsSQL, ['id' => $id]);
+			
 			// 订单日志
 			$orderLogSQL = "SELECT ol.*,u.username FROM {$prefix}order_log ol " .
 				"LEFT JOIN {$prefix}user u ON ol.uid=u.id WHERE ol.order_id=:id ORDER BY ol.id DESC";

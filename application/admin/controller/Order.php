@@ -41,15 +41,15 @@ class Order extends Base
 	}
 
 	/**
-	 * 获取商品详情
+	 * 获取订单详情
 	 * @param OrderModel $orderModel
 	 * @return \think\response\Json
 	 */
 	public function detail(OrderModel $orderModel)
 	{
 		$id = input('id/d', 0);
-		$goodsinfo = $orderModel->getGoodsInfo($id);
-		return json($goodsinfo);
+		$orderInfo = $orderModel->getOrderInfo($id);
+		return json($orderInfo);
 	}
 
 	/**

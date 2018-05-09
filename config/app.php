@@ -126,9 +126,9 @@ return [
 	// 异常处理handle类 留空使用 \think\exception\Handle
 	'exception_handle' => '',
 	'auth_key' => 'JUD6FCtZsqrmVXc2apev4TRn3O8gAhxbSlH9wfPN', //默认数据加密KEY
-	'page_size' => '10', // 分页数
-	'flowsize' => '5', // 流分页数
-	'weixinSize' => '4', // 小程序分页大小
+	'page_size' => 10, // 分页数
+	'flowsize' => 5, // 流分页数
+	'weixinSize' => 10, // 小程序分页大小
 	'salt' => 'wZPb~yxvA!ir38&Z',//加密串
 	'file_upload_size' => 10 * 1024 * 1024, // 上传文件的最大尺寸，10兆
 	// 订单状态

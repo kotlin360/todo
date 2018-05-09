@@ -90,9 +90,9 @@
 					}
 				},
 				{
-					field: 'status', title: '状态', align: 'center', width: 70, templet: function (v) {
+					field: 'status', title: '状态', align: 'center', width: 80, templet: function (v) {
 						if (v.status == 1) {
-							return '<a class="layui-btn layui-btn-xs changeStatus" lay-event="changeStatus">在售</a>';
+							return '<a class="layui-btn layui-btn-xs changeStatus" lay-event="changeStatus">出售中</a>';
 						} else {
 							return '<a class="layui-btn layui-btn-danger layui-btn-xs changeStatus" lay-event="changeStatus">已下架</a>\n';
 						}
@@ -129,7 +129,7 @@
 							var detailBox = layer.open({
 								type: 1,
 								anim: 0,
-								offset: 't',
+								offset: ['5px', '0px'],
 								area: ['100%', '300px'],
 								title: '商品名称：【' + data.title + '】，编号：【' + data.sn + '】规格详情',
 								shadeClose: true,

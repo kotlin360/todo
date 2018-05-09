@@ -48,9 +48,10 @@
 				<div class="layui-inline">
 					<label class="layui-form-label">状态：</label>
 					<div class="layui-input-inline layui-input-inline100">
-						<input type="checkbox" name="status" value="1"
-						       {eq name="base.status|default='1'" value="1" }checked{/eq}
-						lay-skin="switch" lay-text="上架|下架" >
+						<input type="checkbox" value="{$base.status|default='1'}"
+						       {eq name="base.status|default=1" value="1" }checked{/eq}
+						lay-skin="switch" lay-filter="switchStatus" lay-text="上架|下架" >
+						<input type="hidden" name="status" value="{$base.status|default=1}" id="status">
 					</div>
 				</div>
 
@@ -206,6 +207,13 @@
 			},
 			number0: [/^\d+$/, '必须为正整数，不能含有小数']
 		});
+
+		// 监听上下线状态
+		form.on('switch(switchStatus)', function (data) {
+			var status = this.checked ? 1 : 0;
+			$('#status').val(status)
+		});
+
 		//监听商品创建提交
 		form.on('submit(addForm)', function (data) {
 			if ($('.imgs').length == 0) {
@@ -222,6 +230,7 @@
 				url = "{:url('goods/edit')}?t=";
 				okMsg = '商品修改成功';
 			}
+
 			$.ajax({
 				url: url + new Date().getTime(),
 				type: 'post',
