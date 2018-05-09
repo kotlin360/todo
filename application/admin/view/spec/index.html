@@ -31,7 +31,7 @@
 			cols: [[
 				{field: 'id', title: '序号', align: 'center', width: 80},
 				{field: 'name', title: '名称', align: 'center', width: 100},
-				{field: 'value', title: '规格值', align: 'center', width: 300},
+				{field: 'value', title: '规格值', align: 'center', width: 260},
 				{field: 'note', title: '备注', align: 'center', width: 100},
 				{
 					field: 'create_time', title: '创建时间', align: 'center', width: 170,
@@ -42,7 +42,7 @@
 					templet: '<span>{{ d.update_time }}</span>'
 				},
 				{
-					field: 'status', title: '状态', align: 'center', width: 80, templet: function (v) {
+					field: 'status', title: '状态', align: 'center', width: 90, templet: function (v) {
 						if (v.status == 1) {
 							return '<a class="layui-btn layui-btn-xs changeStatus" lay-event="changeStatus">已开启</a>';
 						} else {
@@ -50,7 +50,7 @@
 						}
 					}
 				},
-				{title: '操作', align: 'center', toolbar: '#toobar', width: 80}
+				{title: '操作', align: 'center', toolbar: '#toobar', width: 100}
 			]]
 		});
 		table.on('tool(datatable)', function (obj) {

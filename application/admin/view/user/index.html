@@ -33,8 +33,8 @@
 			page: true,
 			cols: [[
 				{field: 'id', title: '序号', align: 'center', width: 80},
-				{field: 'username', title: '用户名', align: 'center', width: 120},
-				{field: 'tel', title: '手机号码', align: 'center', width: 120},
+				{field: 'username', title: '用户名/手机', align: 'center', width: 120},
+				{field: 'nickname', title: '昵称', align: 'center', width: 150},
 				{field: 'score', title: '总积分', align: 'center', width: 100},
 				{field: 'money', title: '现金余额', align: 'center', width: 110},
 				{field: 'station_name', title: '监测站', align: 'center', width: 110},
@@ -206,10 +206,10 @@
 				<table class="layui-table" id="userTable2">
 					<tbody>
 					<tr>
-						<td class="tHead">用户名</td>
+						<td class="tHead">用户名/手机</td>
 						<td>{{ d.user.username }}</td>
-						<td class="tHead">手机号码</td>
-						<td>{{ d.user.tel }}</td>
+						<td class="tHead">昵称</td>
+						<td>{{ d.user.nickname }}</td>
 						<td class="tHead">生日</td>
 						<td>{{ d.user.birthday }}</td>
 					</tr>

@@ -272,13 +272,13 @@ a, button {
 .kit-tab .kit-tab-tool {
 	z-index: 5;
 	position: absolute;
-	width: 40px;
-	height: 40px;
+	width: 44px;
+	height: 44px;
 	background-color: #fff;
 	top: 0;
 	right: 0px;
 	border-top: 1px solid #f6f6f6;
-	line-height: 40px;
+	line-height: 44px;
 	text-align: center;
 	cursor: pointer;
 }
@@ -289,7 +289,7 @@ a, button {
 
 .kit-tab .kit-tab-tool-body {
 	position: absolute;
-	top: 40px;
+	top: 45px;
 	right: 0px;
 	width: 150px;
 	border: 1px solid #e2e2e2;
@@ -322,6 +322,7 @@ a, button {
 	background: #fff;
 	border-bottom: 0;
 	box-shadow: 0 1px 2px 0 rgba(0, 0, 0, .1);
+	height: 44px;
 }
 
 .layui-tab-title .layui-this:after {
