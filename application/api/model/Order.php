@@ -6,6 +6,7 @@ use app\api\facade\Money as MoneyFacade;
 use app\api\facade\Score as ScoreFacade;
 use app\api\facade\User as UserFacade;
 use app\common\facade\Param as ParamFacade;
+use app\common\facade\Wxpay as WxpayFacade;
 use app\common\service\OpensslEncryptHelper;
 use think\Collection;
 use think\Db;
@@ -445,30 +446,52 @@ class Order extends Model
 	}
 
 	/**
-	 * 支付动作
-	 * @param $uid
+	 * 微信统一下单，预支付动作
+	 * @param $token
 	 * @param $id
 	 * @return array
 	 */
-	public function payHandle($uid, $id)
+	public function payHandle($token, $id)
+	{
+		try {
+			$uid = $token['uid'];
+			// 获取当前订单支付信息
+			$bill = Db::name('order')->where("id={$id}")
+				->field('id,order_no,pay_style,pay_score,pay_money,pay_weixin,score_gift_total,coupon_id,pay_coupon_value,freight')->find();
+
+			if ($bill['pay_weixin'] != 0) {
+				// 此处需要调用微信支付
+				return WxpayFacade::prepay([
+					'order_no' => $bill['order_no'],
+					'pay_weixin' => $bill['pay_weixin'],
+					'openid' => $token['openid']
+				]);
+			} else {
+				// 此处需要调用微信支付，直接扣除积分和余额
+				return $this->payRealHandle($uid, $bill);
+			}
+		} catch (\Exception $e) {
+			return ['code' => 0, 'msg' => '预支付失败：' . $e->getMessage()];
+		}
+	}
+
+	/**
+	 * 真正支付动作，为什么单独拿出来？因为支付的时候有可能需要调用微信支付，有可能不需要微信支付
+	 * @param $uid
+	 * @param $bill
+	 * @param $wxpayLog 微信支付记录数组
+	 * @return array
+	 */
+	public function payRealHandle($uid, $bill, $wxpayLog = null)
 	{
 		Db::startTrans();
 		try {
-			// 获取当前订单支付信息
-			$bill = Db::name('order')->where("id={$id}")
-				->field('id,pay_style,pay_score,pay_money,pay_weixin,score_gift_total,coupon_id,pay_coupon_value,freight')->find();
-
+			$uid = $token['uid'];
 			$couponId = $bill['coupon_id']; // 支付使用的优惠券
 			$payScore = $bill['pay_score']; // 支付积分
 			$payMoney = $bill['pay_money']; // 支付余额
 			$payWeixin = $bill['pay_weixin']; // 微信支付
 			$score_gift_total = $bill['score_gift_total']; // 用户购买商品赠送的总积分
-
-			// 写用户优惠券日志表，此处不用，因为订单的时候优惠券必须设置为已经使用
-//			if ($couponId) {
-//				$couponData = ['status' => 1, 'update_time' => $_SERVER['REQUEST_TIME']];
-//				Db::name('coupon_log')->where("id={$couponId}")->update($couponData);
-//			}
 
 			// 扣除用户积分、钱包余额相应额度,需要判断，因为有可能客户直接微信支付了
 			if ($payScore != 0 || $payMoney != 0 || $score_gift_total != 0) {
@@ -483,13 +506,13 @@ class Order extends Model
 			// 扣除积分写用户积分日志表
 			if ($payScore != 0) {
 				$shareScoreDatas[] = ['uid' => $uid, 'value' => -$payScore, 'note' => '购买商品支付', 'create_time' => $_SERVER['REQUEST_TIME']];
-				// Db::name('score_log')->insert($scoreData);
+				Db::name('score_log')->insert($scoreData);
 			}
 
 			// 赠送用户积分日志表
 			if ($score_gift_total != 0) {
 				$shareScoreDatas[] = ['uid' => $uid, 'value' => $score_gift_total, 'note' => '购买商品赠送', 'create_time' => $_SERVER['REQUEST_TIME']];
-				// Db::name('score_log')->insert($scoreData);
+				Db::name('score_log')->insert($scoreData);
 			}
 
 			// 写用户钱包余额表
@@ -515,19 +538,64 @@ class Order extends Model
 				Db::name('score_log')->insertAll($shareScoreDatas);
 			}
 
-			if ($payWeixin != 0) {
-				// 此处需要调用微信支付
+			// 支付成功，修改订单状态
+			Db::name('order')->where("id={$bill['id']}")->update([
+				'pay_status' => 1,
+				'status' => 5,
+				'pay_time' => time()
+			]);
 
-			}
 			// 支付成功后，需要写订单日志表
 			$orderData = ['uid' => $uid, 'order_id' => 1, 'note' => '支付成功，等待发货', 'create_time' => $_SERVER['REQUEST_TIME']];
 			Db::name('order_log')->insert($orderData);
+
+			// 写微信支付日志
+			if ($wxpayLog !== null) {
+				Db::name('wxpay_log')->insert($wxpayLog);
+			}
 
 			Db::commit();
 			return ['code' => 1, 'data' => $bill];
 		} catch (\Exception $e) {
 			Db::rollback();
 			return ['code' => 0, 'msg' => '支付失败：' . $e->getMessage()];
+		}
+	}
+
+	/**
+	 * 订单支付结果通知
+	 * @param $xml
+	 */
+	public function billPayNotify($xml)
+	{
+		$data = WxpayFacade::billPayNotify($xml);
+		if ($data !== false) {
+
+			// 构造微信支付记录数据
+			$wxpayLog = [
+				'order_no' => $data['out_trade_no'], //订单单号
+				'open_id' => $data['openid'], //付款人openID
+				'total_fee' => $data['total_fee'], //付款金额
+				'transaction_id' => $data['transaction_id'], //微信支付流水号
+				'create_time' => time()
+			];
+
+			// 根据返回结果获取用户uid
+			$uid = Db::name('user')->where("open_id={$openid}")->value('id');
+			// 获取当前订单支付信息
+			$bill = Db::name('order')->where("order_no={$order_no}")
+				->field('id,order_no,pay_style,pay_score,pay_money,pay_weixin,score_gift_total,coupon_id,pay_coupon_value,freight')->find();
+			$wxpayLog['uid'] = $uid;
+
+			// 调用扣款功能
+			$result = $this->payRealHandle($uid, $bill, $wxpayLog);
+			if ($result['code'] == 1) {
+				echo '<xml><return_code><![CDATA[SUCCESS]]></return_code><return_msg><![CDATA[OK]]></return_msg></xml>';
+			} else {
+				echo '<xml><return_code><![CDATA[FAIL]]></return_code><return_msg><![CDATA[商户服务器处理失败]]></return_msg></xml>';
+			}
+		} else {
+			echo '<xml><return_code><![CDATA[FAIL]]></return_code><return_msg><![CDATA[签名失败]]></return_msg></xml>';
 		}
 	}
 
@@ -597,8 +665,11 @@ class Order extends Model
 	{
 		Db::startTrans();
 		try {
+			//生成退款单号
+			$refund_no = $this->build_order_no() . mt_rand(1000, 9999);
+
 			// 更新订单状态
-			$result = Db::name('order')->where("id={$id} AND status in(15,10,15,20)")->update(['status' => 25]);
+			$result = Db::name('order')->where("id={$id} AND status in(15,10,15,20)")->update(['status' => 25, 'refund_no' => $refund_no]);
 			if (!$result) {
 				return ['code' => 0, 'msg' => '退货申请失败：订单未查询到'];
 			}

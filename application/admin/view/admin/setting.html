@@ -173,6 +173,22 @@
 							<div class="layui-form-mid layui-word-aux">关键参数，不了解请不要修改</div>
 						</div>
 						<div class="layui-form-item">
+							<label class="layui-form-label">微信支付商户号：</label>
+							<div class="layui-input-inline">
+								<input type="hidden" name="config_mch_id_uuid" value="{$config.config_mch_id_uuid|default=''}">
+								<input type="text" name="config_mch_id" value="{$config.config_mch_id|default=''}" lay-verify="required" autocomplete="off" class="layui-input">
+							</div>
+							<div class="layui-form-mid layui-word-aux">关键参数，不了解请不要修改</div>
+						</div>
+						<div class="layui-form-item">
+							<label class="layui-form-label">微信支付API密钥：</label>
+							<div class="layui-input-inline">
+								<input type="hidden" name="config_pay_apikey_uuid" value="{$config.config_pay_apikey_uuid|default=''}">
+								<input type="text" name="config_pay_apikey" value="{$config.config_pay_apikey|default=''}" lay-verify="required" autocomplete="off" class="layui-input">
+							</div>
+							<div class="layui-form-mid layui-word-aux">关键参数，不了解请不要修改</div>
+						</div>
+						<div class="layui-form-item">
 							<div class="layui-input-block">
 								<button class="layui-btn" lay-submit="" lay-filter="wechatConfig">立即提交</button>
 								<button type="reset" class="layui-btn layui-btn-primary">重置</button>

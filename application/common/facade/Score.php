@@ -10,6 +10,10 @@ use think\Facade;
  */
 class Score extends Facade
 {
+	/**
+	 * 获取当前Facade对应类名
+	 * @return string
+	 */
 	protected static function getFacadeClass()
 	{
 		return '\\app\\common\\model\\Score';
