@@ -110,21 +110,14 @@ class Order extends Model
 			if ($status == 35) {
 				// 获取当前订单支付信息
 				$bill = Db::name('order')->where("id={$id}")
-					->field('id,order_no,refund_no,pay_style,pay_score,pay_money,pay_weixin,score_gift_total,coupon_id,pay_coupon_value,freight')->find();
+					->field('id,uid,order_no,refund_no,pay_style,pay_score,pay_money,pay_weixin,score_gift_total,coupon_id,pay_coupon_value,freight')->find();
 
+				$uid = $bill['uid'];
 				$couponId = $bill['coupon_id']; // 支付使用的优惠券
 				$payScore = $bill['pay_score']; // 支付积分
 				$payMoney = $bill['pay_money']; // 支付余额
 				$payWeixin = $bill['pay_weixin']; // 微信支付
 				$score_gift_total = $bill['score_gift_total']; // 用户购买商品赠送的总积分
-
-				if ($bill['pay_weixin'] != 0) {
-					// 需要调用微信退款
-					$result = WxpayFacade::refund($bill);
-					if ($result['code'] == 0) {
-						return $result;
-					}
-				}
 
 				// 返回优惠券
 				if ($couponId) {
@@ -166,6 +159,23 @@ class Order extends Model
 				// 修改订单状态
 				Db::name('order')->where("order_no={$orderNo}")->update(['status' => 40]);
 
+				if ($bill['pay_weixin'] != 0) {
+					// 需要调用微信退款
+					$result = WxpayFacade::refund($bill);
+					if ($result['code'] == 0) {
+						return $result;
+					}
+					// 写入微信支付日志表
+					$weixinPayLog = [
+						'order_no' => $result['data']['out_refund_no'],
+						'uid' => $uid,
+						'cate' => 2,
+						'total_fee' => $result['data']['refund_fee'] * -1,
+						'transaction_id' => $result['data']['transaction_id'],
+						'create_time' => time(),
+					];
+					Db::name('wxpay_log')->insert($weixinPayLog);
+				}
 			}
 			$this->where("id={$id}")->update(['status' => $status, 'return_remark' => $return_remark]);
 			// 写订单日志表

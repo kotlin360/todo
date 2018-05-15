@@ -21,8 +21,14 @@ class Recharge extends Controller
 		return json($rechargeModel->getRechargeList());
 	}
 
-	public function do_recharge()
+	/**
+	 * 用户充值接口
+	 * @param RechargeModel $rechargeModel
+	 * @return \think\response\Json
+	 */
+	public function do_recharge(RechargeModel $rechargeModel)
 	{
-
+		$id = input('id/d', 0);
+		return json($rechargeModel->doRecharge($this['auth'], $id));
 	}
 }

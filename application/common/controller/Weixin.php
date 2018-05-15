@@ -3,10 +3,11 @@
 namespace app\common\controller;
 
 use app\api\model\Order as OrderModel;
+use app\api\model\Recharge as RechargeModel;
 use think\facade\Env;
 
 /**
- * @project  微信支付控制器
+ * @project  微信支付控制器(订单支付和充值)
  * @author   千叶
  * @date     2018-05-14
  */
@@ -25,10 +26,12 @@ class Weixin
 	}
 
 	/**
-	 * 用户退款成功后通知
+	 * 充值成功后的通知
+	 * @param RechargeModel $rechargeModel
 	 */
-	public function bill_refund_notify()
+	public function recharge_notify(RechargeModel $rechargeModel)
 	{
-
+		$xml = file_get_contents("php://input");
+		$rechargeModel->rechargeNotify($xml);
 	}
 }

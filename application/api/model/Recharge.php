@@ -1,11 +1,10 @@
 <?php
 namespace app\api\model;
 
+use app\api\facade\Order as OrderFacade;
+use app\common\facade\Wxpay as WxpayFacade;
 use think\Collection;
 use think\Db;
-use think\db\exception\DataNotFoundException;
-use think\db\exception\ModelNotFoundException;
-use think\exception\DbException;
 use think\Model;
 
 /**
@@ -42,6 +41,99 @@ class Recharge extends Model
 			return ['code' => 1, 'data' => $rechargeList];
 		} catch (\Exception $e) {
 			return ['code' => 0, 'msg' => '获取充值数据失败：' . $e->getMessage()];
+		}
+	}
+
+	/**
+	 * 充值
+	 * @param $token
+	 * @param $id
+	 * @return array
+	 */
+	public function doRecharge($token, $id)
+	{
+		//获取充值额度
+		$value = Db::name('recharge')->where("id={$id} AND status=1")->value('value');
+		if (!$value) {
+			return ['code' => 0, 'msg' => '充值失败：未查询到充值额度'];
+		}
+		// 获取订单号
+		$orderNo = OrderFacade::build_order_no();
+
+		// 此处需要调用微信支付
+		return WxpayFacade::preRecharge([
+			'order_no' => $orderNo,
+			'pay_weixin' => $value,
+			'openid' => $token['openid'],
+			'id' => $id
+		]);
+	}
+
+	/**
+	 * 充值成功后结果通知处理
+	 * @param $xml
+	 */
+	public function rechargeNotify($xml)
+	{
+		$data = WxpayFacade::rechargeNotify($xml);
+		if ($data !== false) {
+
+			// 构造微信支付记录数据
+			$wxpayLog = [
+				'order_no' => $data['out_trade_no'], //订单单号
+				'open_id' => $data['openid'], //付款人openID
+				'total_fee' => $data['total_fee'], //付款金额
+				'transaction_id' => $data['transaction_id'], //微信支付流水号
+				'create_time' => time()
+			];
+			Db::startTrans();
+			try {
+				// 根据返回结果获取用户uid
+				$uid = Db::name('user')->where("open_id={$data['openid']}")->value('id');
+
+				// 给用户钱包增加充值额度
+				Db::name('user')->where("id={$uid}")
+					->inc('money', $data['total_fee'])->update();
+				$wxpayLog['uid'] = $uid;
+
+				// 写入微信支付记录表
+				Db::name('wxpay_log')->insert($wxpayLog);
+
+				// 赠送优惠优惠券,id从充值通知附加数据中读取
+				$rechargeId = $data['attach'] + 0;
+				// 查询是否需要赠送优惠券
+				$couponGift = Db::name('recharge')->where("id={$rechargeId}")->field('coupon_id,num')->find();
+				if (is_array($couponGift) && !empty($couponGift)) {
+					$coupon = Db::name('coupon')->where("id={$couponGift['coupon_id']} AND status=1")->field(true)->find();
+
+					// 判断要赠送的优惠券是不是还有效，只需要判断status=1即可
+					if (is_array($coupon) && !empty($coupon)) {
+						$couponLog = [];
+						for ($i = 0; $i < $couponGift['num']; $i++) {
+							$couponLog[] = [
+								'coupon_id' => $coupon['id'],
+								'uid' => $uid,
+								'name' => $coupon['name'],
+								'value' => $coupon['value'],
+								'money' => $coupon['money'],
+								'start' => $coupon['start'],
+								'end' => $coupon['end'],
+								'create_time' => time(),
+							];
+						}
+						Db::name('coupon_log')->insertAll($couponLog);
+					}
+				}
+
+				Db::commit();
+				// 通知微信处理成功
+				echo '<xml><return_code><![CDATA[SUCCESS]]></return_code><return_msg><![CDATA[OK]]></return_msg></xml>';
+			} catch (\Exception $e) {
+				Db::rollback();
+				echo '<xml><return_code><![CDATA[FAIL]]></return_code><return_msg><![CDATA[商户服务器处理失败]]></return_msg></xml>';
+			}
+		} else {
+			echo '<xml><return_code><![CDATA[FAIL]]></return_code><return_msg><![CDATA[签名失败]]></return_msg></xml>';
 		}
 	}
 

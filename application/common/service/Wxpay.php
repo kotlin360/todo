@@ -146,6 +146,97 @@ class Wxpay
 	}
 
 	/**
+	 * 用户提现微信接口
+	 * @param $withdraw
+	 * @return array
+	 */
+	public function withdraw($withdraw)
+	{
+		$param = array(
+			'mch_appid' => $this->config['config_wechat_appid'],
+			'mchid' => $this->config['config_mch_id'],
+			'nonce_str' => self::getNonceStr(),
+			'partner_trade_no' => $withdraw['order_no'],
+			'openid' => $withdraw['openid'],
+			'check_name' => 'NO_CHECK',
+			'amount' => $withdraw['value'] * 100,
+			'desc' => '用户提现',
+			'spbill_create_ip' => Request::ip()
+		);
+
+		$param['sign'] = self::makeSign($param);
+		//请求数据
+		$xmldata = self::array2xml($param);
+		$res = self::curl_post_ssl('https://api.mch.weixin.qq.com/mmpaymkttransfers/promotion/transfers', $xmldata, true);
+		if (!$res) {
+			return ['code' => 0, 'msg' => '退款提交失败，不能连接微信服务器'];
+		}
+
+		$content = self::xml2array($res);
+
+		if (strval($content['return_code']) == 'FAIL') {
+			return ['code' => 0, 'msg' => '退款提交失败：' . strval($content['return_msg'])];
+		}
+
+		if (strval($content['result_code']) == 'FAIL') {
+			return ['code' => 0, 'msg' => '退款提交失败：' . strval($content['err_code_des'])];
+		}
+		return ['code' => 1, 'data' => $content];
+	}
+
+	/**
+	 * 预充值统一订单,其实跟下订单是一样的
+	 * @param $recharge
+	 * @return array
+	 */
+	public function preRecharge($recharge)
+	{
+		//统一下单参数构造
+		$unifiedorder = array(
+			'appid' => $this->config['config_wechat_appid'],
+			'mch_id' => $this->config['config_mch_id'],
+			'nonce_str' => self::getNonceStr(),
+			'body' => '深邦智能-用户充值',
+			'out_trade_no' => $recharge['order_no'],
+			'total_fee' => 0.01 * 100, // 测试数据
+			// 'total_fee' => $bill['pay_weixin'] * 100, // 正式数据
+			'spbill_create_ip' => Request::ip(),
+			'notify_url' => Request::domain() . '/common/weixin/recharge_notify.html',
+			'trade_type' => 'JSAPI',
+			'openid' => $recharge['openid'],
+			// 附加数据,用户充值列表的id，用于充值成功后赠送优惠券
+			'attach' => $recharge['id']
+		);
+
+		$unifiedorder['sign'] = self::makeSign($unifiedorder);
+		//请求数据
+		$xmldata = self::array2xml($unifiedorder);
+		$res = self::curl_post_ssl('https://api.mch.weixin.qq.com/pay/unifiedorder', $xmldata);
+		if (!$res) {
+			return ['code' => 0, 'msg' => '预充值失败，不能连接微信服务器'];
+		}
+
+		$content = self::xml2array($res);
+		if (strval($content['result_code']) == 'FAIL') {
+			return ['code' => 0, 'msg' => '预充值失败：' . strval($content['err_code_des'])];
+		}
+		if (strval($content['return_code']) == 'FAIL') {
+			return ['code' => 0, 'msg' => '预充值失败：' . strval($content['return_msg'])];
+		}
+
+		// 获取预支付信息(prepar_id)，将组合数据再次签名,返回到小程序
+		$data = [
+			'appId' => $content['appid'],
+			'timeStamp' => strval(time()),
+			'nonceStr' => self::getNonceStr(),
+			'package' => 'prepay_id=' . $content['prepay_id'],
+			'signType' => 'MD5'
+		];
+		$data['paySign'] = self::makeSign($data);
+		return ['code' => 1, 'data' => $data];
+	}
+
+	/**
 	 * 将一个数组转换为 XML 结构的字符串
 	 * @param array $arr   要转换的数组
 	 * @param int   $level 节点层级, 1 为 Root.

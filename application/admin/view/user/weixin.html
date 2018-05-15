@@ -1,0 +1,129 @@
+{include file="public/header" /}
+<fieldset class="layui-elem-field" style="border:0">
+	<form class="layui-form" lay-filter="searchForm" id="searchForm">
+		<div class="layui-form-item" style="float: left;">
+			<div class="layui-input-inline">
+				<input type="text" name="order_no" autocomplete="off" placeholder="输入订单号" class="layui-input layui-btn-sm">
+			</div>
+			<div class="layui-input-inline">
+				<input type="text" name="transaction_id" autocomplete="off" placeholder="输入微信支付流水号" class="layui-input layui-btn-sm">
+			</div>
+			<div class="layui-input-inline">
+				<select name="cate">
+					<option value="">==请选择描述==</option>
+					<option value="1">订单支付</option>
+					<option value="2">订单退款</option>
+					<option value="3">用户充值</option>
+					<option value="4">用户提现</option>
+				</select>
+			</div>
+			<button type="submit" lay-submit lay-filter="searchForm" class="layui-btn layui-btn-warm"><i class="fa fa-search"></i> 搜索</button>
+		</div>
+	</form>
+</fieldset>
+<div class="hr-line-dashed"></div>
+<table id="datatable" lay-filter="datatable"></table>
+<script type="text/html" id="toobar">
+	<a class="layui-btn layui-btn-warm layui-btn-xs" lay-event="log"><i class="fa fa-eye"></i> 查看记录</a>
+	{{#  if(d.status < 2){ }}
+	<a class="layui-btn layui-btn-xs" lay-event="check"><i class="fa fa-gavel"></i> 审核</a>
+	{{#  } }}
+</script>
+<script type="text/javascript">
+	layui.config({
+		base: '/static/admin/js/'
+	}).use(['table', 'form', 'layer', 'jquery', 'utils', 'element', 'laytpl'], function () {
+		var table = layui.table, form = layui.form, layer = layui.layer, $ = layui.jquery,
+			utils = layui.utils, element = layui.element, laytpl = layui.laytpl;
+		var datatable = table.render({
+			elem: '#datatable',
+			height: 'full-120',
+			limit: "{$page_size}",
+			url: "{:url('user/weixin')}?t=" + new Date().getTime(),
+			page: true,
+			cols: [[
+				{field: 'id', title: '序号', align: 'center', width: 80},
+				{field: 'nickname', title: '昵称', align: 'center', width: 120},
+				{field: 'username', title: '手机号码', align: 'center', width: 120},
+				{field: 'order_no', title: '订单号', align: 'center', width: 160},
+				{field: 'total_fee', title: '额度', align: 'center', width: 100},
+				{
+					field: 'cate', title: '描述', align: 'center', width: 120, templet: function (v) {
+						switch (v.cate) {
+							case 1:
+								return '<span style="color:#01AAED">订单支付</span>';
+							case 2:
+								return '<span style="color:#FF5722">订单退款</span>';
+							case 3:
+								return '<span style="color:#5FB878">用户充值</span>';
+							case 4:
+								return '<span style="color:#009688">用户提现</span>';
+							default:
+								return '未知';
+						}
+					}
+				},
+				{field: 'transaction_id', title: '微信支付流水号', align: 'center', width: 200},
+				{
+					field: 'create_time', title: '创建时间', align: 'center', width: 170, templet: function (v) {
+						return moment(v.create_time * 1000).format('YYYY-MM-DD HH:mm:ss');
+					}
+				}
+			]]
+		});
+
+		//监听搜索提交
+		form.on('submit(searchForm)', function (data) {
+			var order_no = $('input[name=order_no]').val();
+			var transaction_id = $('input[name=transaction_id]').val();
+			var cate = $('select[name=cate]').val();
+			datatable.reload({
+				where: {
+					order_no: order_no,
+					transaction_id: transaction_id,
+					cate: cate,
+					page: 1
+				}
+			});
+			return false;
+		});
+	});
+</script>
+<script type="text/html" id="logHtml">
+	<div class="layui-fluid">
+		<div class="layui-row" style="padding:20px">
+			<div class="layui-col-md12">
+				<ul class="layui-timeline">
+					{{# layui.each(d.log, function(i, v){ }}
+					<li class="layui-timeline-item">
+						<i class="layui-icon layui-timeline-axis"></i>
+						<div class="layui-timeline-content layui-text">
+							<div class="layui-timeline-title">{{ moment(parseInt(v.time * 1000)).format('YYYY-MM-DD HH:mm:ss') }}&emsp;操作人：【 {{ v.uname }} 】&emsp;{{ v.content }}</div>
+						</div>
+					</li>
+					{{# }); }}
+					{{# if(d.log === null){ }}
+					<div class="layui-col-md12">
+						暂无提现日志数据
+					</div>
+					{{# } }}
+				</ul>
+			</div>
+		</div>
+	</div>
+</script>
+<script type="text/html" id="checkHtml">
+	<div class="layui-row">
+		<div class="layui-col-md12">
+			<form class="layui-form layui-form-pane" lay-filter="rejectForm">
+				<div class="layui-form-item layui-form-text" style="padding:20px">
+					<label class="layui-form-label">拒绝原因</label>
+					<div class="layui-input-block">
+						<textarea name="remark" placeholder="如果通过，不用填写；审核拒绝必须填写理由，不能超过15个字符" class="layui-textarea" style="resize:none"></textarea>
+					</div>
+				</div>
+			</form>
+		</div>
+	</div>
+</script>
+{include file="public/footer" /}

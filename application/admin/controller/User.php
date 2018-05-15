@@ -108,4 +108,32 @@ class User extends Base
 		$id = input('id/d', 0);
 		return json($userModel->getWithdrawLog($id));
 	}
+
+	/**
+	 * 微信支付流水
+	 * @param UserModel $userModel
+	 * @return mixed|\think\response\Json
+	 */
+	public function weixin(UserModel $userModel)
+	{
+		if ($this->request->isAjax()) {
+			$cur_page = input('page', 1, 'intval');
+			$order_no = input('order_no', '', 'urldecode');
+			$transaction_id = input('transaction_id', '', 'urldecode');
+			$cate = input('cate/d', null);
+			$page_size = input('limit', Config::get('page_size'), 'intval');
+
+			// 拼凑map查询条件
+			$map = ' 1=1 ';
+			$map .= $order_no ? "AND order_no like '%{$order_no}%'" : '';
+			$map .= $transaction_id ? "AND transaction_id like '%{$transaction_id}%'" : '';
+			$map .= $cate ? "AND cate = {$cate}" : '';
+
+			$json = $userModel->getWeixinPayLog($map, $cur_page, $page_size);
+			return json($json);
+		} else {
+			$page_size = Config::get('page_size');
+			return $this->assign('page_size', $page_size)->fetch();
+		}
+	}
 }

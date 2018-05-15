@@ -571,24 +571,25 @@ class Order extends Model
 		$data = WxpayFacade::billPayNotify($xml);
 		if ($data !== false) {
 
+			// 根据返回结果获取用户uid
+			$uid = Db::name('user')->where("open_id={$data['openid']}")->value('id');
+			// 获取当前订单支付信息
+			$bill = Db::name('order')->where("order_no={$data['out_trade_no']}")
+				->field('id,order_no,pay_style,pay_score,pay_money,pay_weixin,score_gift_total,coupon_id,pay_coupon_value,freight')->find();
+
 			// 构造微信支付记录数据
 			$wxpayLog = [
-				'order_no' => $data['out_trade_no'], //订单单号
-				'open_id' => $data['openid'], //付款人openID
-				'total_fee' => $data['total_fee'], //付款金额
-				'transaction_id' => $data['transaction_id'], //微信支付流水号
+				'uid' => $uid,
+				'order_no' => $bill['order_no'], //订单单号，微信通知没有
+				'open_id' => $data['openid'], //付款人openID，微信通知有
+				'total_fee' => $bill['pay_weixin'], //付款金额，微信通知没有
+				'transaction_id' => $data['prepay_id'], //微信支付流水号，微信通知有
 				'create_time' => time()
 			];
 
-			// 根据返回结果获取用户uid
-			$uid = Db::name('user')->where("open_id={$openid}")->value('id');
-			// 获取当前订单支付信息
-			$bill = Db::name('order')->where("order_no={$order_no}")
-				->field('id,order_no,pay_style,pay_score,pay_money,pay_weixin,score_gift_total,coupon_id,pay_coupon_value,freight')->find();
-			$wxpayLog['uid'] = $uid;
-
 			// 调用扣款功能
 			$result = $this->payRealHandle($uid, $bill, $wxpayLog);
+
 			if ($result['code'] == 1) {
 				echo '<xml><return_code><![CDATA[SUCCESS]]></return_code><return_msg><![CDATA[OK]]></return_msg></xml>';
 			} else {

@@ -4,6 +4,7 @@ namespace app\admin\model;
 use app\common\facade\Coupon;
 use app\common\facade\Money;
 use app\common\facade\Score;
+use app\common\facade\Wxpay as WxpayFacade;
 use think\Db;
 use think\Exception;
 use think\exception\PDOException;
@@ -151,6 +152,7 @@ class User extends Model
 		$status = $type === 1 ? 2 : 3;
 		$msg = $type === 1 ? '通过' : '拒绝';
 		$username = Session::get('auth.real_name');
+
 		// 生成提现审核表withdraw数据
 		$frame = [
 			'time' => $_SERVER['REQUEST_TIME'],
@@ -159,15 +161,18 @@ class User extends Model
 		];
 		$log = $this->makeLog($id, $frame);
 		$withDrawData = ['status' => $status, 'remark' => $remark, 'check_time' => $_SERVER['REQUEST_TIME'], 'log' => $log];
+
 		Db::startTrans();
 		try {
 			$widthDraw = Db::name('withdraw')->where("id={$id}")
-				->field('uid,cate,value,real_value')->find();
+				->field('id,uid,cate,value,real_value')->find();
+
 			if ($type === 0) {
 				// 拒绝的话返回用户的积分或者现金余额
 				if ($widthDraw['cate'] == 1) {
 					// 返回积分
-					Db::name('user')->where("id={$widthDraw['uid']}")->setInc('score', $widthDraw['real_value']);
+					Db::name('user')->where("id={$widthDraw['uid']}")
+						->setInc('score', $widthDraw['real_value']);
 					// 写入积分记录表
 					$scoreData = ['uid' => $widthDraw['uid'], 'value' => $widthDraw['real_value'], 'note' => '提现审核拒绝，返还积分', 'create_time' => $_SERVER['REQUEST_TIME']];
 					Db::name('score_log')->insert($scoreData);
@@ -178,9 +183,32 @@ class User extends Model
 					$moneyData = ['uid' => $widthDraw['uid'], 'value' => $widthDraw['real_value'], 'note' => '提现审核拒绝，返还现金', 'create_time' => $_SERVER['REQUEST_TIME']];
 					Db::name('money_log')->insert($moneyData);
 				}
+			} else {
+				// 提现审核通过，提现调用微信支付，给用户付款功能
+				// 生成订单号
+				$withDraw['order_no'] = \app\api\facade\Order::build_order_no();
+				// 查询用户的openid
+				$widthDraw['openid'] = Db::name('user')->where("id={$withDrawData}")->value('open_id');
+
+				$result = WxpayFacade::withdraw($widthDraw);
+				if ($result['code'] == 1) {
+					// 提现成功，写入微信支付日志表
+					$weixinPayLog = [
+						'order_no' => $result['data']['partner_trade_no'],
+						'uid' => $widthDraw['uid'],
+						'cate' => 4,
+						'total_fee' => $widthDraw['value'] * -1,
+						'transaction_id' => $result['data']['payment_no'],
+						'create_time' => time(),
+					];
+					Db::name('wxpay_log')->insert($weixinPayLog);
+				} else {
+					return $result;
+				}
 			}
+
 			Db::name('withdraw')->where("id={$id}")->update($withDrawData);
-			// TODO 这里还需要完成微信支付，给用户付款功能
+
 			Db::commit();
 			return ['code' => 1];
 		} catch (\Exception $e) {
@@ -197,7 +225,7 @@ class User extends Model
 	public function getWithdrawLog($id)
 	{
 		$log = Db::name('withdraw')->where("id={$id}")->value('log');
-		return ['code' => 1, 'log' => $log ? unserialize($log) : null];
+		return ['code' => 1, 'log' => $log ? array_reverse(unserialize($log)) : null];
 	}
 
 	/**
@@ -220,5 +248,33 @@ class User extends Model
 			$data = serialize($now);
 		}
 		return $data;
+	}
+
+	/**
+	 * 获取微信支付日志
+	 * @param $map
+	 * @param $cur_page
+	 * @param $page_size
+	 * @return array
+	 */
+	public function getWeixinPayLog($map, $cur_page, $page_size)
+	{
+		try {
+			$count = Db::name('wxpay_log')->where($map)->count();
+			$list = Db::name('wxpay_log')->alias('w')
+				->join('user u', 'w.uid=u.id', 'LEFT')
+				->where($map)->page($cur_page, $page_size)->order('w.id desc')
+				->field('w.*,u.username,u.nickname')->select();
+
+			$json = [
+				'code' => 0,
+				'msg' => '',
+				'count' => $count,
+				'data' => $list
+			];
+			return $json;
+		} catch (\Exception $e) {
+			return ['code' => 404, 'msg' => '获取微信支付日志失败：' . $e->getMessage()];
+		}
 	}
 }
