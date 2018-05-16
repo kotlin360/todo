@@ -40,6 +40,7 @@ class Order extends Model
 		try {
 			// 获取当前用户订单
 			$orders = Db::name('order')->where($where)->limit($start, $limit)
+				->order('create_time DESC')
 				->field('id,order_no,pay_status,status')->select();
 
 			// 处理订单
@@ -180,15 +181,18 @@ class Order extends Model
 			Db::name('user')->where("id={$uid}")->update(['cart' => $cartIdString]);
 
 			// 返回数据
-			return ['code' => 1, 'data' => [
-				'freight' => $this['freight'] + 0,
-				'scoreTotal' => $scoreTotal + 0,
-				'moneyTotal' => $moneyTotal + 0,
-				'maxScore' => $this['maxScore'] + 0,
-				'maxMoney' => $this['maxMoney'] + $this['freight'] + 0,
-				'cash2score_rate' => $param['config_cash2score_rate'] + 0,
-				'cartList' => $cartList
-			]];
+			return [
+				'code' => 1,
+				'data' => [
+					'freight' => $this['freight'] + 0,
+					'scoreTotal' => $scoreTotal + 0,
+					'moneyTotal' => $moneyTotal + 0,
+					'maxScore' => $this['maxScore'] + 0,
+					'maxMoney' => $this['maxMoney'] + $this['freight'] + 0,
+					'cash2score_rate' => $param['config_cash2score_rate'] + 0,
+					'cartList' => $cartList
+				]
+			];
 		} catch (\Exception $e) {
 			return ['code' => 0, 'msg' => '结算异常：' . $e->getMessage()];
 		}

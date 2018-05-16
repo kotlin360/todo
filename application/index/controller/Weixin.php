@@ -1,6 +1,6 @@
 <?php
 
-namespace app\common\controller;
+namespace app\index\controller;
 
 use app\api\model\Order as OrderModel;
 use app\api\model\Recharge as RechargeModel;

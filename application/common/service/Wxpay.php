@@ -45,7 +45,7 @@ class Wxpay
 			'total_fee' => 0.01 * 100, // 测试数据
 			// 'total_fee' => $bill['pay_weixin'] * 100, // 正式数据
 			'spbill_create_ip' => Request::ip(),
-			'notify_url' => Request::domain() . '/common/weixin/bill_pay_notify.html',
+			'notify_url' => Request::domain() . '/index/weixin/bill_pay_notify.html',
 			'trade_type' => 'JSAPI',
 			'openid' => $bill['openid']
 		);
@@ -201,7 +201,7 @@ class Wxpay
 			'total_fee' => 0.01 * 100, // 测试数据
 			// 'total_fee' => $bill['pay_weixin'] * 100, // 正式数据
 			'spbill_create_ip' => Request::ip(),
-			'notify_url' => Request::domain() . '/common/weixin/recharge_notify.html',
+			'notify_url' => Request::domain() . '/index/weixin/recharge_notify.html',
 			'trade_type' => 'JSAPI',
 			'openid' => $recharge['openid'],
 			// 附加数据,用户充值列表的id，用于充值成功后赠送优惠券
