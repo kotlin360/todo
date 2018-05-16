@@ -148,7 +148,14 @@
 					shadeClose: true,
 					btn: ['审核通过', '审核拒绝'],
 					yes: function () {
-						ajaxPost(url, {id: data.id, status: 35});
+						layer.confirm('必须在收到退货的货物后才可以审核通过!!!', {
+							title: '重要提示，有退款操作！！！',
+							btn: ['货物收到，给客户退款', '没有收到货物']
+						}, function (index, layero) {
+							ajaxPost(url, {id: data.id, status: 35});
+						}, function (index) {
+						});
+						return false;
 					},
 					btn2: function () {
 						var remark = $.trim($('textarea[name=returnRemark]').val());

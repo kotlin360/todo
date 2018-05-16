@@ -6,6 +6,7 @@ use app\common\facade\Wxpay as WxpayFacade;
 use think\Collection;
 use think\Db;
 use think\Model;
+use think\facade\Env;
 
 /**
  * @project  充值接口模型
@@ -75,25 +76,35 @@ class Recharge extends Model
 	 */
 	public function rechargeNotify($xml)
 	{
-		$data = WxpayFacade::rechargeNotify($xml);
-		if ($data !== false) {
+		Db::startTrans();
+		try {
+			// 这里虽然是充值，但是和下订单一致，调用微信通知解析xml返回数据即可
+			$data = WxpayFacade::billPayNotify($xml);
 
-			// 构造微信支付记录数据
-			$wxpayLog = [
-				'order_no' => $data['out_trade_no'], //订单单号
-				'open_id' => $data['openid'], //付款人openID
-				'total_fee' => $data['total_fee'], //付款金额
-				'transaction_id' => $data['transaction_id'], //微信支付流水号
-				'create_time' => time()
-			];
-			Db::startTrans();
-			try {
+			if ($data !== false) {
+
+				$money = $data['total_fee'] / 100; // 用户充值的钱
+
+				// 构造微信支付记录数据
+				$wxpayLog = [
+					'order_no' => $data['out_trade_no'], //订单单号
+					'cate' => 3, // 3代表用户充值
+					'open_id' => $data['openid'], //付款人openID
+					'total_fee' => $money, //付款金额
+					'transaction_id' => $data['transaction_id'], //微信支付流水号
+					'create_time' => time()
+				];
+
 				// 根据返回结果获取用户uid
-				$uid = Db::name('user')->where("open_id={$data['openid']}")->value('id');
+				$uid = Db::name('user')->where("open_id='{$data['openid']}'")->value('id');
 
 				// 给用户钱包增加充值额度
-				Db::name('user')->where("id={$uid}")
-					->inc('money', $data['total_fee'])->update();
+				Db::name('user')->where("id={$uid}")->setInc('money', $money);
+
+				// 写入用户钱包日志
+				$moneyData = ['uid' => $uid, 'value' => $money, 'note' => '用户充值', 'create_time' => $_SERVER['REQUEST_TIME']];
+				Db::name('money_log')->insert($moneyData);
+
 				$wxpayLog['uid'] = $uid;
 
 				// 写入微信支付记录表
@@ -106,7 +117,7 @@ class Recharge extends Model
 				if (is_array($couponGift) && !empty($couponGift)) {
 					$coupon = Db::name('coupon')->where("id={$couponGift['coupon_id']} AND status=1")->field(true)->find();
 
-					// 判断要赠送的优惠券是不是还有效，只需要判断status=1即可
+					// 判断要赠送的优惠券是不是还有效，只需要判断status=1即可（上面的where条件中）
 					if (is_array($coupon) && !empty($coupon)) {
 						$couponLog = [];
 						for ($i = 0; $i < $couponGift['num']; $i++) {
@@ -116,6 +127,7 @@ class Recharge extends Model
 								'name' => $coupon['name'],
 								'value' => $coupon['value'],
 								'money' => $coupon['money'],
+								'status' => 0,// 未使用
 								'start' => $coupon['start'],
 								'end' => $coupon['end'],
 								'create_time' => time(),
@@ -128,12 +140,14 @@ class Recharge extends Model
 				Db::commit();
 				// 通知微信处理成功
 				echo '<xml><return_code><![CDATA[SUCCESS]]></return_code><return_msg><![CDATA[OK]]></return_msg></xml>';
-			} catch (\Exception $e) {
-				Db::rollback();
-				echo '<xml><return_code><![CDATA[FAIL]]></return_code><return_msg><![CDATA[商户服务器处理失败]]></return_msg></xml>';
+			} else {
+				echo '<xml><return_code><![CDATA[FAIL]]></return_code><return_msg><![CDATA[签名失败]]></return_msg></xml>';
 			}
-		} else {
-			echo '<xml><return_code><![CDATA[FAIL]]></return_code><return_msg><![CDATA[签名失败]]></return_msg></xml>';
+
+		} catch (\Exception $e) {
+			Db::rollback();
+			echo '<xml><return_code><![CDATA[FAIL]]></return_code><return_msg><![CDATA[商户服务器处理失败]]></return_msg></xml>';
+			file_put_contents(Env::get('runtime_path') . '/log/weixin.txt', '充值失败：' . $e->getMessage() . PHP_EOL, FILE_APPEND);
 		}
 	}
 

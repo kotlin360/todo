@@ -24,8 +24,8 @@ class Wxpay
 		// 系统参数
 		$this->config = ParamFacade::getSystemParam();
 
-		$this->SSLCERT_PATH = Env::get('APP_PATH') . '/weixinCert/apiclient_cert.pem';
-		$this->SSLKEY_PATH = Env::get('APP_PATH') . '/weixinCert/apiclient_key.pem';
+		$this->SSLCERT_PATH = Env::get('ROOT_PATH') . '/weixinCert/apiclient_cert.pem';
+		$this->SSLKEY_PATH = Env::get('ROOT_PATH') . '/weixinCert/apiclient_key.pem';
 	}
 
 	/**
@@ -42,8 +42,8 @@ class Wxpay
 			'nonce_str' => self::getNonceStr(),
 			'body' => '深邦智能-订单支付',
 			'out_trade_no' => $bill['order_no'],
-			'total_fee' => 0.01 * 100, // 测试数据
-			// 'total_fee' => $bill['pay_weixin'] * 100, // 正式数据
+			// 'total_fee' => 0.01 * 100, // 测试数据
+			'total_fee' => $bill['pay_weixin'] * 100, // 正式数据
 			'spbill_create_ip' => Request::ip(),
 			'notify_url' => Request::domain() . '/index/weixin/bill_pay_notify.html',
 			'trade_type' => 'JSAPI',
@@ -85,10 +85,8 @@ class Wxpay
 	 */
 	public function billPayNotify($xml)
 	{
-		file_put_contents(Env::get('runtime_path') . '/log/weixin.txt', $xml, FILE_APPEND);
 		//将服务器返回的XML数据转化为数组
 		$data = self::xml2array($xml);
-		file_put_contents(Env::get('runtime_path') . '/log/weixin.txt', $data, FILE_APPEND);
 		// 保存微信服务器返回的签名sign
 		$data_sign = $data['sign'];
 		// sign不参与签名算法
@@ -118,17 +116,13 @@ class Wxpay
 			'out_refund_no' => $bill['refund_no'],
 			'out_trade_no' => $bill['order_no'],
 			'total_fee' => $bill['pay_weixin'] * 100,
-			'refund_fee' => 0.01 * 100, // 测试数据
-			//'refund_fee' => $bill['pay_weixin'] * 100, // 正式数据
-			// 'op_user_id' => $this->opUserId,
-			// 退款不需要通知，return_code为SUCCESS之后，直接判断result_code即可
-			// 'notify_url' => Request::domain() . '/common/weixin/bill_refund_notify.html',
+			'refund_fee' => $bill['pay_weixin'] * 100
 		);
 
 		$param['sign'] = self::makeSign($param);
 		//请求数据
 		$xmldata = self::array2xml($param);
-		$res = self::curl_post_ssl('https://api.mch.weixin.qq.com/pay/unifiedorder', $xmldata, true);
+		$res = self::curl_post_ssl('https://api.mch.weixin.qq.com/secapi/pay/refund', $xmldata, true);
 		if (!$res) {
 			return ['code' => 0, 'msg' => '退款提交失败，不能连接微信服务器'];
 		}
@@ -169,17 +163,17 @@ class Wxpay
 		$xmldata = self::array2xml($param);
 		$res = self::curl_post_ssl('https://api.mch.weixin.qq.com/mmpaymkttransfers/promotion/transfers', $xmldata, true);
 		if (!$res) {
-			return ['code' => 0, 'msg' => '退款提交失败，不能连接微信服务器'];
+			return ['code' => 0, 'msg' => '提现失败，不能连接微信服务器'];
 		}
 
 		$content = self::xml2array($res);
 
 		if (strval($content['return_code']) == 'FAIL') {
-			return ['code' => 0, 'msg' => '退款提交失败：' . strval($content['return_msg'])];
+			return ['code' => 0, 'msg' => '提现失败：' . strval($content['return_msg'])];
 		}
 
 		if (strval($content['result_code']) == 'FAIL') {
-			return ['code' => 0, 'msg' => '退款提交失败：' . strval($content['err_code_des'])];
+			return ['code' => 0, 'msg' => '提现失败：' . strval($content['err_code_des'])];
 		}
 		return ['code' => 1, 'data' => $content];
 	}
@@ -335,7 +329,7 @@ class Wxpay
 			curl_setopt($ch, CURLOPT_HTTPHEADER, $aHeader);
 		}
 
-		if ($useCert === true) {
+		if ($useCert == true) {
 			//设置证书，使用证书：cert 与 key 分别属于两个.pem文件
 			curl_setopt($ch, CURLOPT_SSLCERTTYPE, 'PEM');
 			curl_setopt($ch, CURLOPT_SSLCERT, $this->SSLCERT_PATH);

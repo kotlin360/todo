@@ -76,9 +76,8 @@ class Order extends Base
 		$id = input('id/d', 0);
 		// status 30拒绝 35通过
 		$status = input('status/d', 30);
-		$return_remark = input('returnRemark', '');
-		$goodsinfo = $orderModel->returnVerify($id, $status, $return_remark);
-		return json($goodsinfo);
+		$return_remark = input('returnRemark', '通过无理由');
+		return json($orderModel->returnVerify($id, $status, $return_remark));
 	}
 
 }

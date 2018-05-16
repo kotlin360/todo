@@ -94,7 +94,7 @@ class User extends Base
 	{
 		$id = input('id/d');
 		$type = input('type/d');
-		$remark = input('remark', '');
+		$remark = input('remark', '通过无理由');
 		return json($userModel->checkWithdraw($id, $type, $remark));
 	}
 

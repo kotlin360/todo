@@ -64,7 +64,8 @@ class Order extends Base
 			'uid' => $this['auth']['uid'],
 			'id' => input('id/d'),
 			'pid' => input('pid/d'),
-			'num' => input('num/d')
+			'num' => input('num/d', 1),
+			'use_money' => input('use_money/d', 0), // 是否使用余额支付运费
 		];
 
 		// 订单信息数据
@@ -73,7 +74,10 @@ class Order extends Base
 			'freight' => 0, // 运费
 			'order_no' => $orderModel->build_order_no(), // 订单号
 			'uid' => $this['auth']['uid'],
-			'user_remark' => input('user_remark'), // 用户订单备注
+			'user_remark' => input('user_remark', ''), // 用户订单备注
+			'pay_score' => 0,
+			'pay_money' => 0, // 用户选择支付的余额初始化
+			'pay_weixin' => 0, // 微信支付额度初始化
 			'create_time' => $_SERVER['REQUEST_TIME']
 		];
 
@@ -122,6 +126,17 @@ class Order extends Base
 		$orderModel->orderAddressAndInvoiceHandle($orderData, $addressInfo, $invoiceInfo);
 
 		return json($orderModel->buildOrder($orderData, $shareTokens));
+	}
+
+	/**
+	 * 删除尚未支付的订单
+	 * @param OrderModel $orderModel
+	 * @return \think\response\Json
+	 */
+	public function del_order(OrderModel $orderModel)
+	{
+		$orderNo = input('orderNo', 0);
+		return json($orderModel->delOrder($this['auth']['uid'], $orderNo));
 	}
 
 	/**

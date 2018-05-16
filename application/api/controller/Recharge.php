@@ -9,7 +9,7 @@ use app\api\model\Recharge as RechargeModel;
  * @author   千叶
  * @date     2018-04-18
  */
-class Recharge extends Controller
+class Recharge extends Base
 {
 	/**
 	 * 充值额度、赠送的优惠券列表

@@ -10,9 +10,13 @@ use app\common\facade\Wxpay as WxpayFacade;
 use app\common\service\OpensslEncryptHelper;
 use think\Collection;
 use think\Db;
+use think\db\exception\DataNotFoundException;
+use think\db\exception\ModelNotFoundException;
+use think\exception\DbException;
 use think\facade\Config;
 use think\facade\Request;
 use think\Model;
+use think\facade\Env;
 
 /**
  * @project  订单接口模型
@@ -89,8 +93,9 @@ class Order extends Model
 
 			// 获取商品信息
 			$goodsInfo = Db::name('goods')->alias('g')
-				->join('goods_products p', "g.id=p.goods_id AND p.id={$data['pid']}", 'LEFT')->where("g.id={$data['id']}")
-				->field('g.title,p.img,p.spec_value_string,p.stock,p.score,p.freight,p.style,p.gift,p.is_online,p.is_delete')->find();
+				->join('goods_products p', "g.id=p.goods_id AND p.id={$data['pid']}", 'LEFT')
+				->where("g.id={$data['id']}")
+				->field('g.id,g.title,p.id as pid,p.img,p.spec_value_string,p.stock,p.score,p.freight,p.style,p.gift,p.is_online,p.is_delete')->find();
 
 			// 处理无规格的情况
 			$goodsInfo['spec_value_string'] = $goodsInfo['spec_value_string'] == null ? '无规格' : $goodsInfo['spec_value_string'];
@@ -104,8 +109,8 @@ class Order extends Model
 			if ($goodsInfo['is_online'] == 0 || $goodsInfo['is_delete'] == 1) {
 				return ['code' => 0, 'msg' => '兑换失败，商品已经下架'];
 			}
-
-			$goodsInfo['img2'] = Request::domain() . '/uploads/' . $goodsInfo['img'];
+			$img = Db::name('goods_images')->where("goods_id={$data['id']}")->order('id')->value('img_m');
+			$goodsInfo['img2'] = Request::domain() . '/uploads/' . $img;
 			return ['code' => 1, 'data' => [
 				'user' => $user,
 				'goods' => $goodsInfo,
@@ -201,25 +206,55 @@ class Order extends Model
 	/**
 	 * 纯积分兑换商品生成订单
 	 * @param $goods
-	 * @param $data
+	 * @param $orderData
 	 * @param $shareTokens
 	 * @return array
 	 */
-	public function buildScoreOrder($goods, $data, $shareTokens)
+	public function buildScoreOrder($goods, $orderData, $shareTokens)
 	{
 		$result = $this->getScoreOrderInfo($goods);
 		if ($result['code'] == 1) {
 
+			$orderData['freight'] = $result['data']['goods']['freight']; // 当前商品运费
+			$payTypeArray = ['积分']; // 支付方式
+
+			$scoreTotal = $result['data']['scoreTotal'] + 0; // 当前账户积分
+			$moneyTotal = $result['data']['moneyTotal'] + 0; // 当前用户钱包余额
+
 			// 判断当前用户积分额度与当前商品的总积分
 			$payScore = ($result['data']['goods']['score'] + 0) * ($goods['num'] + 0);
-			if ($payScore > $result['data']['scoreTotal']) {
+			if ($payScore > $scoreTotal) {
 				return ['code' => 0, 'msg' => '兑换失败：当前总积分不足'];
 			}
+
+			$orderData['pay_score'] = $payScore;
+			// 判断运费用余额还是微信支付
+			if ($goods['use_money'] == 1) {
+				$payTypeArray[] = '钱包余额';
+				// 使用钱包余额
+				if ($moneyTotal >= $orderData['freight']) {
+					// 余额充足的情况
+					$orderData['pay_money'] = $orderData['freight'];
+					$orderData['pay_weixin'] = 0;
+				} else {
+					// 余额也不够，剩下的就是微信支付
+					$payTypeArray[] = '微信支付';
+					$orderData['pay_money'] = $moneyTotal;
+					$orderData['pay_weixin'] = $orderData['freight'] - $moneyTotal;
+				}
+			} else {
+				$payTypeArray[] = '微信支付';
+				// 没有使用钱包余额
+				$orderData['pay_money'] = 0;
+				$orderData['pay_weixin'] = $orderData['freight'];
+			}
+			$orderData['score_gift_total'] = $result['data']['goods']['gift']; // 购买商品赠送的总积分
+			$orderData['pay_style'] = implode('+', $payTypeArray);
 
 			Db::startTrans();
 			try {
 				// 创建写入订单表
-				$orderId = Db::name('goods')->insert($data, false, true);
+				$orderId = Db::name('order')->insert($orderData, false, true);
 
 				// 写入订单商品详情表
 				$goodsIdArray[] = $goods['id'];
@@ -227,9 +262,7 @@ class Order extends Model
 					'order_id' => $orderId,
 					'img' => $result['data']['goods']['img'],
 					'goods_id' => $goods['id'],
-					// 购买商品赠送的积分
-					'score_gift_total' => $good['gift'] * $goods['num'],
-					'goods_title' => $goods['title'],
+					'goods_title' => $result['data']['goods']['title'],
 					'goods_num' => $goods['num'],
 					'spec_id' => $goods['pid'],
 					'spec_value_string' => $result['data']['goods']['spec_value_string'],
@@ -240,25 +273,28 @@ class Order extends Model
 				];
 				Db::name('order_goods')->insert($orderGoodsData);
 
+				// 生成订单后扣除用户的积分、余额以及写各种日志表
+				$this->deductionUserMoneyWhenBuildOrder($orderData);
+
 				// 扣除库存
-				Db::name('goods_products')->where("id={$goods['pid']}")->dec('stock', $goods['num'])->update();
+				Db::name('goods_products')->where("id={$goods['pid']}")->setDec('stock', $goods['num']);
 
 				// 写订单日志表
-				$orderLogData = ['order_id' => $orderId, 'uid' => $data['uid'], 'note' => '积分兑换商品，等待付款', 'create_time' => $_SERVER['REQUEST_TIME']];
+				$orderLogData = ['order_id' => $orderId, 'uid' => $orderData['uid'], 'note' => '积分兑换商品，等待付款', 'create_time' => $_SERVER['REQUEST_TIME']];
 				Db::name('order_log')->insert($orderLogData);
 
 				// 检测当前是否有分享人
-				$unUsedShareToken = $this->shareGoodsBePurchased($shareTokens, $data['uid'], $orderId, $goodsIdArray);
+				$unUsedShareToken = $this->shareGoodsBePurchased($shareTokens, $orderData['uid'], $orderId, $goodsIdArray);
 
 				// 提交事务，相应数据
 				Db::commit();
-				return ['code' => 1, 'orderNo' => $data['order_no'], 'shareToken' => $unUsedShareToken];
+				return ['code' => 1, 'orderNo' => $orderData['order_no'], 'shareToken' => $unUsedShareToken];
 			} catch (\Exception $e) {
 				Db::rollback();
 				return ['code' => 0, 'msg' => '兑换失败：' . $e->getMessage()];
 			}
 		} else {
-			return ['code' => 0, 'msg' => '订单创建失败，请稍后再试'];
+			return ['code' => 0, 'msg' => '兑换失败，请稍后再试'];
 		}
 	}
 
@@ -414,6 +450,9 @@ class Order extends Model
 			// 订单提交成功后删除购物车中的商品
 			Db::name('cart')->where("id in({$this['realCartIdString']}) AND uid={$orderData['uid']}")->delete();
 
+			// 生成订单后扣除用户的积分、余额以及写各种日志表
+			$this->deductionUserMoneyWhenBuildOrder($orderData);
+
 			// 写订单日志表
 			$orderLogData = ['order_id' => $this['orderId'], 'uid' => $orderData['uid'], 'note' => '提交订单，等待付款', 'create_time' => $_SERVER['REQUEST_TIME']];
 			Db::name('order_log')->insert($orderLogData);
@@ -426,6 +465,57 @@ class Order extends Model
 		} catch (\Exception $e) {
 			Db::rollback();
 			return ['code' => 0, 'msg' => '订单创建失败：' . $e->getMessage()];
+		}
+	}
+
+	/**
+	 * 删除尚未支付的订单，需要回滚优惠券、积分、余额
+	 * @param $uid
+	 * @param $orderNo
+	 * @return array
+	 */
+	public function delOrder($uid, $orderNo)
+	{
+		Db::startTrans();
+		try {
+			$order = Db::name('order')->where("order_no={$orderNo} AND uid={$uid}")->field(true)->find();
+			if (!$order['id']) {
+				return ['code' => 0, 'msg' => '删除失败：未查询到此订单'];
+			}
+			if ($order['status'] != 1) {
+				return ['code' => 0, 'msg' => '删除失败：此订单不支持删除'];
+			}
+
+			$couponid = $order['coupon_id'];
+			$payScore = $order['pay_score'];
+			$payMoney = $order['pay_money'];
+
+			// 返回优惠券
+			Db::name('coupon_log')->where("id={$couponid} AND uid={$uid}")
+				->update(['update_time' => 0, 'status' => 0]);
+
+			// 返回积分写用户积分日志表
+			if ($payScore != 0) {
+				Db::name('user')->where("id={$uid}")->setInc('score', $payScore);
+				$scoreData = ['uid' => $uid, 'value' => $payScore, 'note' => '放弃购买返回积分', 'create_time' => $_SERVER['REQUEST_TIME']];
+				Db::name('score_log')->insert($scoreData);
+			}
+
+			// 返回用户钱包余额表
+			if ($payMoney != 0) {
+				Db::name('user')->where("id={$uid}")->setInc('money', $payMoney);
+				$moneyData = ['uid' => $uid, 'value' => $payMoney, 'note' => '放弃购买返回余额', 'create_time' => $_SERVER['REQUEST_TIME']];
+				Db::name('money_log')->insert($moneyData);
+			}
+
+			// 删除此订单
+			Db::name('order')->where("order_no={$orderNo} AND uid={$uid}")->delete();
+
+			Db::commit();
+			return ['code' => 1];
+		} catch (\Exception $e) {
+			Db::rollback();
+			return ['code' => 0, 'msg' => '删除失败：' . $e->getMessage()];
 		}
 	}
 
@@ -471,12 +561,39 @@ class Order extends Model
 					'openid' => $token['openid']
 				]);
 			} else {
-				// 此处需要调用微信支付，直接扣除积分和余额
+				// 此处不需要调用微信支付，直接扣除积分和余额
 				return $this->payRealHandle($uid, $bill);
 			}
 		} catch (\Exception $e) {
 			return ['code' => 0, 'msg' => '预支付失败：' . $e->getMessage()];
 		}
+	}
+
+	/**
+	 * 生成订单后就扣除用户的积分和余额
+	 * @param $orderData
+	 * @throws \think\Exception
+	 */
+	public function deductionUserMoneyWhenBuildOrder($orderData)
+	{
+		$uid = $orderData['uid'];
+		$payScore = $orderData['pay_score']; // 支付积分
+		$payMoney = $orderData['pay_money']; // 支付余额
+
+		// 扣除积分写用户积分日志表
+		if ($payScore != 0) {
+			Db::name('user')->where("id={$uid}")->setDec('score', $payScore);
+			$scoreData = ['uid' => $uid, 'value' => -$payScore, 'note' => '购买商品支付', 'create_time' => $_SERVER['REQUEST_TIME']];
+			Db::name('score_log')->insert($scoreData);
+		}
+
+		// 写用户钱包余额表
+		if ($payMoney != 0) {
+			Db::name('user')->where("id={$uid}")->setDec('money', $payMoney);
+			$moneyData = ['uid' => $uid, 'value' => -$payMoney, 'note' => '购买商品支付', 'create_time' => $_SERVER['REQUEST_TIME']];
+			Db::name('money_log')->insert($moneyData);
+		}
+
 	}
 
 	/**
@@ -490,47 +607,23 @@ class Order extends Model
 	{
 		Db::startTrans();
 		try {
-			$uid = $token['uid'];
-			$couponId = $bill['coupon_id']; // 支付使用的优惠券
-			$payScore = $bill['pay_score']; // 支付积分
-			$payMoney = $bill['pay_money']; // 支付余额
-			$payWeixin = $bill['pay_weixin']; // 微信支付
+
+			//$payWeixin = $bill['pay_weixin']; // 微信支付
 			$score_gift_total = $bill['score_gift_total']; // 用户购买商品赠送的总积分
-
-			// 扣除用户积分、钱包余额相应额度,需要判断，因为有可能客户直接微信支付了
-			if ($payScore != 0 || $payMoney != 0 || $score_gift_total != 0) {
-				Db::name('user')->where("id={$uid}")
-					->dec('score', $payScore)
-					->dec('money', $payMoney)
-					->inc('score', $score_gift_total)
-					->update();
-			}
-
 			$shareScoreDatas = [];
-			// 扣除积分写用户积分日志表
-			if ($payScore != 0) {
-				$shareScoreDatas[] = ['uid' => $uid, 'value' => -$payScore, 'note' => '购买商品支付', 'create_time' => $_SERVER['REQUEST_TIME']];
-				Db::name('score_log')->insert($scoreData);
-			}
 
 			// 赠送用户积分日志表
 			if ($score_gift_total != 0) {
+				Db::name('user')->where("id={$uid}")->setInc('score', $score_gift_total);
 				$shareScoreDatas[] = ['uid' => $uid, 'value' => $score_gift_total, 'note' => '购买商品赠送', 'create_time' => $_SERVER['REQUEST_TIME']];
-				Db::name('score_log')->insert($scoreData);
-			}
-
-			// 写用户钱包余额表
-			if ($payMoney != 0) {
-				$scoreData = ['uid' => $uid, 'value' => -$payMoney, 'note' => '购买商品支付', 'create_time' => $_SERVER['REQUEST_TIME']];
-				Db::name('money_log')->insert($scoreData);
 			}
 
 			// 查询是否有分享记录，如果有需要给双方增加积分
 			$shares = Db::name('share_goods_be_purchase')->where("order_id={$bill['id']}")
 				->field('uid,share_uid,gift')->select();
 			Collection::make($shares)->each(function ($share) {
-				Db::name('user')->where("id={$share['uid']}")->inc('score', $share['gift']);
-				Db::name('user')->where("id={$share['share_uid']}")->inc('score', $share['gift']);
+				Db::name('user')->where("id={$share['uid']}")->setInc('score', $share['gift']);
+				Db::name('user')->where("id={$share['share_uid']}")->setInc('score', $share['gift']);
 				// 分享码赠送写日志
 				$shareScoreDatas[] = [
 					['uid' => $share['uid'], 'value' => $share['gift'], 'note' => '购买分享人商品赠送积分', 'create_time' => $_SERVER['REQUEST_TIME']],
@@ -538,7 +631,7 @@ class Order extends Model
 				];
 			});
 
-			if (!empty($shareScoreDatas)) {
+			if (is_array($shareScoreDatas) && !empty($shareScoreDatas)) {
 				Db::name('score_log')->insertAll($shareScoreDatas);
 			}
 
@@ -550,7 +643,7 @@ class Order extends Model
 			]);
 
 			// 支付成功后，需要写订单日志表
-			$orderData = ['uid' => $uid, 'order_id' => 1, 'note' => '支付成功，等待发货', 'create_time' => $_SERVER['REQUEST_TIME']];
+			$orderData = ['uid' => $uid, 'order_id' => $bill['id'], 'note' => '支付成功，等待发货', 'create_time' => $_SERVER['REQUEST_TIME']];
 			Db::name('order_log')->insert($orderData);
 
 			// 写微信支付日志
@@ -572,35 +665,42 @@ class Order extends Model
 	 */
 	public function billPayNotify($xml)
 	{
-		$data = WxpayFacade::billPayNotify($xml);
-		if ($data !== false) {
+		try {
+			$data = WxpayFacade::billPayNotify($xml);
+			if ($data !== false) {
 
-			// 根据返回结果获取用户uid
-			$uid = Db::name('user')->where("open_id={$data['openid']}")->value('id');
-			// 获取当前订单支付信息
-			$bill = Db::name('order')->where("order_no={$data['out_trade_no']}")
-				->field('id,order_no,pay_style,pay_score,pay_money,pay_weixin,score_gift_total,coupon_id,pay_coupon_value,freight')->find();
+				// 根据返回结果获取用户uid
+				$uid = Db::name('user')->where("open_id='{$data['openid']}'")->value('id');
 
-			// 构造微信支付记录数据
-			$wxpayLog = [
-				'uid' => $uid,
-				'order_no' => $bill['order_no'], //订单单号，微信通知没有
-				'open_id' => $data['openid'], //付款人openID，微信通知有
-				'total_fee' => $bill['pay_weixin'], //付款金额，微信通知没有
-				'transaction_id' => $data['prepay_id'], //微信支付流水号，微信通知有
-				'create_time' => time()
-			];
+				// 获取当前订单支付信息
+				$bill = Db::name('order')->where("order_no={$data['out_trade_no']}")
+					->field('id,order_no,pay_style,pay_score,pay_money,pay_weixin,score_gift_total,coupon_id,pay_coupon_value,freight')->find();
 
-			// 调用扣款功能
-			$result = $this->payRealHandle($uid, $bill, $wxpayLog);
+				// 构造微信支付记录数据
+				$wxpayLog = [
+					'uid' => $uid,
+					'cate' => 1,// 1代表订单支付
+					'order_no' => $data['out_trade_no'], //商户订单单号
+					'open_id' => $data['openid'], //付款人openID
+					'total_fee' => $data['total_fee'] / 100, //付款金额
+					'transaction_id' => $data['transaction_id'], //微信支付流水号
+					'create_time' => time()
+				];
 
-			if ($result['code'] == 1) {
-				echo '<xml><return_code><![CDATA[SUCCESS]]></return_code><return_msg><![CDATA[OK]]></return_msg></xml>';
+				// 调用扣款功能
+				$result = $this->payRealHandle($uid, $bill, $wxpayLog);
+
+				if ($result['code'] == 1) {
+					echo '<xml><return_code><![CDATA[SUCCESS]]></return_code><return_msg><![CDATA[OK]]></return_msg></xml>';
+				} else {
+					echo '<xml><return_code><![CDATA[FAIL]]></return_code><return_msg><![CDATA[商户服务器处理失败]]></return_msg></xml>';
+				}
 			} else {
-				echo '<xml><return_code><![CDATA[FAIL]]></return_code><return_msg><![CDATA[商户服务器处理失败]]></return_msg></xml>';
+				echo '<xml><return_code><![CDATA[FAIL]]></return_code><return_msg><![CDATA[签名失败]]></return_msg></xml>';
 			}
-		} else {
-			echo '<xml><return_code><![CDATA[FAIL]]></return_code><return_msg><![CDATA[签名失败]]></return_msg></xml>';
+		} catch (\Exception $e) {
+			echo '<xml><return_code><![CDATA[FAIL]]></return_code><return_msg><![CDATA[商户服务器处理失败]]></return_msg></xml>';
+			file_put_contents(Env::get('runtime_path') . '/log/weixin.txt', '订单支付失败：' . $e->getMessage() . PHP_EOL, FILE_APPEND);
 		}
 	}
 
@@ -635,22 +735,22 @@ class Order extends Model
 	/**
 	 * 确认收货
 	 * @param $uid
-	 * @param $orderNo
+	 * @param $id
 	 * @return array
 	 */
-	public function comfirmReceipt($uid, $orderNo)
+	public function comfirmReceipt($uid, $id)
 	{
 		Db::startTrans();
 		try {
 			// 更新订单状态
-			$result = Db::name('order')->where("id={$orderNo} AND status in(10,15)")->update(['status' => 20]);
+			$result = Db::name('order')->where("id={$id} AND status in(10,15)")->update(['status' => 20]);
 			if (!$result) {
 				return ['code' => 0, 'msg' => '确认失败：订单未查询到'];
 			}
 
 			// 写入订单日志
 			$orderLog = ['uid' => $uid, 'order_id' => $id, 'note' => '已收货，订单完成', 'create_time' => $_SERVER['REQUEST_TIME']];
-			Db::name('order_log')->insert($orderData);
+			Db::name('order_log')->insert($orderLog);
 
 			Db::commit();
 			return ['code' => 1];
@@ -681,7 +781,7 @@ class Order extends Model
 
 			// 写入订单日志
 			$orderLog = ['uid' => $uid, 'order_id' => $id, 'note' => '客户申请退货，等待审核', 'create_time' => $_SERVER['REQUEST_TIME']];
-			Db::name('order_log')->insert($orderData);
+			Db::name('order_log')->insert($orderLog);
 
 			Db::commit();
 			return ['code' => 1];

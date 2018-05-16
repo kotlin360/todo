@@ -75,8 +75,13 @@ class User extends Model
 	 */
 	public function getUserInfo($id)
 	{
+
+		$now = $_SERVER['REQUEST_TIME'];
 		// 用户基本信息
 		$user = Db::name('user')->where("id={$id}")->field('passwd,open_id,avatar', true)->find();
+		// 获取优惠券张数
+		$map = "uid={$user['id']} AND status=0 AND start <= {$now} AND end >= {$now}";
+		$user['coupon_num'] = Db::name('coupon_log')->where($map)->count();
 		if ($user['create_ip']) {
 			$ip2region = new \Ip2Region();
 			$create_region = $ip2region->binarySearch($user['create_ip']);
@@ -186,18 +191,19 @@ class User extends Model
 			} else {
 				// 提现审核通过，提现调用微信支付，给用户付款功能
 				// 生成订单号
-				$withDraw['order_no'] = \app\api\facade\Order::build_order_no();
+				$widthDraw['order_no'] = \app\api\facade\Order::build_order_no();
 				// 查询用户的openid
-				$widthDraw['openid'] = Db::name('user')->where("id={$withDrawData}")->value('open_id');
+				$widthDraw['openid'] = Db::name('user')->where("id={$widthDraw['uid']}")->value('open_id');
 
 				$result = WxpayFacade::withdraw($widthDraw);
+
 				if ($result['code'] == 1) {
 					// 提现成功，写入微信支付日志表
 					$weixinPayLog = [
 						'order_no' => $result['data']['partner_trade_no'],
 						'uid' => $widthDraw['uid'],
-						'cate' => 4,
-						'total_fee' => $widthDraw['value'] * -1,
+						'cate' => 4, // 4代表用户提现
+						'total_fee' => $widthDraw['value'] / -100,
 						'transaction_id' => $result['data']['payment_no'],
 						'create_time' => time(),
 					];
