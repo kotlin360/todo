@@ -2,6 +2,7 @@
 namespace app\admin\model;
 
 use app\common\facade\Wxpay as WxpayFacade;
+use think\Collection;
 use think\Db;
 use think\facade\Config;
 use think\facade\Session;
@@ -38,11 +39,22 @@ class Order extends Model
 				"LEFT JOIN {$prefix}goods g ON og.goods_id=g.id WHERE og.order_id=:id";
 			$goods = Db::query($goodsSQL, ['id' => $id]);
 
-			// 订单日志
-			$orderLogSQL = "SELECT ol.*,u.username FROM {$prefix}order_log ol " .
-				"LEFT JOIN {$prefix}user u ON ol.uid=u.id WHERE ol.order_id=:id ORDER BY ol.id DESC";
+			// 订单日志，因为失误的原因，这里uid小程序写入的是用户的主键，而后台写入的是用户的真实姓名，所以处理下
+			$orderLogSQL = "SELECT id,order_id,uid as username,note,create_time FROM {$prefix}order_log  WHERE order_id=:id ORDER BY id DESC";
 			$orderLog = Db::query($orderLogSQL, ['id' => $id]);
-			return ['code' => 1, 'order' => $order[0], 'goods' => $goods, 'orderLog' => $orderLog];
+			$orderLogs = [];
+			foreach ($orderLog as $log) {
+				if (is_numeric($log['username'])) {
+					$user = Db::name('user')->where("id={$log['username']}")->field('username,nickname')->find();
+					if ($user) {
+						$log['username'] = $user['nickname'] . '-' . $user['username'];
+					} else {
+						$log['username'] = '匿名';
+					}
+				}
+				$orderLogs[] = $log;
+			}
+			return ['code' => 1, 'order' => $order[0], 'goods' => $goods, 'orderLog' => $orderLogs];
 		} catch (\Exception $e) {
 			return ['code' => 0, 'msg' => '获取失败：' . $e->getMessage()];
 		}
@@ -84,7 +96,7 @@ class Order extends Model
 		try {
 			$this->where("id={$id}")->update(['status' => 15, 'courier_number' => $courierNumber]);
 			// 写订单日志表
-			$orderLogData = ['order_id' => $id, 'uid' => Session::get('auth.uid'), 'note' => '订单发货成功', 'create_time' => $_SERVER['REQUEST_TIME']];
+			$orderLogData = ['order_id' => $id, 'uid' => Session::get('auth.rolename'), 'note' => '订单发货成功', 'create_time' => $_SERVER['REQUEST_TIME']];
 			Db::name('order_log')->insert($orderLogData);
 			Db::commit();
 			return ['code' => 1, 'msg' => '订单发货成功'];
@@ -175,7 +187,7 @@ class Order extends Model
 				$this->where("id={$id}")->update(['status' => $status, 'return_remark' => $return_remark]);
 			}
 			// 写订单日志表
-			$orderLogData = ['order_id' => $id, 'uid' => Session::get('auth.uid'), 'note' => $msg . '，原因:' . $return_remark, 'create_time' => $_SERVER['REQUEST_TIME']];
+			$orderLogData = ['order_id' => $id, 'uid' => Session::get('auth.rolename'), 'note' => $msg . '，原因:' . $return_remark, 'create_time' => $_SERVER['REQUEST_TIME']];
 			Db::name('order_log')->insert($orderLogData);
 			Db::commit();
 			return ['code' => 1, 'msg' => '订单退款审核成功'];

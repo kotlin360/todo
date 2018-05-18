@@ -113,7 +113,7 @@ class Goods extends Model
 					'score' => $extend['score'][$k],
 					'freight' => $extend['freight'][$k],
 					'gift' => $extend['gift'][$k],
-					'is_online' => $extend['is_online'][$k]
+					'is_online' => isset($extend['is_online'][$k]) ? $extend['is_online'][$k] : 0
 				];
 				$spec_id = Db::name('goods_products')->insert($products, false, true);
 				// 如果此规格是积分兑换或者组合支付的并且是线上产品，回写商品表goods中的is_score和spec_sn字段
@@ -247,7 +247,7 @@ class Goods extends Model
 						'score' => $extend['score'][$k],
 						'freight' => $extend['freight'][$k],
 						'gift' => $extend['gift'][$k],
-						'is_online' => $extend['is_online'][$k],
+						'is_online' => isset($extend['is_online'][$k]) ? $extend['is_online'][$k] : 0,
 						'is_delete' => 0,
 						'create_time' => $_SERVER['REQUEST_TIME']
 					];

@@ -61,7 +61,7 @@ class Order extends Model
 				return ['code' => 1, 'data' => [], 'pageSize' => $limit];
 			}
 			$orderGoods = Db::name('order_goods')->where("order_id in ({$this['orderIds']})")
-				->field('order_id,goods_title,img,goods_num,spec_id as pid,spec_value_string,style,cash,score')->select();
+				->field('goods_id,order_id,goods_title,img,goods_num,spec_id as pid,spec_value_string,style,cash,score')->select();
 			Collection::make($orderGoods)->each(function ($v) use (&$orderList) {
 				$order_id = $v['order_id'];
 				unset($v['order_id']);
@@ -255,12 +255,12 @@ class Order extends Model
 			try {
 				// 创建写入订单表
 				$orderId = Db::name('order')->insert($orderData, false, true);
-
+				$img = Db::name('goods_images')->where("goods_id={$goods['id']}")->order('id')->value('img_m');
 				// 写入订单商品详情表
 				$goodsIdArray[] = $goods['id'];
 				$orderGoodsData = [
 					'order_id' => $orderId,
-					'img' => $result['data']['goods']['img'],
+					'img' => $img,
 					'goods_id' => $goods['id'],
 					'goods_title' => $result['data']['goods']['title'],
 					'goods_num' => $goods['num'],
@@ -774,9 +774,9 @@ class Order extends Model
 			$refund_no = $this->build_order_no() . mt_rand(1000, 9999);
 
 			// 更新订单状态
-			$result = Db::name('order')->where("id={$id} AND status in(15,10,15,20)")->update(['status' => 25, 'refund_no' => $refund_no]);
+			$result = Db::name('order')->where("id={$id} AND status in(5,20)")->update(['status' => 25, 'refund_no' => $refund_no]);
 			if (!$result) {
-				return ['code' => 0, 'msg' => '退货申请失败：订单未查询到'];
+				return ['code' => 0, 'msg' => '退货申请失败：订单已经发货或者退货完成'];
 			}
 
 			// 写入订单日志

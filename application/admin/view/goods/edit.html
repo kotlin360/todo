@@ -240,6 +240,7 @@
 					layer.load();
 				},
 				success: function (result) {
+					layer.closeAll();
 					if (result.code == 1) {
 						parent.message.show({msg: okMsg});
 						window.location.href = "{:url('goods/index')}";

@@ -160,10 +160,13 @@ class Spec extends Model
 	{
 		try {
 			$spec = Db::name($this->name)->where("id={$id}")->findOrFail();
-			$spec['value'] = implode(unserialize($spec['value']), ',');
+
+			$valueArray = unserialize($spec['value']);
+			$names = array_column($valueArray, 'name');
+			$spec['value'] = implode($names, ',');
 			return $spec;
 		} catch (\Exception $e) {
-			Log::error('根据id获取商品某个商品规格');
+			Log::error('根据id获取商品某个商品规格' . $e->getMessage());
 			return null;
 		}
 	}
