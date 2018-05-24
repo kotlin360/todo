@@ -66,7 +66,7 @@ class Order extends Model
 				$order_id = $v['order_id'];
 				unset($v['order_id']);
 				$v['img'] = Request::domain() . '/uploads/' . $v['img'];
-				$orderList[$order_id]['goods'] = $v;
+				$orderList[$order_id]['goods'][] = $v;
 			});
 
 			return ['code' => 1, 'data' => array_values($orderList), 'pageSize' => $limit];

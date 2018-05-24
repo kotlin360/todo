@@ -42,7 +42,6 @@ class Wxpay
 			'nonce_str' => self::getNonceStr(),
 			'body' => '深邦智能-订单支付',
 			'out_trade_no' => $bill['order_no'],
-			// 'total_fee' => 0.01 * 100, // 测试数据
 			'total_fee' => $bill['pay_weixin'] * 100, // 正式数据
 			'spbill_create_ip' => Request::ip(),
 			'notify_url' => Request::domain() . '/index/weixin/bill_pay_notify.html',
@@ -192,8 +191,7 @@ class Wxpay
 			'nonce_str' => self::getNonceStr(),
 			'body' => '深邦智能-用户充值',
 			'out_trade_no' => $recharge['order_no'],
-			'total_fee' => 0.01 * 100, // 测试数据
-			// 'total_fee' => $bill['pay_weixin'] * 100, // 正式数据
+			'total_fee' => $recharge['pay_weixin'] * 100, // 正式数据
 			'spbill_create_ip' => Request::ip(),
 			'notify_url' => Request::domain() . '/index/weixin/recharge_notify.html',
 			'trade_type' => 'JSAPI',

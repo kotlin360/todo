@@ -106,7 +106,7 @@ class Coupon extends Model
 			}
 
 			// 检查是否领取过
-			$couponLogId = Db::name('coupon_log')->where("coupon_id={$id}")->value('id');
+			$couponLogId = Db::name('coupon_log')->where("uid={$user['uid']} AND coupon_id={$id}")->value('id');
 			if ($couponLogId) {
 				return ['code' => 0, 'msg' => '领取失败：已经领取过'];
 			}
